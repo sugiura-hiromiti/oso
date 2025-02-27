@@ -1,0 +1,7 @@
+[workspace]
+resolver = "3"
+members = ["oso_kernel", "oso_loader"]
+
+# [package]
+# name = "oso"
+# version = "0.1.0"
