@@ -28,6 +28,11 @@ pub fn open_file(
 
 pub fn read_file(file: &mut file::RegularFile,) -> uefi::Result<alloc::string::String,> {
 	//string_to_cstr16!(path, path);
+	let content = read_file_bytes(file,)?;
+	Ok(alloc::string::String::from_utf8_lossy(content.as_slice(),).into_owned(),)
+}
+
+pub fn read_file_bytes(file: &mut file::RegularFile,) -> uefi::Result<alloc::vec::Vec<u8,>,> {
 	// ファイルのサイズを取得
 	//let file_info = file.get_boxed_info::<file::FileInfo>()?;
 	let buf = &mut [0; 1024];
@@ -42,10 +47,7 @@ pub fn read_file(file: &mut file::RegularFile,) -> uefi::Result<alloc::string::S
 	debug!("content.len(): {}", content.len());
 	let read_size = file.read(content,)?;
 	debug!("read_size: {read_size}");
-
-	//assert_eq!(file_size, file.read(content)?);
-
-	Ok(alloc::string::String::from_utf8_lossy(content,).into_owned(),)
+	Ok(content.to_vec(),)
 }
 
 pub fn write_file(file: &mut file::RegularFile, content: alloc::string::String,) -> uefi::Result {

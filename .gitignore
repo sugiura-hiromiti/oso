@@ -1,4 +1,6 @@
-/target
+target/
+mnt/
 *.rpm
 *.raw
 *.img
+*.elf

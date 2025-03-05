@@ -2,7 +2,11 @@
 rm -rf $PWD/assets/mnt $PWD/assets/disk.img
 
 # NOTE: raw disk imageを作成
-qemu-img create -f raw $PWD/assets/disk.img 64m
+if [ "$1" = "-x86_64" ]; then
+	qemu-img create -f raw $PWD/assets/disk.img 200m
+elif [ "$1" = "-aarch64" ]; then
+	qemu-img create -f raw $PWD/assets/disk.img 200m
+fi
 
 # NOTE: diskイメージをフォーマット
 mkfs.fat -n 'OSO' -s 2 -f 2 -R 32 -F 32 $PWD/assets/disk.img
@@ -17,16 +21,21 @@ mkdir -p $PWD/assets/mnt/efi/boot
 if [ "$1" = "-x86_64" ]; then
 	echo 'on x86_64 mode'
 	cp $2 $PWD/assets/mnt/efi/boot/bootx64.efi
+	cp $PWD/../oso_kernel/oso_kernel.elf $PWD/assets/mnt/oso_kernel.elf
 elif [ "$1" = "-aarch64" ]; then
 	echo 'on aarch64 mode'
 	cp $2 $PWD/assets/mnt/efi/boot/bootaa64.efi
+	cp $PWD/../oso_kernel/oso_kernel.elf $PWD/assets/mnt/oso_kernel.elf
 fi
+
+eza $PWD/assets/mnt -T
 
 # NOTE: unmount disk
 hdiutil detach $MOUNTED_DISK
 
 if [ "$1" = "-x86_64" ]; then
 	# on x86
+	echo 'run qemu-system-x86_64'
 	qemu-system-x86_64 \
 		-drive if=pflash,file=$PWD/assets/OVMF_CODE.fd,format=raw,readonly=on \
 		-drive if=pflash,file=$PWD/assets/OVMF_VARS.fd,format=raw \
@@ -34,15 +43,14 @@ if [ "$1" = "-x86_64" ]; then
 		-monitor stdio
 elif [ "$1" = "-aarch64" ]; then
 	# on aarch64
+	# these articles may help figure out script
+	# https://rust-osdev.github.io/uefi-rs/tutorial/vm.html
+	echo 'run qemu-system-aarch64'
 	qemu-system-aarch64 \
 		-M virt \
-		-machine virtualization=true \
-		-machine virt,gic-version=3 \
-		-cpu max \
-		-smp 2 \
 		-m 4096 \
-		-drive if=pflash,format=raw,file=$PWD/assets/disk.img,readonly=on \
-		-drive format=raw,file=$PWD/assets/varstore.img \
-		-monitor stdio \
-		# -cpu max,pauth-impdef=on \
+		-cpu cortex-a72 \
+		-drive id=disk,file=$PWD/assets/disk.img,if=none,format=raw \
+		-device virtio-blk-device,drive=disk \
+		-monitor stdio
 fi

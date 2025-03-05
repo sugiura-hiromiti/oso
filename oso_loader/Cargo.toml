@@ -4,6 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+byteorder = { version = "*", default-features = false }
+goblin = { version = "*", features = [
+	"elf32",
+	"elf64",
+	"endian_fd",
+], default-features = false }
 log = "*"
 uefi = { version = "*", features = [
 	"panic_handler",
