@@ -3,15 +3,22 @@
 
 extern crate alloc;
 
+use core::ptr::NonNull;
+
+use alloc::vec::Vec;
 use byteorder::ByteOrder;
+use goblin::elf;
+use goblin::elf64;
 use log::debug;
 use log::info;
 use oso_loader::fs::via_simple_filesystem as sfs;
 use oso_loader::graphic;
+use oso_util::FrameBufConf;
 use uefi::Status;
 use uefi::boot;
 use uefi::boot::MemoryType;
 use uefi::mem::memory_map::MemoryMap;
+use uefi::proto::console::gop::GraphicsOutput;
 use uefi::proto::media::file;
 use uefi::proto::media::file::File;
 use uefi::proto::media::file::FileInfo;
@@ -30,56 +37,73 @@ fn efi_main() -> Status {
 
 /// `efi_main`でのエラー処理を楽にする為に、処理中に投げられたResult::Errをここで一度吸収する
 fn app() -> uefi::Result {
-	//oso_loader::clear_stdout();
-	//oso::draw_sierpinski()?;
-
 	// oso_loader::clear_stdout();
 	// inspector()?;
 
-	oso_loader::clear_stdout();
-	graphic::fill_with(0xff, 0xff, 0xff,)?;
+	//oso_loader::clear_stdout();
+	//graphic::fill_with(0xff, 0xff, 0xff,)?;
 	//graphic::draw_sierpinski()?;
 
-	oso_loader::clear_stdout();
-	load_kernel()?;
+	//oso_loader::clear_stdout();
+
+	debug!("load kernel");
+	let kernel_position = load_kernel()?;
+
+	debug!("load graphic configuration to pass kernel");
+	let frame_buf_conf = load_graphic_config()?;
+
+	debug!("exit boot services");
 	exit_boot_services();
-	exec_kernel();
+	exec_kernel(frame_buf_conf,);
 	Ok((),)
 }
 
 const KERNEL_BASE_ADDR: u64 = 0x100_000;
 const KERNEL_NAME: &str = "oso_kernel.elf\0";
 
-/// カーネルファイルをメモリに読み込む
-fn load_kernel() -> uefi::Result {
+/// カーネルファイルをVec<u8>として読み込む
+///
+/// # Return
+///
+/// カーネルファイルの内容が置かれているメモリ領域の先頭アドレスを返します
+fn load_kernel() -> uefi::Result<NonNull<u8,>,> {
 	let open_mode = file::FileMode::Read;
 	let attributes = file::FileAttribute::empty();
 
-	let mut file = sfs::open_file(KERNEL_NAME, open_mode, attributes,)?
-		.into_regular_file()
-		.expect("file name is recognized as directory. abort",);
+	debug!("obtain kernel file handler");
+	let mut kernel_file = sfs::open_file(KERNEL_NAME, open_mode, attributes,)?;
 
-	let file_info = file.get_boxed_info::<FileInfo>()?;
-	let file_size = file_info.file_size() as usize;
-	let page_count = 1 + file_size / uefi::boot::PAGE_SIZE;
+	debug!("read kernel file");
+	let kernel_bytes = sfs::read_file_bytes(&mut kernel_file,)?;
 
-	// TODO: ハードウェアによって、0x100_000番地が空いてない事がある
-	// その場合はメモリマップを確認し、EfiConventionalMemoryとなっている十分な大きさの領域を探す
-	let ptr = uefi::boot::allocate_pages(
-		uefi::boot::AllocateType::Address(KERNEL_BASE_ADDR,),
-		MemoryType::LOADER_DATA,
-		page_count,
-	)?;
-	debug!("ptr is {ptr:#?}");
+	debug!("parse elf header & calculate load address range for kernel");
+	parse_elf(&kernel_bytes,)
+}
 
-	// `KERNEL_BASE_ADDR`が指すメモリアドレスに、カーネルファイルの内容を展開
-	let read_size = file.read(unsafe {
-		core::slice::from_raw_parts_mut(KERNEL_BASE_ADDR as *mut u8, file_size,)
-	},)?;
-	debug!("read_size is {read_size}");
+/// elf形式のカーネルファイルを読み込み、elfヘッダを解析してどう読み込めば良いかを決定する
+fn parse_elf(kernel_bytes: &Vec<u8,>,) -> uefi::Result<NonNull<u8,>,> {
+	let elf = elf::Elf::parse(kernel_bytes,)?;
+	let (kernel_head, kernel_tail,) = oso_loader::elf::calc_kernel_address(&elf,);
+	todo!()
+}
 
-	file.close();
-	Ok((),)
+fn load_graphic_config() -> uefi::Result<FrameBufConf,> {
+	debug!("obtain graphics output protocol");
+	let mut gout = oso_loader::open_protocol_with::<GraphicsOutput,>()?;
+
+	let base = gout.frame_buffer().as_mut_ptr() as usize;
+	let mode_info = gout.current_mode_info();
+	let (width, height,) = mode_info.resolution();
+	let stride = mode_info.stride();
+	let pixel_format = match mode_info.pixel_format() {
+		uefi::proto::console::gop::PixelFormat::Rgb => 0,
+		uefi::proto::console::gop::PixelFormat::Bgr => 1,
+		uefi::proto::console::gop::PixelFormat::Bitmask => 2,
+		uefi::proto::console::gop::PixelFormat::BltOnly => 3,
+	};
+
+	let fbc = FrameBufConf::new(pixel_format, base, width, height, stride,);
+	Ok(fbc,)
 }
 
 fn exit_boot_services() {
@@ -89,15 +113,16 @@ fn exit_boot_services() {
 	//todo!()
 }
 
-fn exec_kernel() {
+fn exec_kernel(fbc: FrameBufConf,) {
 	let entry_addr = unsafe {
 		// NOTE: lenになぜ8を指定しているのか
 		// → `extern "sysv64" fn()`のサイズが8だから？
 		core::slice::from_raw_parts((KERNEL_BASE_ADDR + 24) as *const u8, 8,)
 	};
 	let entry_addr = byteorder::LittleEndian::read_u64(entry_addr,);
-	let entry_point: extern "sysv64" fn() = unsafe { core::mem::transmute(entry_addr as usize,) };
-	entry_point();
+	let entry_point: extern "sysv64" fn(FrameBufConf,) =
+		unsafe { core::mem::transmute(entry_addr as usize,) };
+	entry_point(fbc,);
 }
 
 /// 起動時にログをいくつか表示

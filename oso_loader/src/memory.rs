@@ -29,9 +29,7 @@ pub fn save_mamory_map(mem_map: &MemoryMapOwned, path: impl AsRef<str,>,) -> uef
 
 	let open_mode = file::FileMode::CreateReadWrite;
 	let attributes = file::FileAttribute::empty();
-	let mut file = sfs::open_file(path, open_mode, attributes,)?
-		.into_regular_file()
-		.expect("path seems directory",);
+	let mut file = sfs::open_file(path, open_mode, attributes,)?;
 
 	sfs::write_file(&mut file, header,)?;
 	for index in 0..mem_map.len() {

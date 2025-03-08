@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+pub mod elf;
+pub mod error;
 pub mod fs;
 pub mod graphic;
 pub mod memory;
@@ -9,6 +11,7 @@ extern crate alloc;
 
 use core::fmt::Debug;
 
+use error::OsoLoaderError;
 use log::debug;
 use log::info;
 use uefi::Identify;
@@ -16,7 +19,6 @@ use uefi::boot;
 use uefi::boot::OpenProtocolParams;
 use uefi::proto;
 use uefi::proto::loaded_image;
-use uefi::proto::rng::Rng;
 
 /// bytes(not bit🫠) of volume of file system
 const VOLUME_SIZE: usize = 16 * 1024; //1024 * 1024;
@@ -58,7 +60,7 @@ pub fn clear_stdout() {
 	},);
 }
 
-pub fn print_image_path() -> uefi::Result {
+pub fn print_image_path() -> Result<(), OsoLoaderError,> {
 	// イメージがどこにあるかを探るアプリケーション
 	let loaded_image =
 		boot::open_protocol_exclusive::<loaded_image::LoadedImage,>(boot::image_handle(),)?;
@@ -90,8 +92,8 @@ pub fn print_image_path() -> uefi::Result {
 	Ok((),)
 }
 
-fn open_protocol_with<P: uefi::proto::ProtocolPointer + ?Sized + Debug,>()
--> uefi::Result<boot::ScopedProtocol<P,>,> {
+pub fn open_protocol_with<P: uefi::proto::ProtocolPointer + ?Sized + Debug,>()
+-> Result<boot::ScopedProtocol<P,>, OsoLoaderError,> {
 	debug!("open handler");
 	let handle = boot::get_handle_for_protocol::<P,>()?;
 	let img_hndl = boot::image_handle();
@@ -105,11 +107,4 @@ fn open_protocol_with<P: uefi::proto::ProtocolPointer + ?Sized + Debug,>()
 	// let proto = boot::open_protocol_exclusive::<P,>(handle,);
 	// debug!("opened proto");
 	proto
-}
-
-/// Get a random `usize` value
-fn get_randowm_usize(rng: &mut Rng,) -> usize {
-	let mut buf = [0; size_of::<usize,>()];
-	rng.get_rng(None, &mut buf,).expect("get_rng failed",);
-	usize::from_le_bytes(buf,)
 }

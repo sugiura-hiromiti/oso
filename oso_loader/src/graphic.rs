@@ -1,14 +1,10 @@
-use crate::get_randowm_usize;
 use crate::open_protocol_with;
 use log::debug;
-use uefi::boot;
-use uefi::boot::OpenProtocolParams;
-use uefi::boot::SearchType;
+use oso_util::FrameBufConf;
 use uefi::proto::console::gop::BltOp;
 use uefi::proto::console::gop::BltPixel;
 use uefi::proto::console::gop::BltRegion;
 use uefi::proto::console::gop::GraphicsOutput;
-use uefi::proto::rng::Rng;
 
 #[derive(Clone,)]
 struct Point {

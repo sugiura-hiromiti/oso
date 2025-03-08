@@ -4,7 +4,7 @@
 use core::arch::asm;
 
 #[unsafe(no_mangle)]
-pub extern "sysv64" fn kernel_main() {
+pub extern "sysv64" fn kernel_main(frame_buf_base: u64, frame_buf_size: u64,) {
 	loop {
 		unsafe {
 			asm!("hlt");

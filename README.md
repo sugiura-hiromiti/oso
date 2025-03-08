@@ -26,3 +26,11 @@ mount -t msdos $MOUNTED_DISK mnt
 # unmount
 hdiutil detach $MOUNTED_DISK
 ```
+
+- ABI
+
+rustcを使っている限りはABIの規約を守るのはコンパイラの役割
+アセンブリを使う場合はプログラマがABIの規約を守る必要がある
+
+x86_64向けのABIではSystem V AMD64が一般的
+aarch64向けを作る場合はABIの違いを考慮する必要がありそう

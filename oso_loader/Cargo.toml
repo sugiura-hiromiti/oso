@@ -11,6 +11,7 @@ goblin = { version = "*", features = [
 	"endian_fd",
 ], default-features = false }
 log = "*"
+oso_util = { path = "../oso_util" }
 uefi = { version = "*", features = [
 	"panic_handler",
 	"logger",

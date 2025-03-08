@@ -5,13 +5,13 @@ use log::error;
 use uefi::Status;
 use uefi::proto::media::file;
 use uefi::proto::media::file::File;
-use uefi::proto::media::file::FileHandle;
+use uefi::proto::media::file::RegularFile;
 
 pub fn open_file(
 	file_name: impl AsRef<str,>,
 	open_mode: file::FileMode,
 	attributes: file::FileAttribute,
-) -> uefi::Result<FileHandle,> {
+) -> uefi::Result<RegularFile,> {
 	// イメージのファイルシステムにおけるルートディレクトリを取得
 	let mut root_dir = img_root_dir()?;
 	assert!(root_dir.is_directory()?);
@@ -19,7 +19,9 @@ pub fn open_file(
 	string_to_cstr16!(file_name, filename);
 	let file_handler = root_dir.open(filename, open_mode, attributes,)?;
 	if file_handler.is_regular_file()? {
-		Ok(file_handler,)
+		Ok(file_handler
+			.into_regular_file()
+			.expect("failed to convert file handler as a regular file",),)
 	} else {
 		error!("file name is recognized as directory");
 		Err(uefi::Error::new(Status::ABORTED, (),),)
