@@ -5,3 +5,10 @@ version = 4
 [[package]]
 name = "oso_kernel"
 version = "0.1.0"
+dependencies = [
+ "oso_util",
+]
+
+[[package]]
+name = "oso_util"
+version = "0.1.0"
