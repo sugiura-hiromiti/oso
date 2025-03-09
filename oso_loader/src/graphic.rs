@@ -1,6 +1,6 @@
+use crate::error::OsoLoaderError;
 use crate::open_protocol_with;
 use log::debug;
-use oso_util::FrameBufConf;
 use uefi::proto::console::gop::BltOp;
 use uefi::proto::console::gop::BltPixel;
 use uefi::proto::console::gop::BltRegion;
@@ -40,27 +40,33 @@ impl Buffer {
 	/// (block transferの意味)
 	///
 	/// bufferをframebufferに移動させる
-	fn blit(&self, gout: &mut GraphicsOutput,) -> uefi::Result {
+	fn blit(&self, gout: &mut GraphicsOutput,) -> Result<(), OsoLoaderError,> {
 		gout.blt(BltOp::BufferToVideo {
 			buffer: &self.pixels,
 			src:    BltRegion::Full,
 			dest:   (0, 0,),
 			dims:   (self.width, self.height,),
-		},)
+		},)?;
+		Ok((),)
 	}
 
 	/// 特定の1点のみをframebufferに転送する
-	fn blit_pixel(&self, gout: &mut GraphicsOutput, coord: (usize, usize,),) -> uefi::Result {
+	fn blit_pixel(
+		&self,
+		gout: &mut GraphicsOutput,
+		coord: (usize, usize,),
+	) -> Result<(), OsoLoaderError,> {
 		gout.blt(BltOp::BufferToVideo {
 			buffer: &self.pixels,
 			src:    BltRegion::SubRectangle { coords: coord, px_stride: self.width, },
 			dest:   coord,
 			dims:   (1, 1,),
-		},)
+		},)?;
+		Ok((),)
 	}
 }
 
-pub fn fill_with(red: u8, green: u8, blue: u8,) -> uefi::Result {
+pub fn fill_with(red: u8, green: u8, blue: u8,) -> Result<(), OsoLoaderError,> {
 	// graphics output protocolを開く
 	let mut gout = open_protocol_with::<GraphicsOutput,>()?;
 	debug!("opened graphics output protocol");
@@ -100,7 +106,7 @@ pub fn fill_with(red: u8, green: u8, blue: u8,) -> uefi::Result {
 }
 
 /// sierpinski図形を描く
-pub fn draw_sierpinski() -> uefi::Result {
+pub fn draw_sierpinski() -> Result<(), OsoLoaderError,> {
 	debug!("entered draw_sierpinski");
 
 	// graphics output protocolを開く

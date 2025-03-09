@@ -1,3 +1,4 @@
+use crate::error::OsoLoaderError;
 use crate::fs::via_simple_filesystem as sfs;
 use alloc::format;
 use log::debug;
@@ -14,7 +15,7 @@ use uefi::proto::media::file::File;
 ///
 /// この関数はuefi::Result型の返り値を持ちます
 /// メモリマップの取得に成功した場合はOk(MemoryMapOwned型の変数)を返します
-pub fn get_memory_map(mem_type: &boot::MemoryType,) -> uefi::Result<MemoryMapOwned,> {
+pub fn get_memory_map(mem_type: &boot::MemoryType,) -> Result<MemoryMapOwned, OsoLoaderError,> {
 	let mem_map = boot::memory_map(*mem_type,)?;
 	Ok(mem_map,)
 }
@@ -22,7 +23,10 @@ pub fn get_memory_map(mem_type: &boot::MemoryType,) -> uefi::Result<MemoryMapOwn
 /// 受け取った`mem_map`の内容を`path`で指定されたファイルにcsv形式で保存
 ///
 /// # Return
-pub fn save_mamory_map(mem_map: &MemoryMapOwned, path: impl AsRef<str,>,) -> uefi::Result {
+pub fn save_mamory_map(
+	mem_map: &MemoryMapOwned,
+	path: impl AsRef<str,>,
+) -> Result<(), OsoLoaderError,> {
 	debug!("write memory map to file");
 	let header = format!("Index, Type, Type(name), PhysicalStart, NumberOfPages, Attribute\n");
 	debug!("{header}");
@@ -49,4 +53,9 @@ pub fn save_mamory_map(mem_map: &MemoryMapOwned, path: impl AsRef<str,>,) -> uef
 
 	file.close();
 	Ok((),)
+}
+
+/// 指定されたサイズのメモリを確保するためにメモリを何ページアロケートすれば良いのかを算出
+pub fn required_pages(size: usize,) -> usize {
+	size / uefi::boot::PAGE_SIZE + 1
 }

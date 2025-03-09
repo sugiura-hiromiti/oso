@@ -20,10 +20,8 @@ use uefi::boot::OpenProtocolParams;
 use uefi::proto;
 use uefi::proto::loaded_image;
 
-/// bytes(not bit🫠) of volume of file system
-const VOLUME_SIZE: usize = 16 * 1024; //1024 * 1024;
-
 #[macro_export]
+/// ?演算子で処理できないエラーがあった場合に使う
 macro_rules! on_error {
 	($e:ident, $situation:expr) => {{
 		log::error!("error happen {}", $situation);
@@ -33,6 +31,8 @@ macro_rules! on_error {
 }
 
 #[macro_export]
+/// `AsRef<str>`を実装する型の変数をuefi::CStr16型へ変換する
+/// 所有権の問題で関数ではなくマクロになっている
 macro_rules! string_to_cstr16 {
 	($str:expr, $rslt:ident) => {
 		//let $rslt = alloc::string::ToString::to_string($string,);
@@ -60,6 +60,7 @@ pub fn clear_stdout() {
 	},);
 }
 
+/// uefiで読み込まれているイメージを探りイメージファイルへのパスを表示する
 pub fn print_image_path() -> Result<(), OsoLoaderError,> {
 	// イメージがどこにあるかを探るアプリケーション
 	let loaded_image =
@@ -101,10 +102,10 @@ pub fn open_protocol_with<P: uefi::proto::ProtocolPointer + ?Sized + Debug,>()
 	let attributes = boot::OpenProtocolAttributes::GetProtocol;
 
 	debug!("opened handler");
-	let proto = unsafe { boot::open_protocol::<P,>(params, attributes,) };
+	let proto = unsafe { boot::open_protocol::<P,>(params, attributes,) }?;
 	debug!("opened proto");
 
 	// let proto = boot::open_protocol_exclusive::<P,>(handle,);
 	// debug!("opened proto");
-	proto
+	Ok(proto,)
 }

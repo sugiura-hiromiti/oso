@@ -34,3 +34,7 @@ rustcを使っている限りはABIの規約を守るのはコンパイラの役
 
 x86_64向けのABIではSystem V AMD64が一般的
 aarch64向けを作る場合はABIの違いを考慮する必要がありそう
+
+- uefi-rsクレートのAPI移行
+
+について [詳しく書かれたドキュメント](https://github.com/rust-osdev/uefi-rs/blob/13c1c2be2b17edd73a9565d89431a9266273f8a8/docs/funcs_migration.md?plain=1#L50)

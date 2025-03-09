@@ -1,8 +1,10 @@
+use crate::error::OsoLoaderError;
 use crate::string_to_cstr16;
+use alloc::format;
+use alloc::string::ToString;
 use alloc::vec;
 use log::debug;
 use log::error;
-use uefi::Status;
 use uefi::proto::media::file;
 use uefi::proto::media::file::File;
 use uefi::proto::media::file::RegularFile;
@@ -11,7 +13,7 @@ pub fn open_file(
 	file_name: impl AsRef<str,>,
 	open_mode: file::FileMode,
 	attributes: file::FileAttribute,
-) -> uefi::Result<RegularFile,> {
+) -> Result<RegularFile, OsoLoaderError,> {
 	// イメージのファイルシステムにおけるルートディレクトリを取得
 	let mut root_dir = img_root_dir()?;
 	assert!(root_dir.is_directory()?);
@@ -24,35 +26,36 @@ pub fn open_file(
 			.expect("failed to convert file handler as a regular file",),)
 	} else {
 		error!("file name is recognized as directory");
-		Err(uefi::Error::new(Status::ABORTED, (),),)
+		Err(OsoLoaderError::Uefi("file name is recognized as directory".to_string(),),)
 	}
 }
 
-pub fn read_file(file: &mut file::RegularFile,) -> uefi::Result<alloc::string::String,> {
+pub fn read_file(file: &mut file::RegularFile,) -> Result<alloc::string::String, OsoLoaderError,> {
 	//string_to_cstr16!(path, path);
 	let content = read_file_bytes(file,)?;
 	Ok(alloc::string::String::from_utf8_lossy(content.as_slice(),).into_owned(),)
 }
 
-pub fn read_file_bytes(file: &mut file::RegularFile,) -> uefi::Result<alloc::vec::Vec<u8,>,> {
+pub fn read_file_bytes(
+	file: &mut file::RegularFile,
+) -> Result<alloc::vec::Vec<u8,>, OsoLoaderError,> {
 	// ファイルのサイズを取得
 	//let file_info = file.get_boxed_info::<file::FileInfo>()?;
-	let buf = &mut [0; 1024];
-	let file_info: &mut file::FileInfo =
-		file.get_info(buf,).expect("error happen while obtaining file info",);
+	let file_info = file.get_boxed_info::<file::FileInfo>()?;
 	let file_size = file_info.file_size() as usize;
 	debug!("file_size: {file_size}");
 
 	// 内容を書き込む為のバッファの確保
 	let mut content = vec![0; file_size];
-	let content = content.as_mut_slice();
-	debug!("content.len(): {}", content.len());
-	let read_size = file.read(content,)?;
+	let read_size = file.read(&mut content,)?;
 	debug!("read_size: {read_size}");
-	Ok(content.to_vec(),)
+	Ok(content,)
 }
 
-pub fn write_file(file: &mut file::RegularFile, content: alloc::string::String,) -> uefi::Result {
+pub fn write_file(
+	file: &mut file::RegularFile,
+	content: alloc::string::String,
+) -> Result<(), OsoLoaderError,> {
 	// let open_mode = file::FileMode::CreateReadWrite;
 	// let attributes = file::FileAttribute::empty();
 	// let mut file = open_file(path, open_mode, attributes,)?
@@ -67,13 +70,13 @@ pub fn write_file(file: &mut file::RegularFile, content: alloc::string::String,)
 			let status = e.status();
 			let data = e.data();
 			assert_eq!(status.0, *data);
-			Err(uefi::Error::new(status, (),),)
+			Err(OsoLoaderError::Uefi(format!("failed to write to file: status code is {data}"),),)
 		},
 	}
 }
 
 /// イメージのルートディレクトリを取得
-pub fn img_root_dir() -> uefi::Result<file::Directory,> {
+pub fn img_root_dir() -> Result<file::Directory, OsoLoaderError,> {
 	// 読み込まれているイメージのファイルシステムを取得する
 	let mut img_loaded_fs = super::img_fs()?;
 
