@@ -1,4 +1,5 @@
-//! oso_loaderクレート用のエラー構造体
+//! oso_loader/kernel用のエラー型
+//! TODO: アロケータを実装したら`oso_util`に移管
 use alloc::format;
 use alloc::string::String;
 use core::error::Error;

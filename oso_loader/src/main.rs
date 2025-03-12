@@ -12,7 +12,7 @@ use oso_loader::error::OsoLoaderError;
 use oso_loader::fs::via_simple_filesystem as sfs;
 use oso_loader::memory::required_pages;
 use oso_util::graphic::FrameBufConf;
-use oso_util::graphic::PixelFormat;
+use oso_util::graphic::PixelFormatConf;
 use uefi::Status;
 use uefi::boot;
 use uefi::boot::MemoryType;
@@ -102,10 +102,10 @@ fn load_graphic_config() -> Result<FrameBufConf, OsoLoaderError,> {
 	let (width, height,) = mode_info.resolution();
 	let stride = mode_info.stride();
 	let pixel_format = match mode_info.pixel_format() {
-		uefi::proto::console::gop::PixelFormat::Rgb => PixelFormat::Rgb,
-		uefi::proto::console::gop::PixelFormat::Bgr => PixelFormat::Bgr,
-		uefi::proto::console::gop::PixelFormat::Bitmask => PixelFormat::Bitmask,
-		uefi::proto::console::gop::PixelFormat::BltOnly => PixelFormat::BltOnly,
+		uefi::proto::console::gop::PixelFormat::Rgb => PixelFormatConf::Rgb,
+		uefi::proto::console::gop::PixelFormat::Bgr => PixelFormatConf::Bgr,
+		uefi::proto::console::gop::PixelFormat::Bitmask => PixelFormatConf::Bitmask,
+		uefi::proto::console::gop::PixelFormat::BltOnly => PixelFormatConf::BltOnly,
 	};
 	let mut fb = gout.frame_buffer();
 	let base = fb.as_mut_ptr();
