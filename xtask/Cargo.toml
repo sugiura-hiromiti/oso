@@ -1,6 +1,9 @@
 [package]
-name = "oso_util"
+name = "xtask"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "*"
+toml = "*"
+serde_json = "*"

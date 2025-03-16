@@ -1,7 +1,6 @@
 [package]
-name = "oso_kernel"
+name = "oso_bridge"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-oso_bridge = { path = "../oso_bridge" }

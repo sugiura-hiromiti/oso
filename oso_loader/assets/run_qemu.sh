@@ -37,6 +37,7 @@ if [ "$1" = "-x86_64" ]; then
 	# on x86
 	echo 'run qemu-system-x86_64'
 	qemu-system-x86_64 \
+		-vga virtio \
 		-drive if=pflash,file=$PWD/assets/OVMF_CODE.fd,format=raw,readonly=on \
 		-drive if=pflash,file=$PWD/assets/OVMF_VARS.fd,format=raw \
 		-hda $PWD/assets/disk.img \

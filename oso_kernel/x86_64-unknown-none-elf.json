@@ -18,7 +18,7 @@
 		"ld.lld": [
 			"--entry=kernel_main",
 			"--image-base=0x100000",
-			"-ooso_kernel.elf",
+			"-otarget/oso_kernel.elf",
 			"--static"
 		]
 	}

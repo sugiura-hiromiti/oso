@@ -3,12 +3,12 @@
 version = 4
 
 [[package]]
+name = "oso_bridge"
+version = "0.1.0"
+
+[[package]]
 name = "oso_kernel"
 version = "0.1.0"
 dependencies = [
- "oso_util",
+ "oso_bridge",
 ]
-
-[[package]]
-name = "oso_util"
-version = "0.1.0"
