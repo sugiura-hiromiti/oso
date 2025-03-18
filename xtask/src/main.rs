@@ -2,7 +2,9 @@
 
 use anyhow::Result as Rslt;
 use anyhow::anyhow;
+use colored::*;
 use std::env;
+use std::ffi::OsStr;
 use std::fs;
 use std::io::BufReader;
 use std::path::Path;
@@ -19,6 +21,13 @@ trait Run {
 
 impl Run for Command {
 	fn run(&mut self,) -> Rslt<String,> {
+		let full_cmd = format!(
+			"{:?} {:?}",
+			self.get_program(),
+			self.get_args().collect::<Vec<_,>>().join(OsStr::new(" "))
+		)
+		.green();
+		println!("🫠 {full_cmd}");
 		let out = self.output()?;
 		let stdout = String::from_utf8_lossy_owned(out.stdout,);
 		let stderr = String::from_utf8_lossy_owned(out.stderr,);
@@ -31,13 +40,14 @@ impl Run for Command {
 		}
 
 		if out.status.success() {
-			Ok(stdout,)
+			Ok(stdout.trim().to_string(),)
 		} else {
 			Err(anyhow!("command execution has failed"),)
 		}
 	}
 }
 
+#[derive(Debug,)]
 enum Architecture {
 	X86_64,
 	Aarch64,
@@ -69,6 +79,7 @@ impl ToString for Architecture {
 	}
 }
 
+#[derive(Debug,)]
 struct Crate {
 	name:           String,
 	/// this field is equivalent to build.target section of .cargo/config.toml file
@@ -91,6 +102,7 @@ impl Crate {
 	}
 }
 
+#[derive(Debug,)]
 struct OsoWorkSpace {
 	arch:       Architecture,
 	xtask_root: PathBuf,
@@ -181,14 +193,17 @@ impl OsoWorkSpace {
 				"-drive".to_string(),
 				format!(
 					"if=pflash,file={},format=raw,readonly=on",
-					self.xtask_root.join("assets/OVMF_CODE.fd").to_str().unwrap()
+					self.xtask_root.join("assets/OVMF_CODE.fd").display()
 				),
 				"-drive".to_string(),
 				format!(
 					"if=pflash,file={},format=raw",
-					self.xtask_root.join("assets/OVMF_VARS.fd").to_str().unwrap()
+					self.xtask_root.join("assets/OVMF_VARS.fd").display()
 				),
 				"-hda".to_string(),
+				format!("{}", self.img_path().display(),),
+				"-monitor".to_string(),
+				"stdio".to_string(),
 			],
 			Architecture::Aarch64 => todo!(),
 		}
@@ -209,11 +224,11 @@ fn de_toml(path: &Path,) -> Rslt<Table,> {
 	Ok(table,)
 }
 
-fn target_arch(crate_root: &Path,) -> Rslt<Architecture,> {
-	let target = target_tuple(crate_root,)?;
-
-	Architecture::try_from(&target,)
-}
+// fn target_arch(crate_root: &Path,) -> Rslt<Architecture,> {
+// 	let target = target_tuple(crate_root,)?;
+//
+// 	Architecture::try_from(&target,)
+// }
 
 fn target_tuple(crate_root: &Path,) -> Rslt<String,> {
 	let config_toml = de_toml(&crate_root.join(".cargo/config.toml",),)?;
@@ -235,7 +250,7 @@ fn executable_location(crate_root: &Path, target: &String, crate_name: &String,)
 			.iter()
 			.find_map(|v| {
 				let opt = v.as_str().unwrap();
-				if &opt[..2] == "-o" { Some(opt,) } else { None }
+				if &opt[..2] == "-o" { Some(&opt[2..],) } else { None }
 			},)
 			.expect(&format!(
 				"you need to specify name of build artifact explicitly in \
@@ -260,7 +275,7 @@ fn main() -> Rslt<(),> {
 
 	let mut crate_pathes = vec![];
 	// カーネルとブートローダーをビルド
-	for crate_name in [LOADER, KERNEL,] {
+	for crate_name in [KERNEL, LOADER,] {
 		let path = xtask_root.parent().unwrap().join(crate_name,);
 		env::set_current_dir(&path,)?;
 		Command::new("cargo",).arg("b",).run()?;
@@ -272,6 +287,8 @@ fn main() -> Rslt<(),> {
 		crate_pathes.pop().unwrap(),
 		crate_pathes.pop().unwrap(),
 	)?;
+
+	println!("{oso:#?}");
 
 	// qemunのコマンド自体とオプションを決定
 	let qemu = oso.qemu();

@@ -4,3 +4,4 @@ mnt/
 *.raw
 *.img
 *.elf
+*.sh
