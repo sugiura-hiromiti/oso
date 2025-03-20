@@ -15,12 +15,12 @@ use oso_kernel::graphic::FrameBuffer;
 /// が強制されているのではないか？
 pub extern "sysv64" fn kernel_main(frame_buf_conf: FrameBufConf,) {
 	let mut fb = FrameBuffer::new(frame_buf_conf,);
-	fb.fill_rectangle(
-		&(0, 0,).into(),
-		&(fb.width - 1, fb.height - 1,).into(),
-		&(0xff, 0xff, 0xff,).into(),
-	)
-	.expect("failed fill rectangle",);
+	fb.fill_rectangle(&(0, 0,), &(fb.width - 1, fb.height - 1,), &(0xff, 0xff, 0xff,),)
+		.expect("failed fill rectangle",);
+
+	// #123456
+	fb.fill_rectangle(&(0, 0,), &(100, 100,), &(0x01, 0x23, 0x45,),)
+		.expect("failed fill rectangle",);
 
 	loop {
 		unsafe {

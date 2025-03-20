@@ -1,6 +1,8 @@
 use oso_bridge::graphic::FrameBufConf;
 use oso_bridge::graphic::PixelFormatConf;
 
+// WARN: do not remove this comment outed code for future implementation
+//
 // pub struct Rgb;
 // impl Draw for Rgb {
 // 	fn draw_type(&self,) -> &str {
@@ -74,9 +76,36 @@ use oso_bridge::graphic::PixelFormatConf;
 // 	}
 // }
 
+/// trait for types which can represent 2 dimentional area
+/// implement this trait ensures to be able to get value of x axis & y axis
+pub trait Coordinal {
+	fn x(&self,) -> usize;
+	fn y(&self,) -> usize;
+}
+
 pub struct Coord {
 	pub x: usize,
 	pub y: usize,
+}
+
+impl Coordinal for Coord {
+	fn x(&self,) -> usize {
+		self.x
+	}
+
+	fn y(&self,) -> usize {
+		self.y
+	}
+}
+
+impl Coordinal for (usize, usize,) {
+	fn x(&self,) -> usize {
+		self.0
+	}
+
+	fn y(&self,) -> usize {
+		self.1
+	}
 }
 
 impl From<(usize, usize,),> for Coord {
@@ -85,10 +114,46 @@ impl From<(usize, usize,),> for Coord {
 	}
 }
 
+/// trait for types which can represent color format
+/// implement this trait ensures to be able to get value of red, green, blue
+pub trait ColorRpr {
+	fn red(&self,) -> u8;
+	fn green(&self,) -> u8;
+	fn blue(&self,) -> u8;
+}
+
 pub struct Color {
 	red:   u8,
 	green: u8,
 	blue:  u8,
+}
+
+impl ColorRpr for Color {
+	fn red(&self,) -> u8 {
+		self.red
+	}
+
+	fn green(&self,) -> u8 {
+		self.green
+	}
+
+	fn blue(&self,) -> u8 {
+		self.blue
+	}
+}
+
+impl ColorRpr for (u8, u8, u8,) {
+	fn red(&self,) -> u8 {
+		self.0
+	}
+
+	fn green(&self,) -> u8 {
+		self.1
+	}
+
+	fn blue(&self,) -> u8 {
+		self.2
+	}
 }
 
 impl From<(u8, u8, u8,),> for Color {
@@ -97,6 +162,7 @@ impl From<(u8, u8, u8,),> for Color {
 	}
 }
 
+/// draw to display
 pub trait Draw {
 	fn put_pixel(&mut self, coord: &Coord, color: &Color,) -> Result<(), (),>;
 
@@ -108,12 +174,13 @@ pub trait Draw {
 	/// ```
 	fn fill_rectangle(
 		&mut self,
-		left_top: &Coord,
-		right_bottom: &Coord,
-		color: &Color,
+		left_top: &impl Coordinal,
+		right_bottom: &impl Coordinal,
+		color: &impl ColorRpr,
 	) -> Result<(), (),>;
 }
 
+/// contains frame buffer itself & some helper data like display width/height, pixel format ..
 pub struct FrameBuffer<'a,> {
 	pub drawer: PixelFormat,
 	pub buf:    &'a mut [u8],
@@ -155,22 +222,22 @@ impl<'a,> Draw for FrameBuffer<'a,> {
 
 	fn fill_rectangle(
 		&mut self,
-		left_top: &Coord,
-		right_bottom: &Coord,
-		color: &Color,
+		left_top: &impl Coordinal,
+		right_bottom: &impl Coordinal,
+		color: &impl ColorRpr,
 	) -> Result<(), (),> {
-		if left_top.x > right_bottom.x
-			|| left_top.y > right_bottom.y
-			|| right_bottom.x > self.width
-			|| right_bottom.y > self.height
+		if left_top.x() > right_bottom.x()
+			|| left_top.y() > right_bottom.y()
+			|| right_bottom.x() > self.width
+			|| right_bottom.y() > self.height
 		{
 			return Err((),);
 		}
 
 		let color = self.drawer.color_pixel(color,);
 
-		for x in left_top.x..=right_bottom.x {
-			for y in left_top.y..=right_bottom.y {
+		for x in left_top.x()..=right_bottom.x() {
+			for y in left_top.y()..=right_bottom.y() {
 				let pos = self.pos(&Coord { x, y, },);
 				let pxl = &mut self.buf[pos..pos + 3];
 				self.drawer.put_color(pxl, color,);
@@ -216,10 +283,10 @@ pub enum PixelFormat {
 
 impl PixelFormat {
 	///  TODO: この機能はColor構造体に移したほうがいいのでは？
-	pub fn color_pixel(&self, color: &Color,) -> [u8; 3] {
+	pub fn color_pixel(&self, color: &impl ColorRpr,) -> [u8; 3] {
 		match self {
-			PixelFormat::Rgb => [color.red, color.green, color.blue,],
-			PixelFormat::Bgr => [color.blue, color.green, color.red,],
+			PixelFormat::Rgb => [color.red(), color.green(), color.blue(),],
+			PixelFormat::Bgr => [color.blue(), color.green(), color.red(),],
 			PixelFormat::Bitmask => todo!(),
 			PixelFormat::BltOnly => todo!(),
 		}
