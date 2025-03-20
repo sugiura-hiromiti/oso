@@ -2,7 +2,7 @@
 
 use anyhow::Result as Rslt;
 use anyhow::anyhow;
-use colored::*;
+use colored::Colorize;
 use std::env;
 use std::ffi::OsStr;
 use std::fs;
@@ -10,6 +10,7 @@ use std::io::BufReader;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
+use std::str::FromStr;
 use toml::Table;
 
 const LOADER: &str = "oso_loader";
@@ -42,7 +43,7 @@ impl Run for Command {
 		if out.status.success() {
 			Ok(stdout.trim().to_string(),)
 		} else {
-			Err(anyhow!("command execution has failed"),)
+			Err(anyhow!("command execution has failed\n\tstderr: {stderr}"),)
 		}
 	}
 }
@@ -86,6 +87,7 @@ struct Crate {
 	target:         String,
 	root_dir:       PathBuf,
 	/// path to executable
+	/// this is relative path to project root
 	build_artifact: PathBuf,
 }
 
@@ -105,6 +107,7 @@ impl Crate {
 #[derive(Debug,)]
 struct OsoWorkSpace {
 	arch:       Architecture,
+	root:       PathBuf,
 	xtask_root: PathBuf,
 	loader:     Crate,
 	kernel:     Crate,
@@ -114,11 +117,12 @@ impl OsoWorkSpace {
 	fn new(xtask_root: PathBuf, loader_root: PathBuf, kernel_root: PathBuf,) -> Rslt<Self,> {
 		// let loader_target = target_tuple(&loader_root,)?;
 		// let kernel_target = target_tuple(&kernel_root,)?;
+		let root = xtask_root.parent().unwrap().to_path_buf();
 		let loader = Crate::new(loader_root,)?;
 		let kernel = Crate::new(kernel_root,)?;
 		let arch = Architecture::try_from(&loader.target,)?;
 
-		Ok(Self { arch, xtask_root, loader, kernel, },)
+		Ok(Self { arch, root, xtask_root, loader, kernel, },)
 	}
 
 	fn post_process(&self,) -> Rslt<(),> {
@@ -165,12 +169,16 @@ impl OsoWorkSpace {
 		match &self.arch {
 			Architecture::X86_64 => {
 				Command::new("cp",)
-					.args(
-						[&self.loader.build_artifact, &mount_point.join("efi/boot/bootx64.efi",),],
-					)
+					.args([
+						self.root.join(&self.loader.build_artifact,),
+						mount_point.join("efi/boot/bootx64.efi",),
+					],)
 					.run()?;
 				Command::new("cp",)
-					.args([&self.kernel.build_artifact, &mount_point.join("oso_kernel.elf",),],)
+					.args([
+						self.root.join(&self.kernel.build_artifact,),
+						mount_point.join("oso_kernel.elf",),
+					],)
 					.run()?;
 			},
 			Architecture::Aarch64 => todo!(),
@@ -256,14 +264,14 @@ fn executable_location(crate_root: &Path, target: &String, crate_name: &String,)
 				"you need to specify name of build artifact explicitly in \
 				 {target}[\"post-link-args\"][\"ld.lld\"]",
 			),);
-		crate_root.join(out,)
+		out.to_string()
 	} else if target.contains("uefi",) {
-		crate_root.join(format!("target/{target}/debug/{crate_name}.efi"),)
+		format!("target/{target}/debug/{crate_name}.efi")
 	} else {
-		crate_root.join(format!("target/{target}/debug/{crate_name}"),)
+		format!("target/{target}/debug/{crate_name}")
 	};
 
-	Ok(out,)
+	Ok(PathBuf::from_str(&out,)?,)
 }
 
 fn main() -> Rslt<(),> {

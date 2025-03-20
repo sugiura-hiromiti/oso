@@ -56,22 +56,3 @@ umount /path/to/mount_point
 # or
 diskutil eject /path/to/mount_point
 ```
-
-- rustにおける[T]型の`into_iter`の挙動
-
-どうやら以下のコードにおける`item`の値は予想の逆順になっているっぽい
-
-```rust
-// this program outputs
-//
-// lol
-// omg
-//
-// not
-//
-// omg
-// lol
-for item in ["omg", "lol"] {
-	println!("{item}");
-}
-```
