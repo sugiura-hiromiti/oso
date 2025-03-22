@@ -156,6 +156,21 @@ impl ColorRpr for (u8, u8, u8,) {
 	}
 }
 
+/// this impl assumes format such as `#012345`
+impl ColorRpr for &str {
+	fn red(&self,) -> u8 {
+		u8::from_str_radix(&self[1..3], 16,).expect("incorrect representation of color format",)
+	}
+
+	fn green(&self,) -> u8 {
+		u8::from_str_radix(&self[3..5], 16,).expect("incorrect representation of color format",)
+	}
+
+	fn blue(&self,) -> u8 {
+		u8::from_str_radix(&self[5..7], 16,).expect("incorrect representation of color format",)
+	}
+}
+
 impl From<(u8, u8, u8,),> for Color {
 	fn from(value: (u8, u8, u8,),) -> Self {
 		Color { red: value.0, green: value.1, blue: value.2, }
@@ -164,7 +179,7 @@ impl From<(u8, u8, u8,),> for Color {
 
 /// draw to display
 pub trait Draw {
-	fn put_pixel(&mut self, coord: &Coord, color: &Color,) -> Result<(), (),>;
+	fn put_pixel(&mut self, coord: &impl Coordinal, color: &impl ColorRpr,) -> Result<(), (),>;
 
 	/// # Params
 	///
@@ -203,15 +218,15 @@ impl<'a,> FrameBuffer<'a,> {
 	// }
 
 	/// 指定された座標のポイントに該当するFramebuffer上でのindexの先頭を返します
-	fn pos(&self, coord: &Coord,) -> usize {
+	fn pos(&self, coord: &impl Coordinal,) -> usize {
 		// 一つのピクセルの大きさが４バイトなので4をかけている
-		(self.stride * coord.y + coord.x) * 4
+		(self.stride * coord.y() + coord.x()) * 4
 	}
 }
 
 /// TOOD: Box<dyn Draw>を利用して条件分岐を無くす
 impl<'a,> Draw for FrameBuffer<'a,> {
-	fn put_pixel(&mut self, coord: &Coord, color: &Color,) -> Result<(), (),> {
+	fn put_pixel(&mut self, coord: &impl Coordinal, color: &impl ColorRpr,) -> Result<(), (),> {
 		let pos = self.pos(coord,);
 		let pxl = &mut self.buf[pos..pos + 3];
 		let color = self.drawer.color_pixel(color,);

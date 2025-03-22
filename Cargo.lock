@@ -101,6 +101,7 @@ name = "oso_kernel"
 version = "0.1.0"
 dependencies = [
  "oso_bridge",
+ "oso_proc_macro",
 ]
 
 [[package]]
@@ -112,6 +113,15 @@ dependencies = [
  "log",
  "oso_bridge",
  "uefi",
+]
+
+[[package]]
+name = "oso_proc_macro"
+version = "0.1.0"
+dependencies = [
+ "colored",
+ "quote",
+ "syn",
 ]
 
 [[package]]

@@ -3,8 +3,11 @@
 
 use core::arch::asm;
 use oso_bridge::graphic::FrameBufConf;
-use oso_kernel::graphic::Draw;
-use oso_kernel::graphic::FrameBuffer;
+use oso_kernel::base::graphic::Draw;
+use oso_kernel::error::KernelError;
+use oso_kernel::base::graphic::FrameBuffer;
+use oso_kernel::gui::font::Text;
+use oso_kernel::gui::font::TextBuf;
 
 #[unsafe(no_mangle)]
 /// TODO:
@@ -15,18 +18,75 @@ use oso_kernel::graphic::FrameBuffer;
 /// が強制されているのではないか？
 pub extern "sysv64" fn kernel_main(frame_buf_conf: FrameBufConf,) {
 	let mut fb = FrameBuffer::new(frame_buf_conf,);
-	fb.fill_rectangle(&(0, 0,), &(fb.width - 1, fb.height - 1,), &(0xff, 0xff, 0xff,),)
-		.expect("failed fill rectangle",);
-
-	// #123456
-	fb.fill_rectangle(&(0, 0,), &(100, 100,), &(0x01, 0x23, 0x45,),)
-		.expect("failed fill rectangle",);
+	if let Err(_ke,) = app(&mut fb,) {
+		todo!()
+	}
 
 	loop {
 		unsafe {
 			asm!("hlt");
 		}
 	}
+}
+
+fn app(fb: &mut FrameBuffer,) -> Result<(), KernelError,> {
+	fb.fill_rectangle(&(0, 0,), &(fb.width - 1, fb.height - 1,), &"#ffffff",)
+		.expect("failed fill rectangle",);
+
+	fb.fill_rectangle(&(100, 100,), &(200, 200,), &"#fedcba",).expect("failed fill rectangle",);
+
+	let text_buf = &mut TextBuf::new((0, 0,), 8, 16,);
+
+	let width = {
+		let mut digits = [0, 0, 0,];
+		let mut width = fb.width;
+
+		let mut idx = 0;
+		while width > 0 {
+			let modulo = width % 10;
+			digits[idx] = modulo;
+			width /= 10;
+			idx += 1;
+		}
+
+		digits
+	};
+	let height = {
+		let mut digits = [0, 0, 0,];
+		let mut height = fb.height;
+
+		let mut idx = 0;
+		while height > 0 {
+			let modulo = height % 10;
+			digits[idx] = modulo;
+			height /= 10;
+			idx += 1;
+		}
+
+		digits
+	};
+
+	fb.write_str("\nwidth: ", text_buf,);
+	for i in (0..3).rev() {
+		fb.write_char(b'0' + width[i] as u8, text_buf,).unwrap();
+	}
+	fb.write_str("\nheight: ", text_buf,);
+	for i in (0..3).rev() {
+		fb.write_char(b'0' + height[i] as u8, text_buf,).unwrap();
+	}
+	fb.write_char(b'\n', text_buf,).unwrap();
+
+	for y in 0..16 {
+		for x in 0..16 {
+			let idx = x + y * 16;
+			fb.write_char(idx, text_buf,).unwrap();
+		}
+		fb.write_char(b'\n', text_buf,).unwrap();
+	}
+
+	fb.fill_rectangle(&(0, 0,), &(fb.width - 1, fb.height - 1,), &"#000000",).unwrap();
+
+	Ok((),)
 }
 
 #[panic_handler]
