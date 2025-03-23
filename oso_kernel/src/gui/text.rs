@@ -1,0 +1,208 @@
+//! this module provides interface for display text
+
+use crate::base::graphic::Coordinal;
+use crate::base::graphic::Draw;
+use crate::base::graphic::FrameBuffer;
+use crate::error::KernelError;
+use crate::gui::font::SINONOME;
+use core::ops::Add;
+use core::ops::Div;
+use core::ops::Mul;
+use core::ops::Sub;
+use oso_proc_macro::impl_int;
+
+pub const MAX_DIGIT: usize = 39;
+
+pub struct TextBuf<C: Coordinal,> {
+	init_pos:        C,
+	row:             usize,
+	col:             usize,
+	pub font_width:  usize,
+	pub font_height: usize,
+}
+
+impl<C: Coordinal,> TextBuf<C,> {
+	pub fn new(init_pos: C, font_width: usize, font_height: usize,) -> Self {
+		Self { init_pos, row: 0, col: 0, font_width, font_height, }
+	}
+
+	fn row_pixel(&self,) -> usize {
+		self.init_pos.y() + self.font_height * self.row
+	}
+
+	fn col_pixel(&self,) -> usize {
+		self.init_pos.x() + self.font_width * self.col
+	}
+
+	pub fn clear(&mut self,) {
+		self.row = 0;
+		self.col = 0;
+	}
+}
+
+pub trait Text {
+	fn write_char<C: Coordinal,>(
+		&mut self,
+		char: u8,
+		text_buf: &mut TextBuf<C,>,
+	) -> Result<(), KernelError,>;
+	fn write_str<C: Coordinal,>(
+		&mut self,
+		text: &str,
+		text_buf: &mut TextBuf<C,>,
+	) -> Result<(), KernelError,> {
+		for c in text.as_bytes() {
+			self.write_char(*c, text_buf,)?;
+		}
+		Ok((),)
+	}
+}
+
+impl<'a,> Text for FrameBuffer<'a,> {
+	fn write_char<C: Coordinal,>(
+		&mut self,
+		char: u8,
+		text_buf: &mut TextBuf<C,>,
+	) -> Result<(), KernelError,> {
+		if char == b'\n' {
+			text_buf.row += 1;
+			text_buf.col = 0;
+			return Ok((),);
+		}
+
+		let font_data = SINONOME[char as usize];
+		let col_pos = text_buf.col_pixel();
+		let row_pos = text_buf.row_pixel();
+
+		for i in 0..text_buf.font_width {
+			for j in 0..text_buf.font_height {
+				let flag = i + j * text_buf.font_width;
+				// determine whether pixel with position (i, j) in the character box should be
+				// drawed or not
+				let bit = font_data & (0b1 << flag);
+				if bit != 0 {
+					let coord = (col_pos + i, row_pos + j,);
+					self.put_pixel(&coord, &"#000000",)?;
+				}
+			}
+		}
+
+		text_buf.col += 1;
+		Ok((),)
+	}
+}
+
+#[macro_export]
+macro_rules! to_txt {
+	(let $rslt:ident = $exp:expr) => {
+		let mut ___original = $exp.clone();
+		let mut ___num = [0; oso_kernel::gui::text::MAX_DIGIT];
+		let mut ___digits = $exp.digit_count();
+
+		/// マイナスだった場合は`-`を先頭にくっつける
+		for i in 0..___digits {
+			___num[i] = ___original.shift_right();
+		}
+
+		if ___original < 0 {
+			___num[___digits] = b'-';
+		}
+
+		// loop {
+		// 	___i -= 1;
+		// 	let ___digit = ___original.shift_right();
+		// 	___num[___i] = ___digit + b'0';
+		// 	if ___i == 0 {
+		// 		break;
+		// 	}
+		// }
+
+		let $rslt = unsafe { core::str::from_utf8_unchecked(&___num[..___digits],) };
+	};
+}
+
+// pub trait ToTxt {
+// 	// type F;
+// 	fn to_txt(&self,) -> &str;
+// }
+//
+// impl<T: Integer,> ToTxt for T {
+// 	// type F = impl Integer;
+//
+// 	fn to_txt(&self,) -> &str {
+// 		let mut original = self.clone();
+// 		let mut num = [0; MAX_DIGIT];
+// 		let digits = self.digit_count();
+//
+// 		let mut i = digits;
+// 		loop {
+// 			if digits == 0 {
+// 				break;
+// 			}
+//
+// 			let digit = original.shift_right();
+// 			num[i] = digit;
+// 			i -= 1;
+// 		}
+//
+// 		unsafe { core::str::from_utf8_unchecked(&num[..digits],) }
+// 	}
+// }
+
+pub trait Integer:
+	Add<Output = Self,>
+	+ Sub<Output = Self,>
+	+ Mul<Output = Self,>
+	+ Div<Output = Self,>
+	+ PartialOrd
+	+ Ord
+	+ Clone
+	+ Sized
+{
+	fn digit_count(&self,) -> usize;
+	fn nth_digit(&self, n: usize,) -> u8;
+	fn shift_right(&mut self,) -> u8;
+}
+
+// macro_rules! impl_int {
+// 	($int_type:ident) => {
+// 		impl Integer for $int_type {
+// 			fn digit_count(&self,) -> usize {
+// 				let mut n = self.clone();
+// 				let mut digits = 0;
+// 				while n != 0 {
+// 					n = n / 10;
+// 					digits += 1;
+// 				}
+//
+// 				digits
+// 			}
+//
+// 			/// # Panic
+// 			///
+// 			/// when argument `n` is 0, this function will panic
+// 			fn nth_digit(&self, n: usize) -> u8 {
+// 				assert_ne!(n, 0);
+// 				let mut origin = self.clone();
+// 				for _i in 1..n {
+// 					origin.shift_right();
+// 				}
+//
+// 				(origin % 10) as u8
+// 			}
+//
+// 			fn shift_right(&mut self) -> u8 {
+// 				let first_digit = *self % 10;
+// 				*self = *self / 10;
+// 				first_digit as u8
+// 			}
+// 		}
+// 	};
+// 	($($int_type:ident),+) => {
+// 		$(
+// 			impl_int!($int_type);
+// 		)+
+// 	};
+// }
+
+impl_int!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);

@@ -8,5 +8,6 @@ proc-macro = true
 
 [dependencies]
 colored = "*"
+proc-macro2 = "*"
 quote = "*"
-syn = "*"
+syn = { version = "*", features = ["extra-traits"] }

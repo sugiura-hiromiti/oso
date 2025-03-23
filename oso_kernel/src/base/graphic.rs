@@ -1,6 +1,9 @@
 use oso_bridge::graphic::FrameBufConf;
 use oso_bridge::graphic::PixelFormatConf;
 
+use crate::error::GraphicError;
+use crate::error::KernelError;
+
 // WARN: do not remove this comment outed code for future implementation
 //
 // pub struct Rgb;
@@ -179,20 +182,33 @@ impl From<(u8, u8, u8,),> for Color {
 
 /// draw to display
 pub trait Draw {
-	fn put_pixel(&mut self, coord: &impl Coordinal, color: &impl ColorRpr,) -> Result<(), (),>;
+	fn put_pixel(
+		&mut self,
+		coord: &impl Coordinal,
+		color: &impl ColorRpr,
+	) -> Result<(), KernelError,>;
 
 	/// # Params
 	///
 	/// letf_topとright_bottomの間には以下の関係が成り立っている必要があります
+	///
 	/// ```no_run
 	/// left_top.x < right_bottom.x && left_top.y < right_bottom.y
 	/// ```
+	///
+	/// また、right_bottomは
+	///
+	/// ```no_run
+	/// right_bottom.x <= frame_buffer.width && right_bottom.y <= frame_buffer.height
+	/// ```
+	///
+	/// である必要があります
 	fn fill_rectangle(
 		&mut self,
 		left_top: &impl Coordinal,
 		right_bottom: &impl Coordinal,
 		color: &impl ColorRpr,
-	) -> Result<(), (),>;
+	) -> Result<(), KernelError,>;
 }
 
 /// contains frame buffer itself & some helper data like display width/height, pixel format ..
@@ -222,11 +238,26 @@ impl<'a,> FrameBuffer<'a,> {
 		// 一つのピクセルの大きさが４バイトなので4をかけている
 		(self.stride * coord.y() + coord.x()) * 4
 	}
+
+	/// this function returns
+	///
+	/// ```no_run
+	/// Coord { x: self.width - 1, y: self.height - 1, }
+	/// ```
+	///
+	/// this is useful to get coordination of right bottom corner
+	pub fn right_bottom(&self,) -> Coord {
+		Coord { x: self.width - 1, y: self.height - 1, }
+	}
 }
 
 /// TOOD: Box<dyn Draw>を利用して条件分岐を無くす
 impl<'a,> Draw for FrameBuffer<'a,> {
-	fn put_pixel(&mut self, coord: &impl Coordinal, color: &impl ColorRpr,) -> Result<(), (),> {
+	fn put_pixel(
+		&mut self,
+		coord: &impl Coordinal,
+		color: &impl ColorRpr,
+	) -> Result<(), KernelError,> {
 		let pos = self.pos(coord,);
 		let pxl = &mut self.buf[pos..pos + 3];
 		let color = self.drawer.color_pixel(color,);
@@ -240,13 +271,13 @@ impl<'a,> Draw for FrameBuffer<'a,> {
 		left_top: &impl Coordinal,
 		right_bottom: &impl Coordinal,
 		color: &impl ColorRpr,
-	) -> Result<(), (),> {
+	) -> Result<(), KernelError,> {
 		if left_top.x() > right_bottom.x()
 			|| left_top.y() > right_bottom.y()
 			|| right_bottom.x() > self.width
 			|| right_bottom.y() > self.height
 		{
-			return Err((),);
+			return Err(KernelError::Graphics(GraphicError::InvalidCoordinate,),);
 		}
 
 		let color = self.drawer.color_pixel(color,);
