@@ -122,6 +122,13 @@ fn exit_boot_services() {
 }
 
 fn exec_kernel(fbc: FrameBufConf, kernel_addr: u64,) {
+	#[cfg(target_arch = "x86_64")]
+	let entry_point: extern "sysv64" fn(FrameBufConf,) =
+		unsafe { core::mem::transmute(kernel_addr as usize,) };
+	#[cfg(target_arch = "aarch64")]
+	let entry_point: extern "C" fn(FrameBufConf,) =
+		unsafe { core::mem::transmute(kernel_addr as usize,) };
+	#[cfg(target_arch = "riscv64")]
 	let entry_point: extern "sysv64" fn(FrameBufConf,) =
 		unsafe { core::mem::transmute(kernel_addr as usize,) };
 	entry_point(fbc,);

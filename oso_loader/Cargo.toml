@@ -18,3 +18,9 @@ uefi = { version = "*", features = [
 	"alloc",
 	"global_allocator",
 ] }
+
+# [features]
+# x86_64 = []
+# aarch64 = []
+# risc_v = []
+# default = ["x86_64"]

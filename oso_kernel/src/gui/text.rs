@@ -1,15 +1,31 @@
 //! this module provides interface for display text
 
-use crate::base::graphic::Coordinal;
-use crate::base::graphic::Draw;
+use crate::base::graphic::DisplayDraw;
 use crate::base::graphic::FrameBuffer;
+use crate::base::graphic::color::PixelFormat;
+use crate::base::graphic::position::Coordinal;
 use crate::error::KernelError;
-use crate::gui::font::SINONOME;
 use core::ops::Add;
 use core::ops::Div;
 use core::ops::Mul;
 use core::ops::Sub;
+use oso_proc_macro::fonts_data;
 use oso_proc_macro::impl_int;
+
+// const SINONOME: &[u8; 256] = {
+// 	let sinonome_font_txt = include_str!("../resource/sinonome_font.txt");
+// 	let characters = &[0; 0x100];
+//
+// 	characters
+// };
+
+pub const SINONOME: &[u128; 256] = fonts_data!("resource/sinonome_font.txt");
+
+pub trait Font {
+	const WIDTH: usize;
+	const HEIGHT: usize;
+	fn char_data(&self, char: char,) -> u128;
+}
 
 pub const MAX_DIGIT: usize = 39;
 
@@ -58,7 +74,7 @@ pub trait Text {
 	}
 }
 
-impl<'a,> Text for FrameBuffer<'a,> {
+impl<'a, P: PixelFormat,> Text for FrameBuffer<'a, P,> {
 	fn write_char<C: Coordinal,>(
 		&mut self,
 		char: u8,
@@ -101,12 +117,16 @@ macro_rules! to_txt {
 
 		/// マイナスだった場合は`-`を先頭にくっつける
 		for i in 0..___digits {
-			___num[i] = ___original.shift_right();
+			___num[i] = ___original.shift_right() + b'0';
 		}
 
-		if ___original < 0 {
+		if $exp < 0 {
 			___num[___digits] = b'-';
+			___digits += 1;
 		}
+
+		let mut rslt = &mut ___num[..___digits];
+		rslt.reverse();
 
 		// loop {
 		// 	___i -= 1;
@@ -117,7 +137,7 @@ macro_rules! to_txt {
 		// 	}
 		// }
 
-		let $rslt = unsafe { core::str::from_utf8_unchecked(&___num[..___digits],) };
+		let $rslt = unsafe { core::str::from_utf8_unchecked(rslt,) };
 	};
 }
 

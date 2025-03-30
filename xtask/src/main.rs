@@ -10,6 +10,7 @@ use std::io::BufReader;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
+use std::process::Stdio;
 use std::str::FromStr;
 use toml::Table;
 
@@ -82,17 +83,15 @@ impl ToString for Architecture {
 
 #[derive(Debug,)]
 struct Crate {
-	name:           String,
 	/// this field is equivalent to build.target section of .cargo/config.toml file
 	target:         String,
-	root_dir:       PathBuf,
 	/// path to executable
 	/// this is relative path to project root
 	build_artifact: PathBuf,
 }
 
 impl Crate {
-	fn new(root_dir: PathBuf,) -> Rslt<Self,> {
+	fn new(root_dir: &PathBuf,) -> Rslt<Self,> {
 		let manifest = de_toml(&root_dir.join("Cargo.toml",),)?;
 		let toml::Value::String(name,) = &manifest["package"]["name"] else {
 			panic!("failed to get crate name. check your crate directory: {:?}", root_dir.to_str());
@@ -100,7 +99,7 @@ impl Crate {
 		let target = target_tuple(&root_dir,)?;
 		let build_artifact = executable_location(&root_dir, &target, &name,)?;
 
-		Ok(Self { name: name.to_string(), target, root_dir, build_artifact, },)
+		Ok(Self { target, build_artifact, },)
 	}
 }
 
@@ -118,8 +117,8 @@ impl OsoWorkSpace {
 		// let loader_target = target_tuple(&loader_root,)?;
 		// let kernel_target = target_tuple(&kernel_root,)?;
 		let root = xtask_root.parent().unwrap().to_path_buf();
-		let loader = Crate::new(loader_root,)?;
-		let kernel = Crate::new(kernel_root,)?;
+		let loader = Crate::new(&loader_root,)?;
+		let kernel = Crate::new(&kernel_root,)?;
 		let arch = Architecture::try_from(&loader.target,)?;
 
 		Ok(Self { arch, root, xtask_root, loader, kernel, },)
@@ -296,15 +295,18 @@ fn main() -> Rslt<(),> {
 		crate_pathes.pop().unwrap(),
 	)?;
 
-	println!("{oso:#?}");
-
 	// qemunのコマンド自体とオプションを決定
 	let qemu = oso.qemu();
 	let qemu_args = oso.qemu_args();
 
 	// 実行
 	oso.post_process()?;
-	Command::new(qemu,).args(qemu_args,).run()?;
+	let _qemu = Command::new(qemu,)
+		.args(qemu_args,)
+		.stdout(Stdio::piped(),)
+		.stderr(Stdio::piped(),)
+		.stdin(Stdio::piped(),)
+		.output()?;
 
 	Ok((),)
 }
