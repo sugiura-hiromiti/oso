@@ -4,6 +4,7 @@
 #![feature(slice_index_methods)]
 #![feature(custom_test_frameworks)]
 #![test_runner(crate::test_runner)]
+#![feature(new_range_api)]
 
 pub mod app;
 pub mod base;
@@ -20,6 +21,8 @@ pub mod error {
 		InvalidCoordinate,
 	}
 }
+
+pub fn init() {}
 
 #[cfg(test)]
 pub fn test_runner(tests: &[&dyn Fn()],) {}

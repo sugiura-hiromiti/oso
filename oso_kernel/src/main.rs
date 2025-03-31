@@ -6,16 +6,21 @@ use oso_bridge::graphic::FrameBufConf;
 use oso_kernel::app::cursor::CursorBuf;
 use oso_kernel::app::cursor::MouseCursorDraw;
 use oso_kernel::base::graphic::DisplayDraw;
+use oso_kernel::base::graphic::FRAME_BUFFER;
 use oso_kernel::base::graphic::FrameBuffer;
+#[allow(unused_imports)]
 use oso_kernel::base::graphic::color::Bgr;
+#[allow(unused_imports)]
 use oso_kernel::base::graphic::color::Bitmask;
+#[allow(unused_imports)]
 use oso_kernel::base::graphic::color::BltOnly;
+#[allow(unused_imports)]
 use oso_kernel::base::graphic::color::PixelFormat;
 use oso_kernel::base::graphic::color::Rgb;
+use oso_kernel::base::text::Integer;
+use oso_kernel::base::text::Text;
+use oso_kernel::base::text::TextBuf;
 use oso_kernel::error::KernelError;
-use oso_kernel::gui::text::Integer;
-use oso_kernel::gui::text::Text;
-use oso_kernel::gui::text::TextBuf;
 use oso_kernel::to_txt;
 
 #[unsafe(no_mangle)]
@@ -27,21 +32,24 @@ use oso_kernel::to_txt;
 /// が強制されているのではないか？
 pub extern "sysv64" fn kernel_main(frame_buf_conf: FrameBufConf,) {
 	macro_rules! enter_app {
-		($pixel_format:expr) => {{
-			let mut fb = FrameBuffer::new(frame_buf_conf, $pixel_format,);
-			if let Err(_ke,) = app(&mut fb,) {
-				todo!()
+		($pixel_format:expr) => {
+			unsafe {
+				FRAME_BUFFER = FrameBuffer::new(frame_buf_conf, $pixel_format,);
+				if let Err(_ke,) = app() {
+					todo!()
+				}
 			}
-		}};
+		};
 	}
-	match frame_buf_conf.pixel_format {
-		oso_bridge::graphic::PixelFormatConf::Rgb => {
-			enter_app!(Rgb)
-		},
-		oso_bridge::graphic::PixelFormatConf::Bgr => enter_app!(Bgr),
-		oso_bridge::graphic::PixelFormatConf::Bitmask => enter_app!(Bitmask),
-		oso_bridge::graphic::PixelFormatConf::BltOnly => enter_app!(BltOnly),
-	}
+
+	#[cfg(feature = "rgb")]
+	enter_app!(Rgb);
+	#[cfg(feature = "bgr")]
+	enter_app!(Bgr);
+	#[cfg(feature = "bitmask")]
+	enter_app!(Bitmask);
+	#[cfg(feature = "bltonly")]
+	enter_app!(BltOnly);
 
 	// let mut fb = FrameBuffer::new(frame_buf_conf,);
 	// if let Err(_ke,) = app(&mut fb,) {
@@ -61,45 +69,47 @@ pub extern "sysv64" fn kernel_main(frame_buf_conf: FrameBufConf,) {
 // 	todo!()
 // }
 
-fn app<P: PixelFormat,>(fb: &mut FrameBuffer<P,>,) -> Result<(), KernelError,> {
-	fb.fill_rectangle(&(100, 100,), &(700, 500,), &"#abcdef",)?;
-	fb.fill_rectangle(&(0, 0,), &fb.right_bottom(), &"#012345",)?;
+unsafe fn app() -> Result<(), KernelError,> {
+	unsafe {
+		FRAME_BUFFER.fill_rectangle(&(100, 100,), &(700, 500,), &"#abcdef",)?;
+		FRAME_BUFFER.fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#012345",)?;
 
-	fb.fill_rectangle(&(100, 100,), &(200, 200,), &"#fedcba",)?;
+		FRAME_BUFFER.fill_rectangle(&(100, 100,), &(200, 200,), &"#fedcba",)?;
 
-	let text_buf = &mut TextBuf::new((0, 0,), 8, 16,);
-	to_txt!(let width = 3u8);
-	fb.write_str("\nwidth: ", text_buf,);
-	fb.write_str(width, text_buf,)?;
-	fb.write_char(b'\n', text_buf,)?;
+		let text_buf = &mut TextBuf::new((0, 0,), 8, 16,);
+		to_txt!(let width = 3u8);
+		FRAME_BUFFER.write_str("\nwidth: ", text_buf,);
+		FRAME_BUFFER.write_str(width, text_buf,)?;
+		FRAME_BUFFER.write_char(b'\n', text_buf,)?;
 
-	for y in 0..16 {
-		for x in 0..16 {
-			let idx = x + y * 16;
-			fb.write_char(idx, text_buf,)?;
+		for y in 0..16 {
+			for x in 0..16 {
+				let idx = x + y * 16;
+				FRAME_BUFFER.write_char(idx, text_buf,)?;
+			}
+			FRAME_BUFFER.write_char(b'\n', text_buf,)?;
 		}
-		fb.write_char(b'\n', text_buf,)?;
+
+		text_buf.clear();
+		FRAME_BUFFER.fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#ffffff",)?;
+
+		to_txt!(let width = FRAME_BUFFER.width);
+		to_txt!(let height = FRAME_BUFFER.height);
+		FRAME_BUFFER.write_str("\nwidth: ", text_buf,);
+		FRAME_BUFFER.write_str(width, text_buf,);
+		FRAME_BUFFER.write_str("\nheight: ", text_buf,);
+		FRAME_BUFFER.write_str(height, text_buf,);
+		to_txt!(let minus = -100);
+		FRAME_BUFFER.write_str("\nminus: ", text_buf,);
+		FRAME_BUFFER.write_str(minus, text_buf,);
+
+		FRAME_BUFFER.fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#fedcba",)?;
+
+		let cursor_buf = CursorBuf::new((123, 456,), 15, 24,);
+		FRAME_BUFFER.draw_mouse_cursor(&cursor_buf,)?;
+
+		Ok((),)
 	}
-
-	text_buf.clear();
-	fb.fill_rectangle(&(0, 0,), &fb.right_bottom(), &"#ffffff",)?;
-
-	to_txt!(let width = fb.width);
-	to_txt!(let height = fb.height);
-	fb.write_str("\nwidth: ", text_buf,);
-	fb.write_str(width, text_buf,);
-	fb.write_str("\nheight: ", text_buf,);
-	fb.write_str(height, text_buf,);
-	to_txt!(let minus = -100);
-	fb.write_str("\nminus: ", text_buf,);
-	fb.write_str(minus, text_buf,);
-
-	fb.fill_rectangle(&(0, 0,), &fb.right_bottom(), &"#abcdef",)?;
-
-	let cursor_buf = CursorBuf::new((123, 456,), 15, 24,);
-	fb.draw_mouse_cursor(&cursor_buf,)?;
-
-	Ok((),)
 }
 
 #[panic_handler]

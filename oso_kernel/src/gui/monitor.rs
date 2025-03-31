@@ -1,3 +1,5 @@
+pub mod desktop;
+
 pub trait Monitor {
 	fn add_desktop(&mut self,);
 	fn count_desktop(&self,);

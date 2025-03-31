@@ -1,12 +1,8 @@
 use crate::base::util::LinkedList;
-use crate::error::KernelError;
-use crate::gui::desktop::Desktop;
 use monitor::Monitor;
 
 pub mod console;
-pub mod desktop;
 pub mod monitor;
-pub mod text;
 
 pub trait Gui {
 	fn add_monitor(&mut self, m: impl Monitor,);

@@ -3,8 +3,8 @@ use crate::base::graphic::FrameBuffer;
 use crate::base::graphic::color::PixelFormat;
 use crate::base::graphic::position::Coordinal;
 use crate::error::KernelError;
-use crate::gui::desktop::DesktopObject;
-use crate::gui::desktop::Move;
+use crate::gui::monitor::desktop::DesktopObject;
+use crate::gui::monitor::desktop::Move;
 
 // TODO: modularize project structure to remove pub keyword
 const MOUSE_CURSOR_WIDTH: usize = 15;
@@ -120,7 +120,7 @@ impl<C: Coordinal,> Move for CursorBuf<C,> {
 	}
 }
 
-impl<P: PixelFormat,> MouseCursorDraw for FrameBuffer<'_, P,> {
+impl<P: PixelFormat,> MouseCursorDraw for FrameBuffer<P,> {
 	fn draw_mouse_cursor(&mut self, cursor_buf: &impl MouseCursor,) -> Result<(), KernelError,> {
 		let x = cursor_buf.x();
 		let y = cursor_buf.y();

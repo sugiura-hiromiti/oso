@@ -1,6 +1,6 @@
 use crate::base::graphic::position::Coordinal;
 use crate::error::KernelError;
-use crate::gui::desktop::DesktopObject;
+use crate::gui::monitor::desktop::DesktopObject;
 
 use super::Move;
 

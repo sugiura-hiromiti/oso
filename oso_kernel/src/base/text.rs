@@ -5,6 +5,7 @@ use crate::base::graphic::FrameBuffer;
 use crate::base::graphic::color::PixelFormat;
 use crate::base::graphic::position::Coordinal;
 use crate::error::KernelError;
+use core::fmt::Write;
 use core::ops::Add;
 use core::ops::Div;
 use core::ops::Mul;
@@ -56,6 +57,12 @@ impl<C: Coordinal,> TextBuf<C,> {
 	}
 }
 
+impl<C: Coordinal,> Write for TextBuf<C,> {
+	fn write_str(&mut self, s: &str,) -> core::fmt::Result {
+		todo!()
+	}
+}
+
 pub trait Text {
 	fn write_char<C: Coordinal,>(
 		&mut self,
@@ -74,7 +81,7 @@ pub trait Text {
 	}
 }
 
-impl<'a, P: PixelFormat,> Text for FrameBuffer<'a, P,> {
+impl<'a, P: PixelFormat,> Text for FrameBuffer<P,> {
 	fn write_char<C: Coordinal,>(
 		&mut self,
 		char: u8,
@@ -112,7 +119,7 @@ impl<'a, P: PixelFormat,> Text for FrameBuffer<'a, P,> {
 macro_rules! to_txt {
 	(let $rslt:ident = $exp:expr) => {
 		let mut ___original = $exp.clone();
-		let mut ___num = [0; oso_kernel::gui::text::MAX_DIGIT];
+		let mut ___num = [0; oso_kernel::base::text::MAX_DIGIT];
 		let mut ___digits = $exp.digit_count();
 
 		/// マイナスだった場合は`-`を先頭にくっつける
@@ -128,46 +135,9 @@ macro_rules! to_txt {
 		let mut rslt = &mut ___num[..___digits];
 		rslt.reverse();
 
-		// loop {
-		// 	___i -= 1;
-		// 	let ___digit = ___original.shift_right();
-		// 	___num[___i] = ___digit + b'0';
-		// 	if ___i == 0 {
-		// 		break;
-		// 	}
-		// }
-
 		let $rslt = unsafe { core::str::from_utf8_unchecked(rslt,) };
 	};
 }
-
-// pub trait ToTxt {
-// 	// type F;
-// 	fn to_txt(&self,) -> &str;
-// }
-//
-// impl<T: Integer,> ToTxt for T {
-// 	// type F = impl Integer;
-//
-// 	fn to_txt(&self,) -> &str {
-// 		let mut original = self.clone();
-// 		let mut num = [0; MAX_DIGIT];
-// 		let digits = self.digit_count();
-//
-// 		let mut i = digits;
-// 		loop {
-// 			if digits == 0 {
-// 				break;
-// 			}
-//
-// 			let digit = original.shift_right();
-// 			num[i] = digit;
-// 			i -= 1;
-// 		}
-//
-// 		unsafe { core::str::from_utf8_unchecked(&num[..digits],) }
-// 	}
-// }
 
 pub trait Integer:
 	Add<Output = Self,>
@@ -183,46 +153,5 @@ pub trait Integer:
 	fn nth_digit(&self, n: usize,) -> u8;
 	fn shift_right(&mut self,) -> u8;
 }
-
-// macro_rules! impl_int {
-// 	($int_type:ident) => {
-// 		impl Integer for $int_type {
-// 			fn digit_count(&self,) -> usize {
-// 				let mut n = self.clone();
-// 				let mut digits = 0;
-// 				while n != 0 {
-// 					n = n / 10;
-// 					digits += 1;
-// 				}
-//
-// 				digits
-// 			}
-//
-// 			/// # Panic
-// 			///
-// 			/// when argument `n` is 0, this function will panic
-// 			fn nth_digit(&self, n: usize) -> u8 {
-// 				assert_ne!(n, 0);
-// 				let mut origin = self.clone();
-// 				for _i in 1..n {
-// 					origin.shift_right();
-// 				}
-//
-// 				(origin % 10) as u8
-// 			}
-//
-// 			fn shift_right(&mut self) -> u8 {
-// 				let first_digit = *self % 10;
-// 				*self = *self / 10;
-// 				first_digit as u8
-// 			}
-// 		}
-// 	};
-// 	($($int_type:ident),+) => {
-// 		$(
-// 			impl_int!($int_type);
-// 		)+
-// 	};
-// }
 
 impl_int!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
