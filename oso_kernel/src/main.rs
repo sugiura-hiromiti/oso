@@ -8,14 +8,13 @@ use oso_kernel::app::cursor::MouseCursorDraw;
 use oso_kernel::base::graphic::DisplayDraw;
 use oso_kernel::base::graphic::FRAME_BUFFER;
 use oso_kernel::base::graphic::FrameBuffer;
-#[allow(unused_imports)]
+#[cfg(feature = "bgr")]
 use oso_kernel::base::graphic::color::Bgr;
-#[allow(unused_imports)]
+#[cfg(feature = "bitmask")]
 use oso_kernel::base::graphic::color::Bitmask;
-#[allow(unused_imports)]
+#[cfg(feature = "bltonly")]
 use oso_kernel::base::graphic::color::BltOnly;
-#[allow(unused_imports)]
-use oso_kernel::base::graphic::color::PixelFormat;
+#[cfg(feature = "rgb")]
 use oso_kernel::base::graphic::color::Rgb;
 use oso_kernel::base::text::Integer;
 use oso_kernel::base::text::Text;
@@ -33,11 +32,20 @@ use oso_kernel::to_txt;
 pub extern "sysv64" fn kernel_main(frame_buf_conf: FrameBufConf,) {
 	macro_rules! enter_app {
 		($pixel_format:expr) => {
+			let fb = FrameBuffer::new(frame_buf_conf, $pixel_format,);
 			unsafe {
-				FRAME_BUFFER = FrameBuffer::new(frame_buf_conf, $pixel_format,);
-				if let Err(_ke,) = app() {
-					todo!()
-				}
+				FrameBuffer::init(
+					&FRAME_BUFFER as *const FrameBuffer<_,>,
+					fb.buf,
+					fb.size,
+					fb.width,
+					fb.height,
+					fb.stride,
+				);
+				//FRAME_BUFFER = FrameBuffer::new(frame_buf_conf, $pixel_format,);
+			}
+			if let Err(_ke,) = app() {
+				todo!()
 			}
 		};
 	}
@@ -69,7 +77,7 @@ pub extern "sysv64" fn kernel_main(frame_buf_conf: FrameBufConf,) {
 // 	todo!()
 // }
 
-unsafe fn app() -> Result<(), KernelError,> {
+fn app() -> Result<(), KernelError,> {
 	unsafe {
 		FRAME_BUFFER.fill_rectangle(&(100, 100,), &(700, 500,), &"#abcdef",)?;
 		FRAME_BUFFER.fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#012345",)?;
@@ -78,7 +86,7 @@ unsafe fn app() -> Result<(), KernelError,> {
 
 		let text_buf = &mut TextBuf::new((0, 0,), 8, 16,);
 		to_txt!(let width = 3u8);
-		FRAME_BUFFER.write_str("\nwidth: ", text_buf,);
+		FRAME_BUFFER.write_str("\nwidth: ", text_buf,)?;
 		FRAME_BUFFER.write_str(width, text_buf,)?;
 		FRAME_BUFFER.write_char(b'\n', text_buf,)?;
 

@@ -1,6 +1,7 @@
 //! this module provides interface for display text
 
 use crate::base::graphic::DisplayDraw;
+use crate::base::graphic::FRAME_BUFFER;
 use crate::base::graphic::FrameBuffer;
 use crate::base::graphic::color::PixelFormat;
 use crate::base::graphic::position::Coordinal;
@@ -69,16 +70,16 @@ pub trait Text {
 		char: u8,
 		text_buf: &mut TextBuf<C,>,
 	) -> Result<(), KernelError,>;
-	fn write_str<C: Coordinal,>(
-		&mut self,
-		text: &str,
-		text_buf: &mut TextBuf<C,>,
-	) -> Result<(), KernelError,> {
-		for c in text.as_bytes() {
-			self.write_char(*c, text_buf,)?;
-		}
-		Ok((),)
-	}
+	// fn write_str<C: Coordinal,>(
+	// 	&mut self,
+	// 	text: &str,
+	// 	text_buf: &mut TextBuf<C,>,
+	// ) -> Result<(), KernelError,> {
+	// 	for c in text.as_bytes() {
+	// 		self.write_char(*c, text_buf,)?;
+	// 	}
+	// 	Ok((),)
+	// }
 }
 
 impl<'a, P: PixelFormat,> Text for FrameBuffer<P,> {
