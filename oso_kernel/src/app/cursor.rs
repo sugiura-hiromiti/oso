@@ -1,4 +1,3 @@
-use crate::base::graphic::DisplayDraw;
 use crate::base::graphic::FrameBuffer;
 use crate::base::graphic::color::PixelFormat;
 use crate::base::graphic::position::Coordinal;

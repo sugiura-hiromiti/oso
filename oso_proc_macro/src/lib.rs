@@ -2,9 +2,8 @@
 
 extern crate proc_macro;
 
-use proc_macro::Diagnostic;
-use proc_macro::Level;
 use proc_macro::TokenStream;
+use proc_macro2::Span;
 use syn::parse_macro_input;
 
 mod helper;
@@ -45,7 +44,7 @@ pub fn gen_wrapper_fn(attr: TokenStream, item: TokenStream,) -> TokenStream {
 	let trait_def = parse_macro_input!(item as syn::ItemTrait);
 	let static_frame_buffer = parse_macro_input!(attr as syn::Ident);
 
-	let wrapper_fns = trait_def.items.into_iter().filter_map(|i| {
+	let wrapper_fns = trait_def.items.clone().into_iter().filter_map(|i| {
 		if let syn::TraitItem::Fn(method,) = i {
 			let sig = method.sig;
 
@@ -55,6 +54,7 @@ pub fn gen_wrapper_fn(attr: TokenStream, item: TokenStream,) -> TokenStream {
 			let unsafety = sig.unsafety;
 			let abi = sig.abi;
 			let fn_name = sig.ident;
+			// syn::Ident::new(format!("global_{}", sig.ident).as_str(), Span::call_site(),);
 			let generics = sig.generics;
 			let input = sig.inputs;
 			let input: Vec<_,> = input
@@ -81,6 +81,7 @@ pub fn gen_wrapper_fn(attr: TokenStream, item: TokenStream,) -> TokenStream {
 	},);
 	let wrapper_fns = quote::quote! {
 		#(#wrapper_fns)*
+		#trait_def
 	};
 
 	wrapper_fns.into()

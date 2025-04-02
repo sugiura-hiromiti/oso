@@ -20,9 +20,12 @@ pub mod error {
 	pub enum GraphicError {
 		InvalidCoordinate,
 	}
+	impl From<KernelError,> for core::fmt::Error {
+		fn from(value: KernelError,) -> Self {
+			core::fmt::Error::from(value,)
+		}
+	}
 }
-
-pub fn init() {}
 
 #[cfg(test)]
 pub fn test_runner(tests: &[&dyn Fn()],) {}

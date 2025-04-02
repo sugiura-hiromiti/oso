@@ -1,6 +1,5 @@
 //! this module provides interface for display text
 
-use crate::base::graphic::color::PixelFormat;
 use crate::base::graphic::position::Coordinal;
 use crate::base::graphic::put_pixel;
 use crate::error::KernelError;
@@ -11,6 +10,8 @@ use core::ops::Mul;
 use core::ops::Sub;
 use oso_proc_macro::fonts_data;
 use oso_proc_macro::impl_int;
+
+use super::graphic::FRAME_BUFFER;
 
 // const SINONOME: &[u8; 256] = {
 // 	let sinonome_font_txt = include_str!("../resource/sinonome_font.txt");
@@ -29,11 +30,22 @@ pub struct TextBuf<C: Coordinal,> {
 	col:             usize,
 	pub font_width:  usize,
 	pub font_height: usize,
+	/// used for scrolling
+	history:         [u128; 1024],
+	history_pos:     usize,
 }
 
 impl<C: Coordinal,> TextBuf<C,> {
 	pub fn new(init_pos: C, font_width: usize, font_height: usize,) -> Self {
-		Self { init_pos, row: 0, col: 0, font_width, font_height, }
+		Self {
+			init_pos,
+			row: 0,
+			col: 0,
+			font_width,
+			font_height,
+			history: [0; 1024],
+			history_pos: 0,
+		}
 	}
 
 	fn row_pixel(&self,) -> usize {
@@ -48,31 +60,7 @@ impl<C: Coordinal,> TextBuf<C,> {
 		self.row = 0;
 		self.col = 0;
 	}
-}
 
-impl<C: Coordinal,> Write for TextBuf<C,> {
-	fn write_str(&mut self, s: &str,) -> core::fmt::Result {
-		// for c in s.as_bytes() {
-		// 	self.write_char
-		// }
-	}
-}
-
-pub trait Text {
-	fn put_char(&mut self, char: u8,) -> Result<(), KernelError,>;
-	// fn write_str<C: Coordinal,>(
-	// 	&mut self,
-	// 	text: &str,
-	// 	text_buf: &mut TextBuf<C,>,
-	// ) -> Result<(), KernelError,> {
-	// 	for c in text.as_bytes() {
-	// 		self.write_char(*c, text_buf,)?;
-	// 	}
-	// 	Ok((),)
-	// }
-}
-
-impl<C: Coordinal,> Text for TextBuf<C,> {
 	fn put_char(&mut self, char: u8,) -> Result<(), KernelError,> {
 		if char == b'\n' {
 			self.row += 1;
@@ -80,8 +68,12 @@ impl<C: Coordinal,> Text for TextBuf<C,> {
 			return Ok((),);
 		}
 
+		if self.row * self.font_height >= FRAME_BUFFER.height {
+			self.clear();
+		}
+
 		let font_data = SINONOME[char as usize];
-		let col_pos = self.col_pixel();
+		let mut col_pos = self.col_pixel();
 		let row_pos = self.row_pixel();
 
 		for i in 0..self.font_width {
@@ -98,6 +90,20 @@ impl<C: Coordinal,> Text for TextBuf<C,> {
 		}
 
 		self.col += 1;
+		if self.col_pixel() + self.font_width >= FRAME_BUFFER.width {
+			self.col = 0;
+			self.row += 1;
+		}
+
+		Ok((),)
+	}
+}
+
+impl<C: Coordinal,> Write for TextBuf<C,> {
+	fn write_str(&mut self, s: &str,) -> core::fmt::Result {
+		for c in s.as_bytes() {
+			self.put_char(*c,)?;
+		}
 		Ok((),)
 	}
 }
