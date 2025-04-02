@@ -1,5 +1,6 @@
 //! this module provides interface for display text
 
+use super::graphic::FRAME_BUFFER;
 use crate::base::graphic::position::Coordinal;
 use crate::base::graphic::put_pixel;
 use crate::error::KernelError;
@@ -11,8 +12,6 @@ use core::ops::Sub;
 use oso_proc_macro::fonts_data;
 use oso_proc_macro::impl_int;
 
-use super::graphic::FRAME_BUFFER;
-
 // const SINONOME: &[u8; 256] = {
 // 	let sinonome_font_txt = include_str!("../resource/sinonome_font.txt");
 // 	let characters = &[0; 0x100];
@@ -20,9 +19,11 @@ use super::graphic::FRAME_BUFFER;
 // 	characters
 // };
 
+/// default font until oso gets ability to load file on execution
 pub const SINONOME: &[u128; 256] = fonts_data!("resource/sinonome_font.txt");
-
+/// maximum number of digits on u128
 pub const MAX_DIGIT: usize = 39;
+static mut CONSOLE: TextBuf<(usize, usize,),> = TextBuf::new((0, 0,), 8, 16,);
 
 pub struct TextBuf<C: Coordinal,> {
 	init_pos:        C,
@@ -36,7 +37,7 @@ pub struct TextBuf<C: Coordinal,> {
 }
 
 impl<C: Coordinal,> TextBuf<C,> {
-	pub fn new(init_pos: C, font_width: usize, font_height: usize,) -> Self {
+	pub const fn new(init_pos: C, font_width: usize, font_height: usize,) -> Self {
 		Self {
 			init_pos,
 			row: 0,
@@ -73,7 +74,7 @@ impl<C: Coordinal,> TextBuf<C,> {
 		}
 
 		let font_data = SINONOME[char as usize];
-		let mut col_pos = self.col_pixel();
+		let col_pos = self.col_pixel();
 		let row_pos = self.row_pixel();
 
 		for i in 0..self.font_width {
@@ -109,6 +110,27 @@ impl<C: Coordinal,> Write for TextBuf<C,> {
 }
 
 #[macro_export]
+macro_rules! println {
+	() => {
+		$crate::print!("\n");
+	};
+	($($arg:tt)*) => {
+		$crate::print!("{}\n", format_args!($($arg)*));
+	};
+}
+
+#[macro_export]
+macro_rules! print {
+    ($($arg:tt)*) => {
+        $crate::base::io::print(format_args!($($arg)*));
+    };
+}
+
+pub fn print(args: core::fmt::Arguments,) {
+	use core::fmt::Write;
+	unsafe { CONSOLE.write_fmt(args,) }.expect("unable to write to console",)
+}
+
 macro_rules! to_txt {
 	(let $rslt:ident = $exp:expr) => {
 		let mut ___original = $exp.clone();

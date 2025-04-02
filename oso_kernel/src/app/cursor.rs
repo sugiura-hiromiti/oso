@@ -1,3 +1,5 @@
+use crate::base::graphic::put_pixel;
+use crate::base::graphic::FRAME_BUFFER;
 use crate::base::graphic::FrameBuffer;
 use crate::base::graphic::color::PixelFormat;
 use crate::base::graphic::position::Coordinal;
@@ -41,7 +43,7 @@ pub trait MouseCursor: DesktopObject {
 }
 
 pub trait MouseCursorDraw {
-	fn draw_mouse_cursor(&mut self, cursor_buf: &impl MouseCursor,) -> Result<(), KernelError,>;
+	fn draw_mouse_cursor(&mut self,) -> Result<(), KernelError,>;
 }
 
 /// belong to `gui` struct
@@ -58,6 +60,21 @@ impl<C: Coordinal,> CursorBuf<C,> {
 }
 
 impl<C: Coordinal,> MouseCursor for CursorBuf<C,> {}
+impl<C: Coordinal,> MouseCursorDraw for CursorBuf<C,> {
+	fn draw_mouse_cursor(&mut self,) -> Result<(), KernelError,> {
+		let mut coord = self.pos;
+		for y in 0..self.height {
+			for x in 0..self.width {
+				let pos = FRAME_BUFFER.pos(&coord,);
+				match MOUSE_CURSOR[x][y] {
+					'@'=>put_pixel(&coord, color)
+				}
+			}
+		}
+
+		todo!()
+	}
+}
 
 impl<C: Coordinal,> Coordinal for CursorBuf<C,> {
 	fn x(&self,) -> usize {

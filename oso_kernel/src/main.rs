@@ -2,6 +2,7 @@
 #![no_main]
 
 use core::arch::asm;
+use core::panic::PanicInfo;
 use oso_bridge::graphic::FrameBufConf;
 use oso_kernel::app::cursor::CursorBuf;
 use oso_kernel::app::cursor::MouseCursorDraw;
@@ -19,10 +20,11 @@ use oso_kernel::base::graphic::color::Rgb;
 use oso_kernel::base::graphic::fill_rectangle;
 use oso_kernel::base::graphic::outline_rectangle;
 use oso_kernel::base::graphic::put_pixel;
-use oso_kernel::base::text::Integer;
-use oso_kernel::base::text::Text;
-use oso_kernel::base::text::TextBuf;
+use oso_kernel::base::io::Integer;
+use oso_kernel::base::io::Text;
+use oso_kernel::base::io::TextBuf;
 use oso_kernel::error::KernelError;
+use oso_kernel::println;
 use oso_kernel::to_txt;
 
 #[unsafe(no_mangle)]
@@ -86,33 +88,21 @@ fn app() -> Result<(), KernelError,> {
 
 	fill_rectangle(&(100, 100,), &(200, 200,), &"#fedcba",)?;
 
-	let text_buf = &mut TextBuf::new((0, 0,), 8, 16,);
-	to_txt!(let width = 3u8);
-	write_str("\nwidth: ", text_buf,)?;
-	write_str(width, text_buf,)?;
-	write_char(b'\n', text_buf,)?;
+	println!("width: {} height: {}", FRAME_BUFFER.width, FRAME_BUFFER.height);
+	// to_txt!(let width = 3u8);
+	// write_str("\nwidth: ", text_buf,)?;
+	// write_str(width, text_buf,)?;
+	// write_char(b'\n', text_buf,)?;
 
-	for y in 0..16 {
-		for x in 0..16 {
-			let idx = x + y * 16;
-			write_char(idx, text_buf,)?;
-		}
-		write_char(b'\n', text_buf,)?;
-	}
+	// for y in 0..16 {
+	// 	for x in 0..16 {
+	// 		let idx = x + y * 16;
+	// 		write_char(idx, text_buf,)?;
+	// 	}
+	// 	write_char(b'\n', text_buf,)?;
+	// }
 
-	text_buf.clear();
 	fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#ffffff",)?;
-
-	to_txt!(let width = width);
-	to_txt!(let height = height);
-	write_str("\nwidth: ", text_buf,);
-	write_str(width, text_buf,);
-	write_str("\nheight: ", text_buf,);
-	write_str(height, text_buf,);
-	to_txt!(let minus = -100);
-	write_str("\nminus: ", text_buf,);
-	write_str(minus, text_buf,);
-
 	fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#fedcba",)?;
 
 	let cursor_buf = CursorBuf::new((123, 456,), 15, 24,);
@@ -123,9 +113,10 @@ fn app() -> Result<(), KernelError,> {
 
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo,) -> ! {
+	println!("{}", &PanicInfo);
 	loop {
-		// unsafe {
-		// 	asm!("hlt");
-		// }
+		unsafe {
+			asm!("hlt");
+		}
 	}
 }
