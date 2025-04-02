@@ -9,6 +9,7 @@ use crate::error::KernelError;
 #[cfg(feature = "bltonly")] use color::BltOnly;
 #[cfg(feature = "rgb")] use color::Rgb;
 use oso_bridge::graphic::FrameBufConf;
+use oso_proc_macro::gen_wrapper_fn;
 
 pub mod color;
 pub mod position;
@@ -29,11 +30,9 @@ pub static FRAME_BUFFER: FrameBuffer<Bitmask,> =
 pub static FRAME_BUFFER: FrameBuffer<BltOnly,> =
 	FrameBuffer { drawer: BltOnly, buf: 0, size: 0, width: 0, height: 0, stride: 0, };
 
-trait Draw: DisplayDraw {}
-
 /// draw to display
-#[gen_wrapper_fn]
-trait DisplayDraw {
+#[gen_wrapper_fn(FRAME_BUFFER)]
+pub trait DisplayDraw {
 	fn put_pixel(&self, coord: &impl Coordinal, color: &impl ColorRpr,)
 	-> Result<(), KernelError,>;
 

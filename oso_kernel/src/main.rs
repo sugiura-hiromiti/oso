@@ -16,6 +16,9 @@ use oso_kernel::base::graphic::color::Bitmask;
 use oso_kernel::base::graphic::color::BltOnly;
 #[cfg(feature = "rgb")]
 use oso_kernel::base::graphic::color::Rgb;
+use oso_kernel::base::graphic::fill_rectangle;
+use oso_kernel::base::graphic::outline_rectangle;
+use oso_kernel::base::graphic::put_pixel;
 use oso_kernel::base::text::Integer;
 use oso_kernel::base::text::Text;
 use oso_kernel::base::text::TextBuf;
@@ -78,46 +81,44 @@ pub extern "sysv64" fn kernel_main(frame_buf_conf: FrameBufConf,) {
 // }
 
 fn app() -> Result<(), KernelError,> {
-	unsafe {
-		FRAME_BUFFER.fill_rectangle(&(100, 100,), &(700, 500,), &"#abcdef",)?;
-		FRAME_BUFFER.fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#012345",)?;
+	fill_rectangle(&(100, 100,), &(700, 500,), &"#abcdef",)?;
+	fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#012345",)?;
 
-		FRAME_BUFFER.fill_rectangle(&(100, 100,), &(200, 200,), &"#fedcba",)?;
+	fill_rectangle(&(100, 100,), &(200, 200,), &"#fedcba",)?;
 
-		let text_buf = &mut TextBuf::new((0, 0,), 8, 16,);
-		to_txt!(let width = 3u8);
-		FRAME_BUFFER.write_str("\nwidth: ", text_buf,)?;
-		FRAME_BUFFER.write_str(width, text_buf,)?;
-		FRAME_BUFFER.write_char(b'\n', text_buf,)?;
+	let text_buf = &mut TextBuf::new((0, 0,), 8, 16,);
+	to_txt!(let width = 3u8);
+	write_str("\nwidth: ", text_buf,)?;
+	write_str(width, text_buf,)?;
+	write_char(b'\n', text_buf,)?;
 
-		for y in 0..16 {
-			for x in 0..16 {
-				let idx = x + y * 16;
-				FRAME_BUFFER.write_char(idx, text_buf,)?;
-			}
-			FRAME_BUFFER.write_char(b'\n', text_buf,)?;
+	for y in 0..16 {
+		for x in 0..16 {
+			let idx = x + y * 16;
+			write_char(idx, text_buf,)?;
 		}
-
-		text_buf.clear();
-		FRAME_BUFFER.fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#ffffff",)?;
-
-		to_txt!(let width = FRAME_BUFFER.width);
-		to_txt!(let height = FRAME_BUFFER.height);
-		FRAME_BUFFER.write_str("\nwidth: ", text_buf,);
-		FRAME_BUFFER.write_str(width, text_buf,);
-		FRAME_BUFFER.write_str("\nheight: ", text_buf,);
-		FRAME_BUFFER.write_str(height, text_buf,);
-		to_txt!(let minus = -100);
-		FRAME_BUFFER.write_str("\nminus: ", text_buf,);
-		FRAME_BUFFER.write_str(minus, text_buf,);
-
-		FRAME_BUFFER.fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#fedcba",)?;
-
-		let cursor_buf = CursorBuf::new((123, 456,), 15, 24,);
-		FRAME_BUFFER.draw_mouse_cursor(&cursor_buf,)?;
-
-		Ok((),)
+		write_char(b'\n', text_buf,)?;
 	}
+
+	text_buf.clear();
+	fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#ffffff",)?;
+
+	to_txt!(let width = width);
+	to_txt!(let height = height);
+	write_str("\nwidth: ", text_buf,);
+	write_str(width, text_buf,);
+	write_str("\nheight: ", text_buf,);
+	write_str(height, text_buf,);
+	to_txt!(let minus = -100);
+	write_str("\nminus: ", text_buf,);
+	write_str(minus, text_buf,);
+
+	fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#fedcba",)?;
+
+	let cursor_buf = CursorBuf::new((123, 456,), 15, 24,);
+	draw_mouse_cursor(&cursor_buf,)?;
+
+	Ok((),)
 }
 
 #[panic_handler]

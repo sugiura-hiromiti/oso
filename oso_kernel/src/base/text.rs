@@ -1,10 +1,8 @@
 //! this module provides interface for display text
 
-use crate::base::graphic::DisplayDraw;
-use crate::base::graphic::FRAME_BUFFER;
-use crate::base::graphic::FrameBuffer;
 use crate::base::graphic::color::PixelFormat;
 use crate::base::graphic::position::Coordinal;
+use crate::base::graphic::put_pixel;
 use crate::error::KernelError;
 use core::fmt::Write;
 use core::ops::Add;
@@ -22,12 +20,6 @@ use oso_proc_macro::impl_int;
 // };
 
 pub const SINONOME: &[u128; 256] = fonts_data!("resource/sinonome_font.txt");
-
-pub trait Font {
-	const WIDTH: usize;
-	const HEIGHT: usize;
-	fn char_data(&self, char: char,) -> u128;
-}
 
 pub const MAX_DIGIT: usize = 39;
 
@@ -60,16 +52,14 @@ impl<C: Coordinal,> TextBuf<C,> {
 
 impl<C: Coordinal,> Write for TextBuf<C,> {
 	fn write_str(&mut self, s: &str,) -> core::fmt::Result {
-		todo!()
+		// for c in s.as_bytes() {
+		// 	self.write_char
+		// }
 	}
 }
 
 pub trait Text {
-	fn write_char<C: Coordinal,>(
-		&mut self,
-		char: u8,
-		text_buf: &mut TextBuf<C,>,
-	) -> Result<(), KernelError,>;
+	fn put_char(&mut self, char: u8,) -> Result<(), KernelError,>;
 	// fn write_str<C: Coordinal,>(
 	// 	&mut self,
 	// 	text: &str,
@@ -82,36 +72,32 @@ pub trait Text {
 	// }
 }
 
-impl<'a, P: PixelFormat,> Text for FrameBuffer<P,> {
-	fn write_char<C: Coordinal,>(
-		&mut self,
-		char: u8,
-		text_buf: &mut TextBuf<C,>,
-	) -> Result<(), KernelError,> {
+impl<C: Coordinal,> Text for TextBuf<C,> {
+	fn put_char(&mut self, char: u8,) -> Result<(), KernelError,> {
 		if char == b'\n' {
-			text_buf.row += 1;
-			text_buf.col = 0;
+			self.row += 1;
+			self.col = 0;
 			return Ok((),);
 		}
 
 		let font_data = SINONOME[char as usize];
-		let col_pos = text_buf.col_pixel();
-		let row_pos = text_buf.row_pixel();
+		let col_pos = self.col_pixel();
+		let row_pos = self.row_pixel();
 
-		for i in 0..text_buf.font_width {
-			for j in 0..text_buf.font_height {
-				let flag = i + j * text_buf.font_width;
+		for i in 0..self.font_width {
+			for j in 0..self.font_height {
+				let flag = i + j * self.font_width;
 				// determine whether pixel with position (i, j) in the character box should be
 				// drawed or not
 				let bit = font_data & (0b1 << flag);
 				if bit != 0 {
 					let coord = (col_pos + i, row_pos + j,);
-					self.put_pixel(&coord, &"#000000",)?;
+					put_pixel(&coord, &"#000000",)?;
 				}
 			}
 		}
 
-		text_buf.col += 1;
+		self.col += 1;
 		Ok((),)
 	}
 }
