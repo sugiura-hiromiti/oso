@@ -6,6 +6,7 @@ pub mod error;
 pub mod fs;
 pub mod graphic;
 pub mod memory;
+pub mod mmio;
 
 extern crate alloc;
 

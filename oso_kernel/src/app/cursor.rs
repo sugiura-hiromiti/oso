@@ -77,14 +77,14 @@ impl MouseCursorDraw for CursorBuf {
 		let mut coord = self.pos.clone();
 		for y in 0..self.height {
 			for x in 0..self.width {
-				match MOUSE_CURSOR[x][y] {
+				match MOUSE_CURSOR[y][x] {
 					'@' => put_pixel(&coord, &self.outline_color,)?,
 					'.' => put_pixel(&coord, &self.body_color,)?,
-					_ => continue,
+					_ => (),
 				}
 				*coord.x_mut() += 1;
 			}
-			*coord.x_mut() -= self.width - 1;
+			*coord.x_mut() = self.pos.x();
 			*coord.y_mut() += 1;
 		}
 

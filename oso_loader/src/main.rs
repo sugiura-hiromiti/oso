@@ -22,6 +22,7 @@ use uefi::proto::media::file;
 #[uefi::entry]
 fn efi_main() -> Status {
 	uefi::helpers::init().unwrap();
+	oso_loader::mmio::mmio_address().unwrap();
 
 	let (kernel_addr, frame_buf_conf,) = match app() {
 		Ok(rslt,) => rslt,
