@@ -133,7 +133,12 @@ impl OsoWorkSpace {
 		let img_path = self.img_path();
 
 		// 前回実行時のものを削除
-		Command::new("rm",).arg("-rf",).args([&mount_point, &img_path,],).run()?;
+		if mount_point.exists() {
+			Command::new("rm",).arg("-rf",).arg(&mount_point,).run()?;
+		}
+		if img_path.exists() {
+			Command::new("rm",).arg("-rf",).arg(&img_path,).run()?;
+		}
 
 		// raw disk imageを作成
 		let mut create_img = Command::new("qemu-img",);

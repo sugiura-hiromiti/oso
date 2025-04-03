@@ -1,20 +1,28 @@
 #![no_std]
 #![no_main]
+#![reexport_test_harness_main = "test_main"]
+#![feature(custom_test_frameworks)]
+#![test_runner(crate::test::test_runner)]
 
-use core::arch::asm;
+#[allow(unused_imports)] use core::arch::asm;
 #[allow(unused_imports)]
 use oso_bridge::graphic::FrameBufConf;
 use oso_kernel::app::cursor::CursorBuf;
 use oso_kernel::app::cursor::MouseCursorDraw;
 use oso_kernel::base::graphic::FRAME_BUFFER;
+#[allow(unused_imports)]
 use oso_kernel::base::graphic::FrameBuffer;
 #[cfg(feature = "bgr")]
+#[allow(unused_imports)]
 use oso_kernel::base::graphic::color::Bgr;
 #[cfg(feature = "bitmask")]
+#[allow(unused_imports)]
 use oso_kernel::base::graphic::color::Bitmask;
 #[cfg(feature = "bltonly")]
+#[allow(unused_imports)]
 use oso_kernel::base::graphic::color::BltOnly;
 #[cfg(feature = "rgb")]
+#[allow(unused_imports)]
 use oso_kernel::base::graphic::color::Rgb;
 use oso_kernel::base::graphic::fill_rectangle;
 use oso_kernel::base::graphic::outline_rectangle;
@@ -30,6 +38,8 @@ use oso_kernel::println;
 /// elf形式でコンパイルするので、恐らくその時に (x86環境では)sysv64 abi
 /// が強制されているのではないか？
 pub extern "sysv64" fn kernel_main(frame_buf_conf: FrameBufConf,) {
+	// #[cfg(test)]
+	// crate::test_main();
 	macro_rules! enter_app {
 		($pixel_format:expr) => {
 			let fb = FrameBuffer::new(frame_buf_conf, $pixel_format,);
@@ -102,8 +112,17 @@ fn app() -> Result<(), KernelError,> {
 	Ok((),)
 }
 
-#[panic_handler]
-fn panic(info: &core::panic::PanicInfo,) -> ! {
-	println!("{}", info);
-	loop {}
+#[cfg(test)]
+mod test {
+	use oso_kernel::println;
+	use oso_kernel::test::Testable;
+
+	#[cfg(test)]
+	pub fn test_runner(tests: &[&dyn Testable],) {
+		println!("running {} tests", tests.len());
+		for test in tests {
+			test.run_test()
+		}
+		loop {}
+	}
 }

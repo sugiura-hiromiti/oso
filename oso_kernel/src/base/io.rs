@@ -20,7 +20,7 @@ use oso_proc_macro::impl_int;
 // };
 
 /// default font until oso gets ability to load file on execution
-pub const SINONOME: &[u128; 256] = fonts_data!("resource/sinonome_font.txt");
+pub const SINONOME: &[u128; 256] = fonts_data!("resource/sinonome_font.dat");
 /// maximum number of digits on u128
 pub const MAX_DIGIT: usize = 39;
 static CONSOLE: TextBuf<(usize, usize,),> = TextBuf::new((0, 0,), 8, 16,);
@@ -31,22 +31,11 @@ pub struct TextBuf<C: Coordinal,> {
 	col:             usize,
 	pub font_width:  usize,
 	pub font_height: usize,
-	/// used for scrolling
-	history:         [u128; 1024],
-	history_pos:     usize,
 }
 
 impl<C: Coordinal,> TextBuf<C,> {
 	pub const fn new(init_pos: C, font_width: usize, font_height: usize,) -> Self {
-		Self {
-			init_pos,
-			row: 0,
-			col: 0,
-			font_width,
-			font_height,
-			history: [0; 1024],
-			history_pos: 0,
-		}
+		Self { init_pos, row: 0, col: 0, font_width, font_height, }
 	}
 
 	fn row_pixel(&self,) -> usize {

@@ -1,10 +1,12 @@
 #![no_std]
+#![no_main]
 #![feature(associated_type_defaults)]
 #![feature(impl_trait_in_assoc_type)]
 #![feature(slice_index_methods)]
 #![feature(custom_test_frameworks)]
-#![test_runner(crate::test_runner)]
+#![test_runner(crate::test::test_runner)]
 #![feature(new_range_api)]
+#![reexport_test_harness_main = "test_main"]
 
 pub mod app;
 pub mod base;
@@ -21,11 +23,46 @@ pub mod error {
 		InvalidCoordinate,
 	}
 	impl From<KernelError,> for core::fmt::Error {
-		fn from(value: KernelError,) -> Self {
-			core::fmt::Error::from(value,)
+		fn from(_value: KernelError,) -> Self {
+			core::fmt::Error
 		}
 	}
 }
 
-#[cfg(test)]
-pub fn test_runner(tests: &[&dyn Fn()],) {}
+#[panic_handler]
+fn panic(info: &core::panic::PanicInfo,) -> ! {
+	println!("{}", info);
+	loop {}
+}
+
+pub mod test {
+	use crate::print;
+	use crate::println;
+
+	#[cfg(test)]
+	pub fn test_runner(tests: &[&dyn Testable],) {
+		println!("running {} tests", tests.len());
+		for test in tests {
+			test.run_test()
+		}
+		loop {}
+	}
+
+	pub trait Testable {
+		fn run_test(&self,);
+	}
+
+	impl<T: Fn(),> Testable for T {
+		fn run_test(&self,) {
+			print!("{}   ---------------\n", core::any::type_name::<T,>());
+			self();
+			println!("\t\t\t\t...[ok]");
+		}
+	}
+
+	#[test_case]
+	fn exmpl() {
+		let a = 1 + 1;
+		assert_eq!(2, a);
+	}
+}
