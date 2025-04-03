@@ -2,11 +2,10 @@
 #![no_main]
 
 use core::arch::asm;
-use core::panic::PanicInfo;
+#[allow(unused_imports)]
 use oso_bridge::graphic::FrameBufConf;
 use oso_kernel::app::cursor::CursorBuf;
 use oso_kernel::app::cursor::MouseCursorDraw;
-use oso_kernel::base::graphic::DisplayDraw;
 use oso_kernel::base::graphic::FRAME_BUFFER;
 use oso_kernel::base::graphic::FrameBuffer;
 #[cfg(feature = "bgr")]
@@ -19,15 +18,11 @@ use oso_kernel::base::graphic::color::BltOnly;
 use oso_kernel::base::graphic::color::Rgb;
 use oso_kernel::base::graphic::fill_rectangle;
 use oso_kernel::base::graphic::outline_rectangle;
-use oso_kernel::base::graphic::put_pixel;
-use oso_kernel::base::io::Integer;
-use oso_kernel::base::io::Text;
-use oso_kernel::base::io::TextBuf;
 use oso_kernel::error::KernelError;
 use oso_kernel::println;
-use oso_kernel::to_txt;
 
 #[unsafe(no_mangle)]
+#[cfg(target_arch = "x86_64")]
 /// TODO:
 /// `extern "sysv64"` を除く事はできるのか?
 /// カーネルを呼び出すのはうまく行っているようだが、bootloaderとkernel側で sysv64 abi
@@ -64,11 +59,6 @@ pub extern "sysv64" fn kernel_main(frame_buf_conf: FrameBufConf,) {
 	#[cfg(feature = "bltonly")]
 	enter_app!(BltOnly);
 
-	// let mut fb = FrameBuffer::new(frame_buf_conf,);
-	// if let Err(_ke,) = app(&mut fb,) {
-	// 	todo!()
-	// }
-
 	loop {
 		unsafe {
 			asm!("hlt");
@@ -103,20 +93,17 @@ fn app() -> Result<(), KernelError,> {
 	// }
 
 	fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#ffffff",)?;
-	fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#fedcba",)?;
+	fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#abcdef",)?;
+	outline_rectangle(&(100, 100,), &(300, 300,), &"#fedcba",)?;
 
-	let cursor_buf = CursorBuf::new((123, 456,), 15, 24,);
-	draw_mouse_cursor(&cursor_buf,)?;
+	let mut cursor_buf = CursorBuf::new();
+	cursor_buf.draw_mouse_cursor()?;
 
 	Ok((),)
 }
 
 #[panic_handler]
-fn panic(_info: &core::panic::PanicInfo,) -> ! {
-	println!("{}", &PanicInfo);
-	loop {
-		unsafe {
-			asm!("hlt");
-		}
-	}
+fn panic(info: &core::panic::PanicInfo,) -> ! {
+	println!("{}", info);
+	loop {}
 }

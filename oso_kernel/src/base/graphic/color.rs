@@ -38,6 +38,12 @@ pub trait ColorRpr {
 	fn red(&self,) -> u8;
 	fn green(&self,) -> u8;
 	fn blue(&self,) -> u8;
+	fn red_mut(&mut self, val: u8,);
+	fn green_mut(&mut self, val: u8,);
+	fn blue_mut(&mut self, val: u8,);
+	fn to_color(&self,) -> Color {
+		Color { red: self.red(), green: self.green(), blue: self.blue(), }
+	}
 }
 
 pub struct Color {
@@ -58,6 +64,18 @@ impl ColorRpr for Color {
 	fn blue(&self,) -> u8 {
 		self.blue
 	}
+
+	fn red_mut(&mut self, val: u8,) {
+		self.red = val;
+	}
+
+	fn green_mut(&mut self, val: u8,) {
+		self.green = val;
+	}
+
+	fn blue_mut(&mut self, val: u8,) {
+		self.blue = val;
+	}
 }
 
 impl ColorRpr for (u8, u8, u8,) {
@@ -71,6 +89,18 @@ impl ColorRpr for (u8, u8, u8,) {
 
 	fn blue(&self,) -> u8 {
 		self.2
+	}
+
+	fn red_mut(&mut self, val: u8,) {
+		self.0 = val;
+	}
+
+	fn green_mut(&mut self, val: u8,) {
+		self.1 = val;
+	}
+
+	fn blue_mut(&mut self, val: u8,) {
+		self.2 = val;
 	}
 }
 
@@ -86,6 +116,18 @@ impl ColorRpr for &str {
 
 	fn blue(&self,) -> u8 {
 		u8::from_str_radix(&self[5..7], 16,).expect("incorrect representation of color format",)
+	}
+
+	fn red_mut(&mut self, val: u8,) {
+		todo!()
+	}
+
+	fn green_mut(&mut self, val: u8,) {
+		todo!()
+	}
+
+	fn blue_mut(&mut self, val: u8,) {
+		todo!()
 	}
 }
 

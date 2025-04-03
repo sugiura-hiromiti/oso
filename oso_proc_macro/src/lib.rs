@@ -3,7 +3,6 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use proc_macro2::Span;
 use syn::parse_macro_input;
 
 mod helper;
@@ -56,22 +55,21 @@ pub fn gen_wrapper_fn(attr: TokenStream, item: TokenStream,) -> TokenStream {
 			let fn_name = sig.ident;
 			// syn::Ident::new(format!("global_{}", sig.ident).as_str(), Span::call_site(),);
 			let generics = sig.generics;
-			let input = sig.inputs;
-			let input: Vec<_,> = input
-				.into_iter()
+			let fn_params = sig.inputs.iter().filter(|a| matches!(a, &&syn::FnArg::Typed(_)),);
+			let method_args: Vec<_,> = sig
+				.inputs
+				.iter()
 				.filter_map(|a| match a {
 					syn::FnArg::Receiver(_,) => None,
-					syn::FnArg::Typed(pty,) => Some(pty,),
+					syn::FnArg::Typed(pty,) => Some(pty.pat.clone(),),
 				},)
 				.collect();
 			let variadic = sig.variadic;
 			let output = sig.output;
 
-			let input_idents: Vec<_,> = input.clone().into_iter().map(|p| p.pat,).collect();
-
 			let decl = quote::quote! {
-				pub #unsafety #asyncness #constness #abi fn #fn_name #generics(#(#input),* #variadic) #output {
-					#static_frame_buffer.#fn_name(#(#input_idents),*)
+				pub #unsafety #asyncness #constness #abi fn #fn_name #generics(#(#fn_params),* #variadic) #output {
+					#static_frame_buffer.#fn_name(#(#method_args),*)
 				}
 			};
 			Some(decl,)
@@ -79,6 +77,7 @@ pub fn gen_wrapper_fn(attr: TokenStream, item: TokenStream,) -> TokenStream {
 			None
 		}
 	},);
+
 	let wrapper_fns = quote::quote! {
 		#(#wrapper_fns)*
 		#trait_def

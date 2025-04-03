@@ -23,7 +23,7 @@ use oso_proc_macro::impl_int;
 pub const SINONOME: &[u128; 256] = fonts_data!("resource/sinonome_font.txt");
 /// maximum number of digits on u128
 pub const MAX_DIGIT: usize = 39;
-static mut CONSOLE: TextBuf<(usize, usize,),> = TextBuf::new((0, 0,), 8, 16,);
+static CONSOLE: TextBuf<(usize, usize,),> = TextBuf::new((0, 0,), 8, 16,);
 
 pub struct TextBuf<C: Coordinal,> {
 	init_pos:        C,
@@ -128,7 +128,13 @@ macro_rules! print {
 
 pub fn print(args: core::fmt::Arguments,) {
 	use core::fmt::Write;
-	unsafe { CONSOLE.write_fmt(args,) }.expect("unable to write to console",)
+	unsafe {
+		(&CONSOLE as *const TextBuf<(usize, usize,),> as *mut TextBuf<(usize, usize,),>)
+			.as_mut()
+			.unwrap()
+			.write_fmt(args,)
+	}
+	.expect("unable to write to console",)
 }
 
 macro_rules! to_txt {
