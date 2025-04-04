@@ -1,5 +1,4 @@
 use core::arch::asm;
-
 use log::trace;
 use uefi::boot::MemoryAttribute;
 use uefi::boot::MemoryDescriptor;
@@ -13,7 +12,7 @@ pub fn mmio_address() -> Result<(), OsoLoaderError,> {
 	let syst = uefi::table::system_table_raw().unwrap();
 
 	let memory_map_size = &mut 0usize;
-	let memory_descriptor = &mut [0; 1024 * 16];
+	let memory_descriptor = &mut [0u8; 1024 * 16];
 	let map_key = &mut 0usize;
 	let descriptor_size = &mut 0usize;
 	let descriptor_version = &mut 0u32;
@@ -21,7 +20,7 @@ pub fn mmio_address() -> Result<(), OsoLoaderError,> {
 	let status = unsafe {
 		(syst.as_ref().boot_services.as_ref().unwrap().get_memory_map)(
 			memory_map_size as *mut usize,
-			memory_descriptor as *mut [i32] as *mut MemoryDescriptor,
+			memory_descriptor as *mut [u8] as *mut MemoryDescriptor,
 			map_key as *mut usize,
 			descriptor_size as *mut usize,
 			descriptor_version as *mut u32,
@@ -29,7 +28,7 @@ pub fn mmio_address() -> Result<(), OsoLoaderError,> {
 	};
 	trace!("{status}");
 	unsafe {
-		let mem_dsc = memory_descriptor as *mut [i32] as *mut MemoryDescriptor;
+		let mem_dsc = memory_descriptor as *mut [u8; 1024 * 16] as *mut MemoryDescriptor;
 		trace!("{:?}", *mem_dsc);
 	}
 	loop {
