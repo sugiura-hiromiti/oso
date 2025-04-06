@@ -41,7 +41,7 @@ pub fn copy_load_segment(elf: &Elf, src: &Vec<u8,>,) {
 
 		// offset to head of segment
 		let ofs = ph.p_offset as usize;
-		// copy contents of setment describe by current program header
+		// copy contents of segment described by current program header
 		dest[..size_on_file].copy_from_slice(&src[ofs..ofs + size_on_file],);
 		// fill remaining bytes by 0
 		dest[size_on_file..].fill(0,);

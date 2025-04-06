@@ -14,6 +14,7 @@ use oso_proc_macro::gen_wrapper_fn;
 pub mod color;
 pub mod position;
 
+//  TODO: use `MaybeUninit`
 #[cfg(feature = "rgb")]
 pub static FRAME_BUFFER: FrameBuffer<Rgb,> =
 	FrameBuffer { drawer: Rgb, buf: 0, size: 0, width: 0, height: 0, stride: 0, };

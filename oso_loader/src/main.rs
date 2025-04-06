@@ -4,6 +4,7 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
+use core::arch::asm;
 use core::usize;
 use goblin::elf;
 use log::debug;
@@ -17,7 +18,9 @@ use uefi::Status;
 use uefi::boot;
 use uefi::boot::MemoryType;
 use uefi::proto::console::gop::GraphicsOutput;
+use uefi::proto::console::gop::PixelFormat;
 use uefi::proto::media::file;
+use uefi_raw::protocol::console::GraphicsOutputProtocol;
 
 #[uefi::entry]
 fn efi_main() -> Status {
@@ -33,6 +36,7 @@ fn efi_main() -> Status {
 			return Status::ABORTED;
 		},
 	};
+
 	debug!("exit boot services");
 	exit_boot_services();
 	exec_kernel(frame_buf_conf, kernel_addr,);
@@ -81,6 +85,8 @@ fn parse_elf(kernel_bytes: &Vec<u8,>,) -> Result<u64, OsoLoaderError,> {
 	// 何ページ分確保すれば良いか計算
 	let (kernel_head, kernel_tail,) = oso_loader::elf::calc_elf_addr_range(&elf_kernel,);
 	let page_count = required_pages(kernel_tail - kernel_head,);
+	debug!("kernel head: {:#x}", kernel_head);
+	debug!("kernel tail: {:#x}", kernel_tail);
 
 	debug!("allocate for kernel program");
 	let _alloc_head = boot::allocate_pages(
@@ -101,20 +107,57 @@ fn load_graphic_config() -> Result<FrameBufConf, OsoLoaderError,> {
 	let mut gout = oso_loader::open_protocol_with::<GraphicsOutput,>()?;
 
 	let mode_info = gout.current_mode_info();
+	debug!("current graphic output mode: {mode_info:?}");
 	let (width, height,) = mode_info.resolution();
 	let stride = mode_info.stride();
+
 	let pixel_format = match mode_info.pixel_format() {
 		uefi::proto::console::gop::PixelFormat::Rgb => PixelFormatConf::Rgb,
 		uefi::proto::console::gop::PixelFormat::Bgr => PixelFormatConf::Bgr,
 		uefi::proto::console::gop::PixelFormat::Bitmask => PixelFormatConf::Bitmask,
 		uefi::proto::console::gop::PixelFormat::BltOnly => PixelFormatConf::BltOnly,
 	};
-	let mut fb = gout.frame_buffer();
-	let base = fb.as_mut_ptr();
-	let size = fb.size();
+	debug!("pixel_format: {:?}", pixel_format);
+
+	let base;
+	// this code emits error because base is not initialized
+	// let a = base;
+	let size;
+
+	if pixel_format == PixelFormatConf::BltOnly {
+		let gout = gout.get().unwrap();
+		let gout = gout as *const GraphicsOutput as *const GraphicsOutputProtocol;
+		let blt = unsafe { (*gout).blt };
+		let mode;
+		unsafe {
+			mode = *(*gout).mode;
+		}
+		base = mode.frame_buffer_base as *mut u8;
+		size = mode.frame_buffer_size;
+		// loop {
+		// 	unsafe {
+		// 		#[cfg(target_arch = "aarch64")]
+		// 		asm!("wfi");
+		// 		#[cfg(target_arch = "x86_64")]
+		// 		asm!("hlt");
+		// 	}
+		// }
+	} else {
+		let mut fb = gout.frame_buffer();
+		base = fb.as_mut_ptr();
+		size = fb.size();
+	}
+
+	// loop {
+	// 	unsafe {
+	// 		asm!("wfi");
+	// 	}
+	// }
 
 	let fbc = FrameBufConf::new(pixel_format, base, size, width, height, stride,);
 	debug!("fbc: {fbc:?}");
+	uefi::boot::stall(100_000_000,);
+
 	Ok(fbc,)
 }
 
@@ -124,13 +167,13 @@ fn exit_boot_services() {
 }
 
 fn exec_kernel(fbc: FrameBufConf, kernel_addr: u64,) {
-	#[cfg(target_arch = "x86_64")]
-	let entry_point: extern "sysv64" fn(FrameBufConf,) =
-		unsafe { core::mem::transmute(kernel_addr as usize,) };
 	#[cfg(target_arch = "aarch64")]
 	let entry_point: extern "C" fn(FrameBufConf,) =
 		unsafe { core::mem::transmute(kernel_addr as usize,) };
 	#[cfg(target_arch = "riscv64")]
+	let entry_point: extern "C" fn(FrameBufConf,) =
+		unsafe { core::mem::transmute(kernel_addr as usize,) };
+	#[cfg(target_arch = "x86_64")]
 	let entry_point: extern "sysv64" fn(FrameBufConf,) =
 		unsafe { core::mem::transmute(kernel_addr as usize,) };
 	entry_point(fbc,);

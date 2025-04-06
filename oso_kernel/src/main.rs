@@ -4,30 +4,62 @@
 #![feature(custom_test_frameworks)]
 #![test_runner(crate::test::test_runner)]
 
-#[allow(unused_imports)] use core::arch::asm;
-#[allow(unused_imports)]
+use core::arch::asm;
 use oso_bridge::graphic::FrameBufConf;
 use oso_kernel::app::cursor::CursorBuf;
 use oso_kernel::app::cursor::MouseCursorDraw;
 use oso_kernel::base::graphic::FRAME_BUFFER;
-#[allow(unused_imports)]
 use oso_kernel::base::graphic::FrameBuffer;
 #[cfg(feature = "bgr")]
-#[allow(unused_imports)]
 use oso_kernel::base::graphic::color::Bgr;
 #[cfg(feature = "bitmask")]
-#[allow(unused_imports)]
 use oso_kernel::base::graphic::color::Bitmask;
 #[cfg(feature = "bltonly")]
-#[allow(unused_imports)]
 use oso_kernel::base::graphic::color::BltOnly;
 #[cfg(feature = "rgb")]
-#[allow(unused_imports)]
 use oso_kernel::base::graphic::color::Rgb;
 use oso_kernel::base::graphic::fill_rectangle;
 use oso_kernel::base::graphic::outline_rectangle;
 use oso_kernel::error::KernelError;
 use oso_kernel::println;
+
+macro_rules! enter_app {
+	($pixel_format:expr, $frame_buf_conf:ident) => {
+		let fb = FrameBuffer::new($frame_buf_conf, $pixel_format,);
+		unsafe {
+			FrameBuffer::init(
+				&FRAME_BUFFER as *const FrameBuffer<_,>,
+				fb.buf,
+				fb.size,
+				fb.width,
+				fb.height,
+				fb.stride,
+			);
+			//FRAME_BUFFER = FrameBuffer::new(frame_buf_conf, $pixel_format,);
+		}
+		if let Err(_ke,) = app() {
+			todo!()
+		}
+	};
+}
+
+#[unsafe(no_mangle)]
+#[cfg(target_arch = "aarch64")]
+pub extern "C" fn kernel_main(frame_buf_conf: FrameBufConf,) {
+	loop {
+		unsafe {
+			asm!("wfe");
+		}
+	}
+	#[cfg(feature = "rgb")]
+	enter_app!(Rgb, frame_buf_conf);
+	#[cfg(feature = "bgr")]
+	enter_app!(Bgr, frame_buf_conf);
+	#[cfg(feature = "bitmask")]
+	enter_app!(Bitmask, frame_buf_conf);
+	#[cfg(feature = "bltonly")]
+	enter_app!(BltOnly, frame_buf_conf);
+}
 
 #[unsafe(no_mangle)]
 #[cfg(target_arch = "x86_64")]
@@ -38,36 +70,19 @@ use oso_kernel::println;
 /// elf形式でコンパイルするので、恐らくその時に (x86環境では)sysv64 abi
 /// が強制されているのではないか？
 pub extern "sysv64" fn kernel_main(frame_buf_conf: FrameBufConf,) {
-	// #[cfg(test)]
-	// crate::test_main();
-	macro_rules! enter_app {
-		($pixel_format:expr) => {
-			let fb = FrameBuffer::new(frame_buf_conf, $pixel_format,);
-			unsafe {
-				FrameBuffer::init(
-					&FRAME_BUFFER as *const FrameBuffer<_,>,
-					fb.buf,
-					fb.size,
-					fb.width,
-					fb.height,
-					fb.stride,
-				);
-				//FRAME_BUFFER = FrameBuffer::new(frame_buf_conf, $pixel_format,);
-			}
-			if let Err(_ke,) = app() {
-				todo!()
-			}
-		};
+	loop {
+		unsafe {
+			asm!("hlt");
+		}
 	}
-
 	#[cfg(feature = "rgb")]
-	enter_app!(Rgb);
+	enter_app!(Rgb, frame_buf_conf);
 	#[cfg(feature = "bgr")]
-	enter_app!(Bgr);
+	enter_app!(Bgr, frame_buf_conf);
 	#[cfg(feature = "bitmask")]
-	enter_app!(Bitmask);
+	enter_app!(Bitmask, frame_buf_conf);
 	#[cfg(feature = "bltonly")]
-	enter_app!(BltOnly);
+	enter_app!(BltOnly, frame_buf_conf);
 
 	loop {
 		unsafe {
@@ -75,12 +90,6 @@ pub extern "sysv64" fn kernel_main(frame_buf_conf: FrameBufConf,) {
 		}
 	}
 }
-
-// #[unsafe(no_mangle)]
-// #[cfg(target_arch = "aarch64")]
-// pub extern "C" fn kernel_main(frame_buf_conf: FrameBufConf,) {
-// 	todo!()
-// }
 
 fn app() -> Result<(), KernelError,> {
 	fill_rectangle(&(100, 100,), &(700, 500,), &"#abcdef",)?;

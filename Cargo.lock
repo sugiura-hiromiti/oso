@@ -341,6 +341,7 @@ dependencies = [
  "log",
  "oso_bridge",
  "uefi",
+ "uefi-raw",
 ]
 
 [[package]]

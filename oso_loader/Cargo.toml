@@ -18,6 +18,7 @@ uefi = { version = "*", features = [
 	"alloc",
 	"global_allocator",
 ] }
+uefi-raw = "*"
 
 # [features]
 # x86_64 = []
