@@ -1,5 +1,4 @@
 use crate::shell::Architecture;
-use crate::shell::Run;
 use anyhow::Result as Rslt;
 use anyhow::anyhow;
 use std::env;
@@ -7,22 +6,21 @@ use std::fs;
 use std::io::BufReader;
 use std::path::Path;
 use std::path::PathBuf;
-use std::process::Command;
 use std::str::FromStr;
 use toml::Table;
 
 pub const LOADER: &str = "oso_loader";
 pub const KERNEL: &str = "oso_kernel";
-const MOUNT_POINT: &str = "/tmp/oso";
 
 #[derive(Debug,)]
-struct Crate {
+pub struct Crate {
 	/// this field is equivalent to build.target section of .cargo/config.toml file
-	target:         String,
+	// target:             String,
 	/// path to executable
 	/// this is relative path to project root
-	build_artifact: PathBuf,
-	pub name:       String,
+	pub build_artifact: PathBuf,
+	pub name:           String,
+	pub root:           PathBuf,
 }
 
 impl Crate {
@@ -34,17 +32,17 @@ impl Crate {
 		let target = target_tuple(&root_dir,)?;
 		let build_artifact = executable_location(&root_dir, &target, name,)?;
 
-		Ok(Self { target, build_artifact, name: name.clone(), },)
+		Ok(Self { root: root_dir.clone(), build_artifact, name: name.clone(), },)
 	}
 }
 
 impl Architecture {
 	pub fn loader_tuple(&self,) -> String {
-		todo!()
+		format!("{}-unknown-uefi", self.to_string())
 	}
 
 	pub fn kernel_tuple(&self,) -> String {
-		todo!()
+		format!("{}-unknown-none-elf.json", self.to_string())
 	}
 }
 
@@ -146,17 +144,17 @@ impl OsoWorkSpace {
 		todo!()
 	}
 
-	fn mount_point(&self,) -> Rslt<PathBuf,> {
-		let path = PathBuf::from_str(MOUNT_POINT,)?;
-		let path = path.join("mnt",);
-		Ok(path,)
-	}
-
-	fn img_path(&self,) -> Rslt<PathBuf,> {
-		let path = PathBuf::from_str(MOUNT_POINT,)?;
-		let path = path.join("disk.img",);
-		Ok(path,)
-	}
+	// fn mount_point(&self,) -> Rslt<PathBuf,> {
+	// 	let path = PathBuf::from_str(MOUNT_POINT,)?;
+	// 	let path = path.join("mnt",);
+	// 	Ok(path,)
+	// }
+	//
+	// fn img_path(&self,) -> Rslt<PathBuf,> {
+	// 	let path = PathBuf::from_str(MOUNT_POINT,)?;
+	// 	let path = path.join("disk.img",);
+	// 	Ok(path,)
+	// }
 }
 
 fn de_toml(path: &Path,) -> Rslt<Table,> {

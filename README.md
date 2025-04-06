@@ -56,3 +56,8 @@ umount /path/to/mount_point
 # or
 diskutil eject /path/to/mount_point
 ```
+
+- ESP
+
+EFI System Partitionの略
+通常はブートローダなどが置かれる

@@ -1,35 +1,42 @@
-use std::path::PathBuf;
-use std::str::FromStr;
-
-use crate::OsoWorkSpace;
-use crate::shell::Opts;
-use crate::workspace::Architecture;
+use crate::builder::Builder;
+use crate::shell::Architecture;
 use anyhow::Result as Rslt;
 use ovmf_prebuilt::Arch;
 use ovmf_prebuilt::FileType;
 use ovmf_prebuilt::Prebuilt;
 use ovmf_prebuilt::Source;
-use tempfile::TempDir;
+use std::path::Path;
+use std::path::PathBuf;
+use std::str::FromStr;
 
-pub fn qemu(arch: &Architecture,) -> String {
-	format!("qemu-system-{}", arch.to_string())
-}
+impl Builder {
+	pub fn qemu(&self,) -> String {
+		format!("qemu-system-{}", self.arch().to_string())
+	}
 
-pub fn qemu_args(opts: &Opts,) -> Vec<String,> {
-	let mut args = basic_args(&self.arch,);
+	pub fn qemu_args(&self,) -> Rslt<Vec<String,>,> {
+		let mut args = basic_args(self.arch(),);
 
-	// configure persistent flash memory
-	let pflash_code = persistent_flash_memory_args(&ovmf_files.code, PflashMode::ReadOnly,);
-	let pflash_var = persistent_flash_memory_args(&ovmf_files.vars, PflashMode::ReadWrite,);
-	args.extend(pflash_code,);
-	args.extend(pflash_var,);
+		// configure persistent flash memory
+		let pflash_code = persistent_flash_memory_args(&self.ovmf_code(), PflashMode::ReadOnly,);
+		let pflash_var = persistent_flash_memory_args(&self.ovmf_vars()?, PflashMode::ReadWrite,);
+		args.extend(pflash_code,);
+		args.extend(pflash_var,);
 
-	args.extend(devices(),);
+		// args.extend(devices(),);
 
-	// setting the boot menu timeout to zero particularly speeds up the boot
-	args.push("-boot".to_string(),);
-	args.push("menu=on,splash-time=0".to_string(),);
-	args
+		// let esp_dir = self.build_mount_point()?;
+		// args.push("-drive".to_string(),);
+		// args.push("format=raw,file=fat:rw:",);
+
+		let block_device = block_device(&self.disk_img_path()?, self.arch(),);
+		args.extend(block_device,);
+
+		// setting the boot menu timeout to zero particularly speeds up the boot
+		args.push("-boot".to_string(),);
+		args.push("menu=on,splash-time=0".to_string(),);
+		Ok(args,)
+	}
 }
 
 /// manage ovmf files
@@ -40,27 +47,35 @@ pub struct Ovmf {
 }
 
 impl Ovmf {
-	fn new(arch: &Architecture,) -> Rslt<Self,> {
+	pub fn new(arch: &Architecture,) -> Rslt<Self,> {
 		let path = PathBuf::from_str("/tmp/",)?;
 		let ovmf_files = Prebuilt::fetch(Source::LATEST, path,)?;
 		let code = ovmf_files.get_file(arch.into(), FileType::Code,);
 		let vars = ovmf_files.get_file(arch.into(), FileType::Vars,);
 		let shell = ovmf_files.get_file(arch.into(), FileType::Shell,);
 
-		let tmp_dir = TempDir::new()?;
-		let tmp_dir = tmp_dir.path();
-		let vars_tmp = tmp_dir.join("ovmf_vars",);
-		fs_err::copy(vars, &vars_tmp,);
+		Ok(Self { code, vars, shell, },)
+	}
 
-		Ok(Self { code, vars: vars_tmp, shell, },)
+	pub fn code(&self,) -> &PathBuf {
+		&self.code
+	}
+
+	pub fn vars(&self,) -> &PathBuf {
+		&self.vars
+	}
+
+	pub fn shell(&self,) -> &PathBuf {
+		&self.shell
 	}
 }
 
 impl From<&Architecture,> for Arch {
 	fn from(value: &Architecture,) -> Self {
 		match value {
-			Architecture::X86_64 => Arch::X64,
 			Architecture::Aarch64 => Arch::Aarch64,
+			Architecture::Riscv64 => Arch::Riscv64,
+			Architecture::X86_64 => Arch::X64,
 		}
 	}
 }
@@ -70,18 +85,30 @@ enum PflashMode {
 	ReadWrite,
 }
 
-fn devices() -> Vec<String,> {
-	vec![
-		"-nodefaults".to_string(),
-		"-device".to_string(),
-		"virtio-rng-pci".to_string(),
-		"-device".to_string(),
-		"virtio-scsi-pci".to_string(),
-	]
-}
+// fn devices() -> Vec<String,> {
+// 	vec![
+// 		"-nodefaults".to_string(),
+// 		"-device".to_string(),
+// 		"virtio-rng-pci".to_string(),
+// 		"-device".to_string(),
+// 		"virtio-scsi-pci".to_string(),
+// 	]
+// }
 
 fn basic_args(arch: &Architecture,) -> Vec<String,> {
 	match arch {
+		Architecture::Aarch64 => vec![
+			// generic arm enviromnent
+			"-machine".to_string(),
+			"virt".to_string(),
+			// a72 is a very generic 64-bit arm cpu
+			"-cpu".to_string(),
+			"cortex-a72".to_string(),
+			// graphics device
+			"-device".to_string(),
+			"virtio-gpu-pci".to_string(),
+		],
+		Architecture::Riscv64 => todo!(),
 		Architecture::X86_64 => {
 			vec![
 				"-machine".to_string(),
@@ -97,17 +124,6 @@ fn basic_args(arch: &Architecture,) -> Vec<String,> {
 				"std".to_string(),
 			]
 		},
-		Architecture::Aarch64 => vec![
-			// generic arm enviromnent
-			"-machine".to_string(),
-			"virt".to_string(),
-			// a72 is a very generic 64-bit arm cpu
-			"-cpu".to_string(),
-			"cortex-a72".to_string(),
-			// graphics device
-			"-device".to_string(),
-			"virtio-gpu-pci".to_string(),
-		],
 	}
 }
 
@@ -125,4 +141,17 @@ fn persistent_flash_memory_args(pflash_file: &PathBuf, mode: PflashMode,) -> Vec
 	args.push(arg,);
 
 	args
+}
+
+fn block_device(disk_img: &Path, arch: &Architecture,) -> Vec<String,> {
+	vec![
+		"-drive".to_string(),
+		format!("file={},format=raw,if=none,id=hd0", disk_img.display()),
+		"-device".to_string(),
+		match arch {
+			Architecture::X86_64 => "virtio-blk-pci,drive=hd0",
+			_ => "virtio-blk-device,drive=hd0",
+		}
+		.to_string(),
+	]
 }
