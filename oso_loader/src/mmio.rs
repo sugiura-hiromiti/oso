@@ -1,12 +1,8 @@
-use core::arch::asm;
+use crate::error::OsoLoaderError;
 use log::trace;
-use uefi::boot::MemoryAttribute;
 use uefi::boot::MemoryDescriptor;
 use uefi::boot::MemoryType;
 use uefi::mem::memory_map::MemoryMap;
-use uefi::mem::memory_map::MemoryMapKey;
-
-use crate::error::OsoLoaderError;
 
 pub fn mmio_descriptor() -> Result<MemoryDescriptor, OsoLoaderError,> {
 	let mm = uefi::boot::memory_map(MemoryType::MMIO,)?;

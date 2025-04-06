@@ -2,6 +2,8 @@ use crate::qemu::Ovmf;
 use crate::shell::Architecture;
 use crate::shell::Opts;
 use crate::shell::Run;
+use crate::workspace;
+use crate::workspace::LOADER;
 use crate::workspace::OsoWorkSpace;
 use anyhow::Result as Rslt;
 use colored::Colorize;
@@ -35,7 +37,6 @@ impl Builder {
 
 	fn build_loader(&self,) -> Rslt<(),> {
 		set_current_dir(&self.workspace.loader.root,)?;
-		Command::new("pwd",).run()?;
 		cargo_build(&self.opts,)?.arg("--target",).arg(self.opts.arch.loader_tuple(),).run()?;
 		set_current_dir(&self.workspace.root,)?;
 		Ok((),)
@@ -43,8 +44,10 @@ impl Builder {
 
 	fn build_kernel(&self,) -> Rslt<(),> {
 		set_current_dir(&self.workspace.kernel.root,)?;
-		Command::new("pwd",).run()?;
-		cargo_build(&self.opts,)?.arg("--target",).arg(self.opts.arch.kernel_tuple(),).run()?;
+		cargo_build(&self.opts,)?
+			.arg("--target",)
+			.arg(format!("{}.json", self.opts.arch.kernel_tuple()),)
+			.run()?;
 		set_current_dir(&self.workspace.root,)?;
 		Ok((),)
 	}
@@ -201,19 +204,35 @@ impl Builder {
 	}
 
 	fn put_boot_loader(&self, boot_dir: &Path,) -> Rslt<(),> {
-		fs_err::copy(
-			&self.workspace.loader.build_artifact,
-			boot_dir.join(self.arch().boot_file_name(),),
-		)?;
+		fs_err::copy(self.loader_build_artifact(), boot_dir.join(self.arch().boot_file_name(),),)?;
 		Ok((),)
 	}
 
+	fn loader_build_artifact(&self,) -> PathBuf {
+		let build_artifact = self
+			.workspace
+			.root
+			.join("target",)
+			.join(self.arch().loader_tuple(),)
+			.join(self.opts.build_mode.to_string(),)
+			.join(format!("{LOADER}.efi"),);
+		println!(
+			"{}",
+			format!("loader build artifact is {}", build_artifact.display()).bold().yellow()
+		);
+		build_artifact
+	}
+
 	fn put_kernel(&self,) -> Rslt<(),> {
-		fs_err::copy(
-			&self.workspace.kernel.build_artifact,
-			self.mount_point_path()?.join(KERNEL_FILE,),
-		)?;
+		fs_err::copy(self.kernel_build_artifact()?, self.mount_point_path()?.join(KERNEL_FILE,),)?;
 		Ok((),)
+	}
+
+	fn kernel_build_artifact(&self,) -> Rslt<PathBuf,> {
+		let target_json =
+			self.workspace.kernel.root.join(format!("{}.json", self.arch().kernel_tuple()),);
+		let target_json = workspace::load_json(&target_json,)?;
+		workspace::detect_build_artifact(target_json,)
 	}
 }
 

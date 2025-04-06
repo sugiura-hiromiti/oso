@@ -145,6 +145,8 @@ fn persistent_flash_memory_args(pflash_file: &PathBuf, mode: PflashMode,) -> Vec
 
 fn block_device(disk_img: &Path, arch: &Architecture,) -> Vec<String,> {
 	vec![
+		"-monitor".to_string(),
+		"stdio".to_string(),
 		"-drive".to_string(),
 		format!("file={},format=raw,if=none,id=hd0", disk_img.display()),
 		"-device".to_string(),

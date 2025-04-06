@@ -1,6 +1,7 @@
 use crate::shell::Architecture;
 use anyhow::Result as Rslt;
 use anyhow::anyhow;
+use anyhow::bail;
 use std::env;
 use std::fs;
 use std::io::BufReader;
@@ -18,9 +19,8 @@ pub struct Crate {
 	// target:             String,
 	/// path to executable
 	/// this is relative path to project root
-	pub build_artifact: PathBuf,
-	pub name:           String,
-	pub root:           PathBuf,
+	pub name: String,
+	pub root: PathBuf,
 }
 
 impl Crate {
@@ -29,10 +29,8 @@ impl Crate {
 		let toml::Value::String(name,) = &manifest["package"]["name"] else {
 			panic!("failed to get crate name. check your crate directory: {:?}", root_dir.to_str());
 		};
-		let target = target_tuple(&root_dir,)?;
-		let build_artifact = executable_location(&root_dir, &target, name,)?;
 
-		Ok(Self { root: root_dir.clone(), build_artifact, name: name.clone(), },)
+		Ok(Self { root: root_dir.clone(), name: name.clone(), },)
 	}
 }
 
@@ -42,7 +40,7 @@ impl Architecture {
 	}
 
 	pub fn kernel_tuple(&self,) -> String {
-		format!("{}-unknown-none-elf.json", self.to_string())
+		format!("{}-unknown-none-elf", self.to_string())
 	}
 }
 
@@ -163,47 +161,33 @@ fn de_toml(path: &Path,) -> Rslt<Table,> {
 	Ok(table,)
 }
 
-// fn target_arch(crate_root: &Path,) -> Rslt<Architecture,> {
-// 	let target = target_tuple(crate_root,)?;
+// fn executable_location(crate_root: &Path, target: &String, crate_name: &String,) ->
+// Rslt<PathBuf,> { 	let out = if target.contains(".json",) {
+// 		let file = fs::File::open(&crate_root.join(target,),)?;
+// 		let reader = BufReader::new(file,);
+// 		let json: serde_json::Value = serde_json::from_reader(reader,)?;
+// 		let serde_json::Value::Array(opts,) = &json["post-link-args"]["ld.lld"] else {
+// 			panic!("your {target}[\"post-link-args\"][\"ld.lld\"] is not array that must be array");
+// 		};
+// 		let out = opts
+// 			.iter()
+// 			.find_map(|v| {
+// 				let opt = v.as_str().unwrap();
+// 				if &opt[..2] == "-o" { Some(&opt[2..],) } else { None }
+// 			},)
+// 			.expect(&format!(
+// 				"you need to specify name of build artifact explicitly in \
+// 				 {target}[\"post-link-args\"][\"ld.lld\"]",
+// 			),);
+// 		out.to_string()
+// 	} else if target.contains("uefi",) {
+// 		format!("target/{target}/debug/{crate_name}.efi")
+// 	} else {
+// 		format!("target/{target}/debug/{crate_name}")
+// 	};
 //
-// 	Architecture::try_from(&target,)
+// 	Ok(PathBuf::from_str(&out,)?,)
 // }
-
-fn target_tuple(crate_root: &Path,) -> Rslt<String,> {
-	let config_toml = de_toml(&crate_root.join(".cargo/config.toml",),)?;
-	let toml::Value::String(target,) = config_toml["build"]["target"].clone() else {
-		return Err(anyhow!("mismatch toml type:\n\tconfig.toml is: {config_toml:#?}"),);
-	};
-	Ok(target,)
-}
-
-fn executable_location(crate_root: &Path, target: &String, crate_name: &String,) -> Rslt<PathBuf,> {
-	let out = if target.contains(".json",) {
-		let file = fs::File::open(&crate_root.join(target,),)?;
-		let reader = BufReader::new(file,);
-		let json: serde_json::Value = serde_json::from_reader(reader,)?;
-		let serde_json::Value::Array(opts,) = &json["post-link-args"]["ld.lld"] else {
-			panic!("your {target}[\"post-link-args\"][\"ld.lld\"] is not array that must be array");
-		};
-		let out = opts
-			.iter()
-			.find_map(|v| {
-				let opt = v.as_str().unwrap();
-				if &opt[..2] == "-o" { Some(&opt[2..],) } else { None }
-			},)
-			.expect(&format!(
-				"you need to specify name of build artifact explicitly in \
-				 {target}[\"post-link-args\"][\"ld.lld\"]",
-			),);
-		out.to_string()
-	} else if target.contains("uefi",) {
-		format!("target/{target}/debug/{crate_name}.efi")
-	} else {
-		format!("target/{target}/debug/{crate_name}")
-	};
-
-	Ok(PathBuf::from_str(&out,)?,)
-}
 
 fn oso_root(path: &Path,) -> PathBuf {
 	let p: PathBuf = path
@@ -214,4 +198,35 @@ fn oso_root(path: &Path,) -> PathBuf {
 		},)
 		.collect();
 	p.join("oso",)
+}
+
+pub fn load_json(path: &Path,) -> Rslt<serde_json::Value,> {
+	// get content of target json file
+	let json = fs_err::File::open(path,)?;
+	let reader = BufReader::new(json,);
+	let json: serde_json::Value = serde_json::from_reader(reader,)?;
+
+	Ok(json,)
+}
+
+/// detect location of output binary which is built by cargo based on target json file
+pub fn detect_build_artifact(json: serde_json::Value,) -> Rslt<PathBuf,> {
+	let serde_json::Value::Array(opts,) = &json["post-link-args"]["ld.lld"] else {
+		bail!("[\"post-link-args\"][\"ld.lld\"] in target json is not array that must be array");
+	};
+
+	let out = opts
+		.iter()
+		.find_map(|v| {
+			if let Some(v,) = v.as_str() {
+				if &v[..2] == "-o" { Some(&v[2..],) } else { None }
+			} else {
+				None
+			}
+		},)
+		.ok_or(anyhow!(
+			"output location of kernel binary does not specified in target json file"
+		),)?;
+
+	Ok(PathBuf::from_str(out,)?,)
 }
