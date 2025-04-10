@@ -2,6 +2,8 @@
 
 extern crate proc_macro;
 
+use proc_macro::Diagnostic;
+use proc_macro::Level;
 use proc_macro::TokenStream;
 use syn::parse_macro_input;
 
@@ -51,21 +53,14 @@ pub fn gen_wrapper_fn(attr: TokenStream, item: TokenStream,) -> TokenStream {
 			let constness = sig.constness;
 			let asyncness = sig.asyncness;
 			let unsafety = sig.unsafety;
-			let abi = sig.abi;
-			let fn_name = sig.ident;
+			let abi = &sig.abi;
+			let fn_name = &sig.ident;
 			// syn::Ident::new(format!("global_{}", sig.ident).as_str(), Span::call_site(),);
-			let generics = sig.generics;
+			let generics = &sig.generics;
 			let fn_params = sig.inputs.iter().filter(|a| matches!(a, &&syn::FnArg::Typed(_)),);
-			let method_args: Vec<_,> = sig
-				.inputs
-				.iter()
-				.filter_map(|a| match a {
-					syn::FnArg::Receiver(_,) => None,
-					syn::FnArg::Typed(pty,) => Some(pty.pat.clone(),),
-				},)
-				.collect();
-			let variadic = sig.variadic;
-			let output = sig.output;
+			let method_args = helper::gen_wrapper_fn::method_args(&sig);
+			let variadic = &sig.variadic;
+			let output = &sig.output;
 
 			let decl = quote::quote! {
 				pub #unsafety #asyncness #constness #abi fn #fn_name #generics(#(#fn_params),* #variadic) #output {
@@ -84,4 +79,18 @@ pub fn gen_wrapper_fn(attr: TokenStream, item: TokenStream,) -> TokenStream {
 	};
 
 	wrapper_fns.into()
+}
+
+/// attr specifies version of uefi
+#[proc_macro_attribute]
+pub fn status_from_spec(version: TokenStream, item: TokenStream,) -> TokenStream {
+	let syn::Lit::Float(f,) = parse_macro_input!(version as syn::Lit) else {
+		panic!("version have to be floating point literal")
+	};
+	let status_spec_url = format!("https://uefi.org/specs/UEFI/{f}/Apx_D_Status_Codes.html");
+
+	Diagnostic::new(Level::Note, status_spec_url,);
+	let spec_page = status_spec_page(status_spec_url,);
+
+	todo!("{f:?}");
 }

@@ -12,6 +12,7 @@ goblin = { version = "*", features = [
 ], default-features = false }
 log = "*"
 oso_bridge = { path = "../oso_bridge" }
+oso_proc_macro = { path = "../oso_proc_macro" }
 uefi = { version = "*", features = [
 	"panic_handler",
 	"logger",

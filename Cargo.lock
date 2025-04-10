@@ -340,6 +340,7 @@ dependencies = [
  "goblin",
  "log",
  "oso_bridge",
+ "oso_proc_macro",
  "uefi",
  "uefi-raw",
 ]
@@ -348,10 +349,12 @@ dependencies = [
 name = "oso_proc_macro"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "colored",
  "proc-macro2",
  "quote",
  "syn",
+ "ureq",
 ]
 
 [[package]]

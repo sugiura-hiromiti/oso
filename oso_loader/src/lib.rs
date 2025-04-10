@@ -7,11 +7,11 @@ pub mod fs;
 pub mod graphic;
 pub mod memory;
 pub mod mmio;
+pub mod raw;
 
 extern crate alloc;
 
 use core::fmt::Debug;
-
 use error::OsoLoaderError;
 use log::debug;
 use log::info;

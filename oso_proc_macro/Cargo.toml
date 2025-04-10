@@ -7,7 +7,9 @@ edition = "2024"
 proc-macro = true
 
 [dependencies]
+anyhow = "*"
 colored = "*"
 proc-macro2 = "*"
 quote = "*"
 syn = { version = "*", features = ["full", "extra-traits"] }
+ureq = "*"

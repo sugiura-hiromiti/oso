@@ -5,6 +5,7 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 use core::arch::asm;
+use core::ffi::c_void;
 use core::usize;
 use goblin::elf;
 use log::debug;
@@ -22,26 +23,29 @@ use uefi::proto::console::gop::PixelFormat;
 use uefi::proto::media::file;
 use uefi_raw::protocol::console::GraphicsOutputProtocol;
 
-#[uefi::entry]
-fn efi_main() -> Status {
-	uefi::helpers::init().unwrap();
+// #[uefi::entry]
+// fn efi_main() -> Status {
+// 	uefi::helpers::init().unwrap();
+//
+// 	oso_loader::mmio::mmio_descriptor().unwrap();
+//
+// 	let (kernel_addr, frame_buf_conf,) = match app() {
+// 		Ok(rslt,) => rslt,
+// 		Err(e,) => {
+// 			oso_loader::on_error!(e, "while executing app()");
+// 			uefi::boot::stall(10_000_000,);
+// 			return Status::ABORTED;
+// 		},
+// 	};
+//
+// 	debug!("exit boot services");
+// 	exit_boot_services();
+// 	exec_kernel(frame_buf_conf, kernel_addr,);
+// 	Status::SUCCESS
+// }
 
-	oso_loader::mmio::mmio_descriptor().unwrap();
-
-	let (kernel_addr, frame_buf_conf,) = match app() {
-		Ok(rslt,) => rslt,
-		Err(e,) => {
-			oso_loader::on_error!(e, "while executing app()");
-			uefi::boot::stall(10_000_000,);
-			return Status::ABORTED;
-		},
-	};
-
-	debug!("exit boot services");
-	exit_boot_services();
-	exec_kernel(frame_buf_conf, kernel_addr,);
-	Status::SUCCESS
-}
+#[unsafe(no_mangle)]
+pub extern "efiapi" fn uefi_main(image_handle: *const c_void, system_table: ) {}
 
 /// `efi_main`でのエラー処理を楽にする為に、処理中に投げられたResult::Errをここで一度吸収する
 fn app() -> Result<(u64, FrameBufConf,), OsoLoaderError,> {
