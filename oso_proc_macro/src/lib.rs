@@ -84,13 +84,14 @@ pub fn gen_wrapper_fn(attr: TokenStream, item: TokenStream,) -> TokenStream {
 /// attr specifies version of uefi
 #[proc_macro_attribute]
 pub fn status_from_spec(version: TokenStream, item: TokenStream,) -> TokenStream {
+	use helper::status_from_spec;
 	let syn::Lit::Float(f,) = parse_macro_input!(version as syn::Lit) else {
 		panic!("version have to be floating point literal")
 	};
 	let status_spec_url = format!("https://uefi.org/specs/UEFI/{f}/Apx_D_Status_Codes.html");
 
-	Diagnostic::new(Level::Note, status_spec_url,);
-	let spec_page = status_spec_page(status_spec_url,);
+	Diagnostic::new(Level::Note, &status_spec_url,);
+	let spec_page = status_from_spec::status_spec_page(&status_spec_url,);
 
 	todo!("{f:?}");
 }

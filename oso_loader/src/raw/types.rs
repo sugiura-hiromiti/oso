@@ -51,6 +51,6 @@ impl Boolean {
 	const TRUE: Self = Self(1,);
 }
 
-#[repr(C)]
 #[oso_proc_macro::status_from_spec(2.11)]
+#[repr(C)]
 pub enum Status {}

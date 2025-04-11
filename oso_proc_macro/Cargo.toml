@@ -9,7 +9,11 @@ proc-macro = true
 [dependencies]
 anyhow = "*"
 colored = "*"
+html5ever = "0.27"
+markup5ever = "*"
+markup5ever_rcdom = "*"
 proc-macro2 = "*"
 quote = "*"
 syn = { version = "*", features = ["full", "extra-traits"] }
+tendril = "*"
 ureq = "*"
