@@ -2,6 +2,11 @@
 
 use core::ffi::c_void;
 
+use alloc::string::String;
+
+use crate::Rslt;
+use crate::error::OsoLoaderError;
+
 pub mod capsule;
 pub mod memory;
 pub mod misc;
@@ -39,5 +44,14 @@ pub struct Guid {
 }
 
 #[oso_proc_macro::status_from_spec(2.11)]
-#[repr(C)]
+#[repr(usize)]
 pub enum Status {}
+
+// impl Status {
+// 	pub fn ok_or(self,) -> Rslt<Self,> {
+// 		match self as usize {
+// 			warn if warn < 8 => Ok(self,),
+// 			e => Err(OsoLoaderError::Uefi(String::new(),),),
+// 		}
+// 	}
+// }

@@ -1,4 +1,7 @@
 use core::ffi::c_void;
+use core::ptr::NonNull;
+
+use crate::Rslt;
 
 use super::protocol::DevicePathProtocol;
 use super::protocol::InterfaceType;
@@ -294,9 +297,23 @@ pub struct BootServices {
 	create_event_ex: unsafe extern "efiapi" fn(
 		event_type: u32,
 		notify_tpl: usize,
-		notify_function: Option<unsafe extern "efiapi" fn(event: Event, context: *const c_void,),>,
+		notify_function: Option<
+			unsafe extern "efiapi" fn(event: *mut c_void, context: *const c_void,),
+		>,
 		notify_context: *mut c_void,
 		event_group: *mut Guid,
 		event: *mut *mut c_void,
 	) -> Status,
+}
+
+impl BootServices {
+	pub fn allocate_pool(&self, mem_ty: MemoryType, size: usize,) -> Rslt<NonNull<u8,>,> {
+		let mut buf = core::ptr::null_mut();
+		unsafe { (self.allocate_pool)(mem_ty, size, &mut buf,).ok_or()? };
+		Ok(NonNull::new(buf,).expect("allocate_pool must not return a null pointer if successful",),)
+	}
+
+	pub fn free_pool(&self, ptr: &mut u8,) -> Rslt {
+		unsafe { (self.free_pool)(ptr,).ok_or() }
+	}
 }

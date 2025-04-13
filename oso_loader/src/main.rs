@@ -15,6 +15,7 @@ use oso_loader::elf::copy_load_segment;
 use oso_loader::error::OsoLoaderError;
 use oso_loader::fs::via_simple_filesystem as sfs;
 use oso_loader::memory::required_pages;
+use oso_loader::raw::table::SystemTable;
 use uefi::Status;
 use uefi::boot;
 use uefi::boot::MemoryType;
@@ -45,7 +46,11 @@ use uefi_raw::protocol::console::GraphicsOutputProtocol;
 // }
 
 #[unsafe(no_mangle)]
-pub extern "efiapi" fn uefi_main(image_handle: *const c_void, system_table: ) {}
+pub extern "efiapi" fn efi_image_entry_point(
+	image_handle: *const c_void,
+	system_table: *const SystemTable,
+) {
+}
 
 /// `efi_main`でのエラー処理を楽にする為に、処理中に投げられたResult::Errをここで一度吸収する
 fn app() -> Result<(u64, FrameBufConf,), OsoLoaderError,> {

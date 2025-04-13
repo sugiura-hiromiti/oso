@@ -1,6 +1,8 @@
 #![no_std]
-#![no_main]
+#![feature(alloc_error_handler)]
+#![feature(ptr_as_ref_unchecked)]
 
+pub mod chibi_uefi;
 pub mod elf;
 pub mod error;
 pub mod fs;
@@ -20,6 +22,8 @@ use uefi::boot;
 use uefi::boot::OpenProtocolParams;
 use uefi::proto;
 use uefi::proto::loaded_image;
+
+type Rslt<T = (),> = Result<T, OsoLoaderError,>;
 
 #[macro_export]
 /// ?演算子で処理できないエラーがあった場合に使う

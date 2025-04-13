@@ -3,7 +3,7 @@
 extern crate proc_macro;
 
 use colored::Colorize;
-use oso_proc_macro_logic as helper;
+use oso_proc_macro_logic as macro_logic;
 use proc_macro::Diagnostic;
 use proc_macro::Level;
 use proc_macro::TokenStream;
@@ -11,14 +11,16 @@ use proc_macro2::Span;
 use syn::LitFloat;
 use syn::parse_macro_input;
 
+mod helper;
+
 #[proc_macro]
 /// # Params
 ///
 /// this macro takes relative path to project root as an argument
 /// specify path to font data
 pub fn fonts_data(path: TokenStream,) -> TokenStream {
-	use helper::fonts_data::convert_bitfield;
-	use helper::fonts_data::fonts;
+	use macro_logic::fonts_data::convert_bitfield;
+	use macro_logic::fonts_data::fonts;
 
 	let specified_path = &syn::parse_macro_input!(path as syn::LitStr);
 	let fonts = fonts(specified_path,);
@@ -31,8 +33,8 @@ pub fn fonts_data(path: TokenStream,) -> TokenStream {
 
 #[proc_macro]
 pub fn impl_int(types: TokenStream,) -> TokenStream {
-	use helper::impl_init::Types;
-	use helper::impl_init::implement;
+	use macro_logic::impl_init::Types;
+	use macro_logic::impl_init::implement;
 
 	let types = parse_macro_input!(types as Types);
 	let integers = types.iter().map(implement,);
@@ -60,7 +62,7 @@ pub fn gen_wrapper_fn(attr: TokenStream, item: TokenStream,) -> TokenStream {
 			// syn::Ident::new(format!("global_{}", sig.ident).as_str(), Span::call_site(),);
 			let generics = &sig.generics;
 			let fn_params = sig.inputs.iter().filter(|a| matches!(a, &&syn::FnArg::Typed(_)),);
-			let method_args = helper::gen_wrapper_fn::method_args(&sig);
+			let method_args = macro_logic::gen_wrapper_fn::method_args(&sig);
 			let variadic = &sig.variadic;
 			let output = &sig.output;
 
@@ -86,16 +88,12 @@ pub fn gen_wrapper_fn(attr: TokenStream, item: TokenStream,) -> TokenStream {
 /// attr specifies version of uefi
 #[proc_macro_attribute]
 pub fn status_from_spec(version: TokenStream, item: TokenStream,) -> TokenStream {
-	use helper::status_from_spec;
-
 	let syn::Lit::Float(f,) = parse_macro_input!(version as syn::Lit) else {
 		panic!("version have to be floating point literal")
 	};
 	let status_spec_url = format!("https://uefi.org/specs/UEFI/{f}/Apx_D_Status_Codes.html");
 
-	Diagnostic::new(Level::Note, &status_spec_url,).emit();
-
-	let spec_page = match status_from_spec::status_spec_page(&status_spec_url,) {
+	let spec_page = match macro_logic::status_from_spec::status_spec_page(&status_spec_url,) {
 		Ok(sc,) => sc,
 		Err(e,) => {
 			panic!("{}\n{e}", "failed to get statuscode info from specification web page".red())
@@ -116,8 +114,6 @@ pub fn status_from_spec(version: TokenStream, item: TokenStream,) -> TokenStream
 			}
 		},)
 		.collect();
-
-	Diagnostic::new(Level::Note, format!("------------------------------------"),).emit();
 
 	let error: Vec<_,> = spec_page
 		.error
@@ -149,6 +145,9 @@ pub fn status_from_spec(version: TokenStream, item: TokenStream,) -> TokenStream
 		.collect();
 
 	let enum_def = parse_macro_input!(item as syn::ItemEnum);
+	let enum_impl =
+		helper::impl_ok_or(&enum_def, &spec_page.success, &spec_page.warn, &spec_page.error,);
+
 	let attrs = enum_def.attrs;
 	let vis = enum_def.vis;
 	let ident = enum_def.ident;
@@ -162,9 +161,9 @@ pub fn status_from_spec(version: TokenStream, item: TokenStream,) -> TokenStream
 				#(#warn)*
 				#(#error)*
 			}
-	};
 
-	Diagnostic::new(Level::Note, format!("{enum_def}"),).emit();
+			#enum_impl
+	};
 
 	enum_def.into()
 }

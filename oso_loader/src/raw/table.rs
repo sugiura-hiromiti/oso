@@ -2,6 +2,7 @@ use super::protocol::TextInputProtocol;
 use super::protocol::TextOutputProtocol;
 use super::service::BootServices;
 use super::service::RuntimeServices;
+use super::types::Guid;
 use super::types::Header;
 use core::ffi::c_void;
 
@@ -20,4 +21,10 @@ pub struct SystemTable {
 	boot_services:      *mut BootServices,
 	config_table_count: usize,
 	config_table:       *mut ConfigTable,
+}
+
+#[repr(C)]
+pub struct ConfigTable {
+	vendor_guid:  Guid,
+	vendor_table: *mut c_void,
 }
