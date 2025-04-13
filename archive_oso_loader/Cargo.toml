@@ -1,5 +1,5 @@
 [package]
-name = "oso_loader"
+name = "archive_oso_loader"
 version = "0.1.0"
 edition = "2024"
 
@@ -13,3 +13,16 @@ goblin = { version = "*", features = [
 log = "*"
 oso_bridge = { path = "../oso_bridge" }
 oso_proc_macro = { path = "../oso_proc_macro" }
+uefi = { version = "*", features = [
+	"panic_handler",
+	"logger",
+	"alloc",
+	"global_allocator",
+] }
+uefi-raw = "*"
+
+# [features]
+# x86_64 = []
+# aarch64 = []
+# risc_v = []
+# default = ["x86_64"]

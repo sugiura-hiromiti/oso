@@ -13,7 +13,7 @@ pub fn impl_ok_or(
 		.map(|sci| {
 			let mnemonic = syn::Ident::new(&sci.mnemonic, Span::call_site(),);
 			quote::quote! {
-				Self::#mnemonic => OK(self,)
+				Self::#mnemonic => Ok(self,)
 			}
 		},)
 		.collect();
@@ -22,7 +22,7 @@ pub fn impl_ok_or(
 		.map(|sci| {
 			let mnemonic = syn::Ident::new(&sci.mnemonic, Span::call_site(),);
 			quote::quote! {
-				Self::#mnemonic => Ok(self)
+				Self::#mnemonic => Ok(self,)
 			}
 		},)
 		.collect();
@@ -41,6 +41,7 @@ pub fn impl_ok_or(
 	quote::quote! {
 		impl #ident {
 			pub fn ok_or(self) -> Rslt<Self,> {
+				use alloc::string::ToString;
 				match self {
 					#(#success,)*
 					#(#warn,)*

@@ -96,9 +96,27 @@ impl ToString for BuildMode {
 	}
 }
 
+pub enum Feature {
+	Loader(String,),
+	Kernel(String,),
+	Workspace(String,),
+}
+
+impl Feature {
+	fn from_str(s: &str,) -> Option<Self,> {
+		match s {
+			f if f == "rgb" || f == "bgr" || f == "bitmask" || f == "bltonly" => {
+				Some(Self::Kernel(f.to_string(),),)
+			},
+			_ => None,
+		}
+	}
+}
+
 pub struct Opts {
 	pub build_mode: BuildMode,
 	pub arch:       Architecture,
+	pub features:   Vec<Feature,>,
 }
 
 impl Opts {
@@ -107,6 +125,8 @@ impl Opts {
 
 		let mut build_mode = Some(BuildMode::Debug,);
 		let mut arch = Some(Architecture::Aarch64,);
+		let mut features = Some(vec![],);
+		let mut feature_zone = false;
 		args.for_each(|s| match s.as_str() {
 			"-r" | "--release" => {
 				build_mode = Some(BuildMode::Release,);
@@ -114,10 +134,22 @@ impl Opts {
 			"-86" | "-x86_64" => {
 				arch = Some(Architecture::X86_64,);
 			},
+			"--features" => feature_zone = true,
+			flag if feature_zone => {
+				if let Some(f,) = Feature::from_str(flag,) {
+					features.as_mut().unwrap().push(f,);
+				} else {
+					feature_zone = false;
+				}
+			},
 			_ => (),
 		},);
 
-		Self { build_mode: build_mode.unwrap(), arch: arch.unwrap(), }
+		Self {
+			build_mode: build_mode.unwrap(),
+			arch:       arch.unwrap(),
+			features:   features.unwrap(),
+		}
 	}
 }
 
