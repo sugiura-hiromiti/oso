@@ -423,11 +423,24 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "colored",
+ "oso_proc_macro_logic",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "oso_proc_macro_logic"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "colored",
  "html5ever",
  "markup5ever",
  "markup5ever_rcdom",
  "proc-macro2",
  "quote",
+ "string_cache",
  "syn",
  "tendril",
  "ureq",
