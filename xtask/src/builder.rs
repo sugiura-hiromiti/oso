@@ -268,6 +268,7 @@ impl Drop for Builder {
 fn cargo_build(opts: &Opts,) -> Rslt<Command,> {
 	let mut cmd = Command::new("cargo",);
 	cmd.arg("b",);
+	cmd.args(&opts.features,);
 	if opts.build_mode.is_release() {
 		cmd.arg("-r",);
 	}

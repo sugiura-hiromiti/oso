@@ -113,6 +113,16 @@ impl Feature {
 	}
 }
 
+impl AsRef<OsStr,> for Feature {
+	fn as_ref(&self,) -> &OsStr {
+		match self {
+			Feature::Loader(s,) => OsStr::new(s,),
+			Feature::Kernel(s,) => OsStr::new(s,),
+			Feature::Workspace(s,) => OsStr::new(s,),
+		}
+	}
+}
+
 pub struct Opts {
 	pub build_mode: BuildMode,
 	pub arch:       Architecture,
