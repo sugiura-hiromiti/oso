@@ -15,6 +15,7 @@ pub mod color;
 pub mod position;
 
 //  TODO: use `MaybeUninit`
+//  - support multi thread like using atomic
 #[cfg(feature = "rgb")]
 pub static FRAME_BUFFER: FrameBuffer<Rgb,> =
 	FrameBuffer { drawer: Rgb, buf: 0, size: 0, width: 0, height: 0, stride: 0, };

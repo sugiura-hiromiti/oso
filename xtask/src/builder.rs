@@ -68,7 +68,7 @@ impl Builder {
 	}
 
 	fn ovmf_tmp_code(&self,) -> Rslt<PathBuf,> {
-		Ok(self.build_dir()?.join("code.fd",),)
+		Ok(self.build_dir()?.join("ovmf_code",),)
 	}
 
 	pub fn ovmf_vars(&self,) -> Rslt<PathBuf,> {
@@ -114,9 +114,14 @@ impl Builder {
 		let qemu_system = self.qemu();
 		let qemu_args = self.qemu_args()?;
 
-		if !self.ovmf_vars()?.exists() {
-			panic!("ovmf_vars: {}, path does not exist", self.ovmf_vars()?.display());
+		if !self.ovmf_code()?.exists() {
+			panic!("ovmf_code: {}, path does not exist", self.ovmf_tmp_code()?.display());
 		}
+		if !self.ovmf_vars()?.exists() {
+			panic!("ovmf_vars: {}, path does not exist", self.ovmf_tmp_vars()?.display());
+		}
+
+		Command::new("eza",).args(["/Users/a/Downloads/QwQ/oso/target/xtask", "-T",],).run()?;
 
 		Command::new(qemu_system,).args(qemu_args,).run()?;
 		Ok((),)

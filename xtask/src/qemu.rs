@@ -106,8 +106,8 @@ fn basic_args(arch: &Architecture,) -> Vec<String,> {
 			"-cpu".to_string(),
 			"cortex-a72".to_string(),
 			// graphics device
-			"-device".to_string(),
-			// keep using ramfb until implementing Linux-style driver
+			// "-device".to_string(),
+			// // keep using ramfb until implementing Linux-style driver
 			// "virtio-gpu-pci".to_string(),
 			//"ramfb".to_string(),
 		],

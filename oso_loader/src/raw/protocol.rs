@@ -2,7 +2,11 @@ use super::types::Boolean;
 use super::types::Status;
 use super::types::text::InputKey;
 use super::types::text::TextOutputMode;
+use crate::Rslt;
+use alloc::vec::Vec;
 use core::ffi::c_void;
+
+pub static CONSOLE:MaybeUninit
 
 #[repr(C)]
 pub struct TextInputProtocol {
@@ -28,6 +32,28 @@ pub struct TextOutputProtocol {
 	set_cursor:    unsafe extern "efiapi" fn(this: *mut Self, column: usize, row: usize,) -> Status,
 	enable_cursor: unsafe extern "efiapi" fn(this: *mut Self, visible: Boolean,) -> Status,
 	mode:          *mut TextOutputMode,
+}
+
+impl TextOutputProtocol {
+	/// # Params
+	///
+	/// this function expects `s` to be encoded as utf8
+	pub fn output(&mut self, s: impl AsRef<str,>,) -> Rslt {
+		let utf16_repr = into_null_terminated_utf16(s,);
+		unsafe { (self.output)(self, utf16_repr,) }.ok_or()
+	}
+
+	/// wrapper function of `(TextOutputProtocol.test)(ptr_of_u16)` call
+	pub fn test(&mut self, s: impl AsRef<str,>,) -> bool {
+		let utf16_repr = into_null_terminated_utf16(s,);
+		unsafe { (self.test)(self, utf16_repr,) }.is_success()
+	}
+}
+
+fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> *const u16 {
+	let mut utf16_repr: Vec<u16,> = s.as_ref().encode_utf16().collect();
+	utf16_repr.push(0,);
+	utf16_repr.as_ptr()
 }
 
 #[repr(C)]

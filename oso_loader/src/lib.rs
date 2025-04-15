@@ -12,8 +12,9 @@ use core::fmt::Debug;
 use error::OsoLoaderError;
 use log::debug;
 use log::info;
+use raw::types::Status;
 
-type Rslt<T = (),> = Result<T, OsoLoaderError,>;
+pub type Rslt<T = Status,> = Result<T, OsoLoaderError,>;
 
 #[macro_export]
 /// ?演算子で処理できないエラーがあった場合に使う
@@ -44,6 +45,15 @@ macro_rules! string_to_cstr16 {
 			},
 		};
 	};
+}
+
+#[macro_export]
+macro_rules! println {
+	($token_tree:tt) => {};
+}
+
+fn print(args: core::fmt::Arguments,) {
+	use core::fmt::Write;
 }
 
 // /// 画面をクリア

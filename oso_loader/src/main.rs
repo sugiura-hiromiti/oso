@@ -11,15 +11,9 @@ use goblin::elf;
 use log::debug;
 use oso_bridge::graphic::FrameBufConf;
 use oso_bridge::graphic::PixelFormatConf;
+use oso_loader::Rslt;
 use oso_loader::error::OsoLoaderError;
 use oso_loader::raw::table::SystemTable;
-// use uefi::Status;
-// use uefi::boot;
-// use uefi::boot::MemoryType;
-// use uefi::proto::console::gop::GraphicsOutput;
-// use uefi::proto::console::gop::PixelFormat;
-// use uefi::proto::media::file;
-// use uefi_raw::protocol::console::GraphicsOutputProtocol;
 
 // #[uefi::entry]
 // fn efi_main() -> Status {
@@ -47,6 +41,14 @@ pub extern "efiapi" fn efi_image_entry_point(
 	image_handle: *const c_void,
 	system_table: *const SystemTable,
 ) {
+	loop {
+		unsafe {
+			#[cfg(target_arch = "aarch64")]
+			asm!("wfe");
+			#[cfg(target_arch = "x86_64")]
+			asm!("hlt");
+		}
+	}
 }
 
 #[panic_handler]
@@ -56,9 +58,13 @@ fn panic(panic: &core::panic::PanicInfo,) -> ! {
 			#[cfg(target_arch = "aarch64")]
 			asm!("wfi");
 			#[cfg(target_arch = "x86_64")]
-			asm!("hlt")
+			asm!("hlt");
 		}
 	}
+}
+
+fn app() -> Rslt<u64,> {
+	todo!()
 }
 
 // /// `efi_main`でのエラー処理を楽にする為に、処理中に投げられたResult::Errをここで一度吸収する

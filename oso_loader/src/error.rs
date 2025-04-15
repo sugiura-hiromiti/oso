@@ -29,3 +29,9 @@ impl From<goblin::error::Error,> for OsoLoaderError {
 		Self::EfiParse(format!("{value:?}"),)
 	}
 }
+
+impl From<OsoLoaderError,> for core::fmt::Error {
+	fn from(value: OsoLoaderError,) -> Self {
+		core::fmt::Error
+	}
+}
