@@ -24,12 +24,6 @@ impl Display for OsoLoaderError {
 	}
 }
 
-impl<E: Debug,> From<uefi::Error<E,>,> for OsoLoaderError {
-	fn from(value: uefi::Error<E,>,) -> Self {
-		Self::Uefi(format!("{value:?}"),)
-	}
-}
-
 impl From<goblin::error::Error,> for OsoLoaderError {
 	fn from(value: goblin::error::Error,) -> Self {
 		Self::EfiParse(format!("{value:?}"),)

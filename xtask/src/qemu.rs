@@ -18,7 +18,7 @@ impl Builder {
 		let mut args = basic_args(self.arch(),);
 
 		// configure persistent flash memory
-		let pflash_code = persistent_flash_memory_args(&self.ovmf_code(), PflashMode::ReadOnly,);
+		let pflash_code = persistent_flash_memory_args(&self.ovmf_code()?, PflashMode::ReadOnly,);
 		let pflash_var = persistent_flash_memory_args(&self.ovmf_vars()?, PflashMode::ReadWrite,);
 		args.extend(pflash_code,);
 		args.extend(pflash_var,);
@@ -40,6 +40,7 @@ impl Builder {
 }
 
 /// manage ovmf files
+#[derive(Debug,)]
 pub struct Ovmf {
 	code:  PathBuf,
 	vars:  PathBuf,

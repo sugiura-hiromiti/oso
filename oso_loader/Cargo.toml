@@ -13,3 +13,10 @@ goblin = { version = "*", features = [
 log = "*"
 oso_bridge = { path = "../oso_bridge" }
 oso_proc_macro = { path = "../oso_proc_macro" }
+
+[features]
+rgb = []
+bgr = []
+bitmask = []
+bltonly = []
+default = ["bltonly"]

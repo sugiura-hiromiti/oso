@@ -11,10 +11,12 @@ use std::env::set_current_dir;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
+use std::str::FromStr;
 
 const BOOT_DIR: &str = "efi/boot";
 const KERNEL_FILE: &str = "oso_kernel.elf";
 
+#[derive(Debug,)]
 pub struct Builder {
 	opts:      Opts,
 	workspace: OsoWorkSpace,
@@ -56,8 +58,17 @@ impl Builder {
 		&self.opts.arch
 	}
 
-	pub fn ovmf_code(&self,) -> &PathBuf {
-		&self.ovmf.code()
+	pub fn ovmf_code(&self,) -> Rslt<PathBuf,> {
+		let tmp_path = self.ovmf_tmp_code()?;
+		if !tmp_path.exists() {
+			let original = self.ovmf.code();
+			fs_err::copy(original, &tmp_path,)?;
+		}
+		Ok(tmp_path,)
+	}
+
+	fn ovmf_tmp_code(&self,) -> Rslt<PathBuf,> {
+		Ok(self.build_dir()?.join("code.fd",),)
 	}
 
 	pub fn ovmf_vars(&self,) -> Rslt<PathBuf,> {
@@ -106,6 +117,7 @@ impl Builder {
 		if !self.ovmf_vars()?.exists() {
 			panic!("ovmf_vars: {}, path does not exist", self.ovmf_vars()?.display());
 		}
+
 		Command::new(qemu_system,).args(qemu_args,).run()?;
 		Ok((),)
 	}
@@ -268,7 +280,10 @@ impl Drop for Builder {
 fn cargo_build(opts: &Opts,) -> Rslt<Command,> {
 	let mut cmd = Command::new("cargo",);
 	cmd.arg("b",);
-	cmd.args(&opts.features,);
+	if opts.features.len() != 0 {
+		cmd.arg("--features",);
+		cmd.args(&opts.features,);
+	}
 	if opts.build_mode.is_release() {
 		cmd.arg("-r",);
 	}

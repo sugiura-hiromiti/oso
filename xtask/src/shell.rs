@@ -5,7 +5,7 @@ use std::ffi::OsStr;
 use std::process::Command;
 use std::process::Stdio;
 
-#[derive(Debug,)]
+#[derive(Debug, PartialEq, Eq,)]
 pub enum Architecture {
 	Aarch64,
 	Riscv64,
@@ -45,7 +45,7 @@ impl ToString for Architecture {
 	fn to_string(&self,) -> String {
 		match self {
 			Architecture::Aarch64 => "aarch64",
-			Architecture::Riscv64 => todo!(),
+			Architecture::Riscv64 => "riscv64",
 			Architecture::X86_64 => "x86_64",
 		}
 		.to_string()
@@ -74,7 +74,7 @@ impl Run for Command {
 	}
 }
 
-#[derive(PartialEq,)]
+#[derive(PartialEq, Debug,)]
 pub enum BuildMode {
 	Release,
 	Debug,
@@ -96,6 +96,7 @@ impl ToString for BuildMode {
 	}
 }
 
+#[derive(Debug, PartialEq, Eq,)]
 pub enum Feature {
 	Loader(String,),
 	Kernel(String,),
@@ -103,12 +104,12 @@ pub enum Feature {
 }
 
 impl Feature {
-	fn from_str(s: &str,) -> Option<Self,> {
+	fn from_str(s: &str,) -> Vec<Self,> {
 		match s {
 			f if f == "rgb" || f == "bgr" || f == "bitmask" || f == "bltonly" => {
-				Some(Self::Kernel(f.to_string(),),)
+				vec![Self::Loader(f.to_string(),), Self::Kernel(f.to_string(),)]
 			},
-			_ => None,
+			_ => vec![],
 		}
 	}
 }
@@ -123,6 +124,7 @@ impl AsRef<OsStr,> for Feature {
 	}
 }
 
+#[derive(Debug,)]
 pub struct Opts {
 	pub build_mode: BuildMode,
 	pub arch:       Architecture,
@@ -146,11 +148,8 @@ impl Opts {
 			},
 			"--features" => feature_zone = true,
 			flag if feature_zone => {
-				if let Some(f,) = Feature::from_str(flag,) {
-					features.as_mut().unwrap().push(f,);
-				} else {
-					feature_zone = false;
-				}
+				let features = Feature::from_str(flag,);
+				todo!()
 			},
 			_ => (),
 		},);
@@ -171,5 +170,76 @@ mod tests {
 	fn build_mode_cmp() {
 		assert!(BuildMode::Release.is_release());
 		assert!(!BuildMode::Debug.is_release());
+	}
+
+	#[test]
+	fn arch_boot_file_name() {
+		let aarch64 = Architecture::Aarch64;
+		assert_eq!(aarch64.boot_file_name(), "bootaa64.efi");
+		let riscv64 = Architecture::Riscv64;
+		assert_eq!(riscv64.boot_file_name(), "bootriscv64.efi");
+		let x86 = Architecture::X86_64;
+		assert_eq!(x86.boot_file_name(), "bootx64.efi");
+	}
+
+	#[test]
+	fn arch_try_from_string() {
+		let build_target =
+			["aarch64-apple-darwin", "riscv64gc-unknown-linux-gnu", "x86_64-pc-windows-gnu",];
+		let arch = [Architecture::Aarch64, Architecture::Riscv64, Architecture::X86_64,];
+
+		build_target.into_iter().zip(arch,).for_each(|(b, a,)| {
+			assert_eq!(Architecture::try_from(&b.to_string()).unwrap(), a);
+		},);
+
+		let not_build_target = "lol";
+		assert!(Architecture::try_from(&not_build_target.to_string()).is_err());
+	}
+
+	#[test]
+	fn arch_to_string() {
+		let from_to = [
+			(Architecture::Aarch64, "aarch64".to_string(),),
+			(Architecture::Riscv64, "riscv64".to_string(),),
+			(Architecture::X86_64, "x86_64".to_string(),),
+		];
+
+		from_to.iter().for_each(|(a, s,)| {
+			assert_eq!(&a.to_string(), s);
+		},);
+	}
+
+	#[test]
+	fn build_mode_is_release() {
+		assert!(BuildMode::Release.is_release());
+		assert!(!BuildMode::Debug.is_release());
+	}
+
+	#[test]
+	fn build_mode_to_string() {
+		let release = BuildMode::Release.to_string();
+		let debug = BuildMode::Debug.to_string();
+		assert_eq!(release.as_str(), "release");
+		assert_eq!(debug.as_str(), "debug");
+	}
+
+	#[test]
+	fn feature_from_string() {
+		let features = ["rgb", "bgr", "bitmask", "bltonly",].map(|s| Feature::from_str(s,),);
+		let answer = [
+			vec![Feature::Loader(format!("rgb"),), Feature::Kernel(format!("rgb"),)],
+			vec![Feature::Loader(format!("bgr"),), Feature::Kernel(format!("bgr"),)],
+			vec![Feature::Loader(format!("bitmask"),), Feature::Kernel(format!("bitmask"),)],
+			vec![Feature::Loader(format!("bltonly"),), Feature::Kernel(format!("bltonly"),)],
+		];
+		features.into_iter().zip(answer,).for_each(|(f, a,)| assert_eq!(f, a),);
+
+		let not_feature = Feature::from_str("this is not feature",);
+		assert_eq!(not_feature.len(), 0);
+	}
+
+	#[test]
+	fn feature_as_ref_os_str() {
+		assert_eq!(Feature::Loader("rgb".to_string()).as_ref(), OsStr::new("rgb"));
 	}
 }
