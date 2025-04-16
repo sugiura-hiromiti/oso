@@ -1,12 +1,10 @@
 use super::types::Boolean;
 use super::types::Status;
 use super::types::text::InputKey;
-use super::types::text::TextOutputMode;
+use super::types::text::TextOutputModePtr;
 use crate::Rslt;
 use alloc::vec::Vec;
 use core::ffi::c_void;
-
-pub static CONSOLE:MaybeUninit
 
 #[repr(C)]
 pub struct TextInputProtocol {
@@ -31,7 +29,7 @@ pub struct TextOutputProtocol {
 	clear:         unsafe extern "efiapi" fn(this: *mut Self,) -> Status,
 	set_cursor:    unsafe extern "efiapi" fn(this: *mut Self, column: usize, row: usize,) -> Status,
 	enable_cursor: unsafe extern "efiapi" fn(this: *mut Self, visible: Boolean,) -> Status,
-	mode:          *mut TextOutputMode,
+	mode:          TextOutputModePtr,
 }
 
 impl TextOutputProtocol {

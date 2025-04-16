@@ -47,13 +47,9 @@ macro_rules! string_to_cstr16 {
 	};
 }
 
-#[macro_export]
-macro_rules! println {
-	($token_tree:tt) => {};
-}
-
 fn print(args: core::fmt::Arguments,) {
 	use core::fmt::Write;
+	todo!()
 }
 
 // /// 画面をクリア

@@ -1,8 +1,3 @@
-use core::ffi::c_void;
-use core::ptr::NonNull;
-
-use crate::Rslt;
-
 use super::protocol::DevicePathProtocol;
 use super::protocol::InterfaceType;
 use super::protocol::LocateSearchType;
@@ -19,6 +14,7 @@ use super::types::misc::ResetType;
 use super::types::time::Time;
 use super::types::time::TimeCapabilities;
 use super::types::time::TimerDelay;
+use core::ffi::c_void;
 
 #[repr(C)]
 pub struct RuntimeServices {
@@ -306,4 +302,3 @@ pub struct BootServices {
 		event: *mut *mut c_void,
 	) -> Status,
 }
-

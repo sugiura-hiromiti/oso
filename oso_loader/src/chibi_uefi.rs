@@ -2,6 +2,7 @@ use super::raw::types::Status;
 
 pub mod console;
 pub mod memory;
+pub mod protocol;
 
 //  TODO: impl later
 #[macro_export]

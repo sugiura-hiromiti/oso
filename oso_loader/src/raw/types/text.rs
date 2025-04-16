@@ -15,3 +15,10 @@ pub struct TextOutputMode {
 	cursor_row:     i32,
 	cursor_visible: Boolean,
 }
+
+#[repr(transparent)]
+pub struct TextOutputModePtr {
+	tom: *mut TextOutputMode,
+}
+
+unsafe impl Sync for TextOutputModePtr {}
