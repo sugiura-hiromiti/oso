@@ -3,9 +3,7 @@ use core::mem::MaybeUninit;
 
 pub static COSOLE: MaybeUninit<TextOutputProtocol,> = MaybeUninit::uninit();
 
-pub fn init() {
-
-}
+pub fn init() {}
 
 impl core::fmt::Write for TextOutputProtocol {
 	fn write_str(&mut self, s: &str,) -> core::fmt::Result {

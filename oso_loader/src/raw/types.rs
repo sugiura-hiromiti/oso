@@ -1,9 +1,5 @@
 //! uefi implementation
 
-use core::ffi::c_void;
-
-use alloc::string::String;
-
 use crate::Rslt;
 use crate::error::OsoLoaderError;
 
@@ -33,6 +29,7 @@ impl Boolean {
 	const TRUE: Self = Self(1,);
 }
 
+#[derive(Debug,)]
 #[repr(C)]
 pub struct Guid {
 	time_low:                    u32,
@@ -41,6 +38,27 @@ pub struct Guid {
 	clock_seq_high_and_reserved: u8,
 	clock_seq_low:               u8,
 	node:                        [u8; 6],
+}
+
+impl Guid {
+	pub fn new(
+		time_low: [u8; 4],
+		time_mid: [u8; 2],
+		time_high_and_version: [u8; 2],
+		clock_seq_high_and_reserved: u8,
+		clock_seq_low: u8,
+		node: [u8; 6],
+	) -> Self {
+		let time_low = u32::from_ne_bytes([time_low[0], time_low[1], time_low[2], time_low[3],],);
+		Self {
+			time_low,
+			time_mid: [time_mid[0], time_mid[1],],
+			time_high_and_version,
+			clock_seq_high_and_reserved,
+			clock_seq_low,
+			node,
+		}
+	}
 }
 
 #[oso_proc_macro::status_from_spec(2.11)]
