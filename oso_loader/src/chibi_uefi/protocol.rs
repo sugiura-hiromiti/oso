@@ -1,5 +1,7 @@
 use crate::Rslt;
+use crate::guid;
 use crate::raw::protocol::LocateSearchType;
+use crate::raw::protocol::TextOutputProtocol;
 use crate::raw::service::BootServices;
 use crate::raw::types::Guid;
 use alloc::vec::Vec;
@@ -9,6 +11,10 @@ use core::ptr::NonNull;
 
 pub trait Protocol {
 	const GUID: Guid;
+}
+
+impl Protocol for TextOutputProtocol {
+	const GUID: Guid = guid!("387477c1-69c7-11d2-8e3900a0c969723b");
 }
 
 impl BootServices {

@@ -1,6 +1,7 @@
 #![no_std]
 #![feature(alloc_error_handler)]
 #![feature(ptr_as_ref_unchecked)]
+#![feature(iter_next_chunk)]
 
 pub mod chibi_uefi;
 pub mod error;
