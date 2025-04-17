@@ -2,9 +2,11 @@
 //! TODO: アロケータを実装したら`oso_util`に移管
 use alloc::format;
 use alloc::string::String;
+use alloc::string::ToString;
 use core::error::Error;
 use core::fmt::Debug;
 use core::fmt::Display;
+use core::num::ParseIntError;
 
 #[derive(Debug,)]
 pub enum OsoLoaderError {
@@ -33,5 +35,11 @@ impl From<goblin::error::Error,> for OsoLoaderError {
 impl From<OsoLoaderError,> for core::fmt::Error {
 	fn from(value: OsoLoaderError,) -> Self {
 		core::fmt::Error
+	}
+}
+
+impl From<ParseIntError,> for OsoLoaderError {
+	fn from(value: ParseIntError,) -> Self {
+		Self::Uefi(value.to_string(),)
 	}
 }
