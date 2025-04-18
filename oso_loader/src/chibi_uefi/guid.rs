@@ -2,12 +2,11 @@ use crate::Rslt;
 use crate::error::OsoLoaderError;
 use crate::raw::types::Guid;
 use alloc::format;
-use alloc::string::ToString;
 
 #[macro_export]
 macro_rules! guid {
 	($s:literal) => {{
-		const GUID: $crate::chibi_uefi::guid::Guid = Guid::fix_by($s,);
+		const GUID: $crate::raw::types::Guid = Guid::fix_by($s,);
 		GUID
 	}};
 }
@@ -36,7 +35,7 @@ impl Guid {
 	pub const fn fix_by(s: &str,) -> Self {
 		let len = s.len();
 		let s_ptr = s.as_ptr();
-		let mut hex = [const { Hex::Zero }; 16];
+		let mut hex = [const { Hex::Zero }; 32];
 
 		let mut i = 0;
 		let mut hex_i = 0;
@@ -49,13 +48,20 @@ impl Guid {
 			i += 1;
 		}
 
-		let time_low = [hex[0], hex[1], hex[2], hex[3],];
-		let time_mid = [hex[4], hex[5],];
-		let time_high_and_version = [hex[6], hex[7],];
-		let clock_seq_high_and_reserved = hex[8];
-		let clock_seq_low = hex[9];
-		let node = [hex[10], hex[11], hex[12], hex[13], hex[14], hex[15],];
-		todo!()
+		let time_low = [hex[0], hex[1], hex[2], hex[3],].as_bytes();
+		let time_mid = [hex[4], hex[5],].as_bytes();
+		let time_high_and_version = [hex[6], hex[7],].as_bytes();
+		let clock_seq_high_and_reserved = hex[8] as u8;
+		let clock_seq_low = hex[9] as u8;
+		let node = [hex[10], hex[11], hex[12], hex[13], hex[14], hex[15],].as_bytes();
+		Guid::new(
+			time_low,
+			time_mid,
+			time_high_and_version,
+			clock_seq_high_and_reserved,
+			clock_seq_low,
+			node,
+		)
 	}
 }
 
@@ -127,6 +133,48 @@ impl TryFrom<char,> for Hex {
 	}
 }
 
-fn le_hex_to_primitive<const N: usize,>(hex_array: [Hex; N],) -> u128 {
-	todo!()
+#[const_trait]
+pub trait BytesToInt<const N: usize,> {
+	fn le_u128(&self,) -> u128;
 }
+
+pub trait BytesCondition<const B: bool,> {}
+impl<const BYTES: usize,> BytesCondition<{ BYTES <= 32 },> for [Hex; BYTES] {}
+
+impl<const N: usize,> const BytesToInt<N,> for [Hex; N]
+where [Hex; N]: BytesCondition<true,>
+{
+	fn le_u128(&self,) -> u128 {
+		let mut i = 0;
+		let mut rslt = 0;
+		while i < N {
+			rslt += (self[i] as u128) << 4 * i;
+			i += 1;
+		}
+		rslt
+	}
+}
+
+#[const_trait]
+pub trait AsBytes<const BYTES: usize, O = Self,> {
+	type Output = O;
+	fn as_bytes(&self,) -> Self::Output;
+}
+
+impl<const BYTES: usize,> const AsBytes<BYTES,> for [Hex; BYTES] {
+	type Output = [u8; BYTES];
+
+	fn as_bytes(&self,) -> Self::Output {
+		let mut rslt = [0; BYTES];
+		let mut i = 0;
+		while i < BYTES {
+			rslt[i] = self[i] as u8;
+			i += 1;
+		}
+		rslt
+	}
+}
+
+// fn le_hex_to_primitive<const N: usize,>(hex_array: [Hex; N],) -> u128 {
+// 	todo!()
+// }

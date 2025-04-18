@@ -41,7 +41,7 @@ pub struct Guid {
 }
 
 impl Guid {
-	pub fn new(
+	pub const fn new(
 		time_low: [u8; 4],
 		time_mid: [u8; 2],
 		time_high_and_version: [u8; 2],

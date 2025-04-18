@@ -2,6 +2,9 @@
 #![feature(alloc_error_handler)]
 #![feature(ptr_as_ref_unchecked)]
 #![feature(iter_next_chunk)]
+#![feature(const_trait_impl)]
+#![feature(generic_const_exprs)]
+#![feature(associated_type_defaults)]
 
 pub mod chibi_uefi;
 pub mod error;
