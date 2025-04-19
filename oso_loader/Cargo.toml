@@ -10,7 +10,6 @@ goblin = { version = "*", features = [
 	"elf64",
 	"endian_fd",
 ], default-features = false }
-log = "*"
 oso_bridge = { path = "../oso_bridge" }
 oso_proc_macro = { path = "../oso_proc_macro" }
 

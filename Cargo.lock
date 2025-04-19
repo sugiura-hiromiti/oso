@@ -404,7 +404,6 @@ version = "0.1.0"
 dependencies = [
  "byteorder",
  "goblin",
- "log",
  "oso_bridge",
  "oso_proc_macro",
 ]

@@ -8,11 +8,12 @@ use core::arch::asm;
 use core::ffi::c_void;
 use core::usize;
 use goblin::elf;
-use log::debug;
 use oso_bridge::graphic::FrameBufConf;
 use oso_bridge::graphic::PixelFormatConf;
 use oso_loader::Rslt;
 use oso_loader::error::OsoLoaderError;
+use oso_loader::init;
+use oso_loader::println;
 use oso_loader::raw::table::SystemTable;
 
 // #[uefi::entry]
@@ -41,6 +42,9 @@ pub extern "efiapi" fn efi_image_entry_point(
 	image_handle: *const c_void,
 	system_table: *const SystemTable,
 ) {
+	init(unsafe { system_table.as_ref() }.expect("system_table is null",),)
+		.expect("failed to initialized application",);
+	app().expect("error arise while executing application",);
 	loop {
 		unsafe {
 			#[cfg(target_arch = "aarch64")]
@@ -64,7 +68,10 @@ fn panic(panic: &core::panic::PanicInfo,) -> ! {
 }
 
 fn app() -> Rslt<u64,> {
-	todo!()
+	// println!("hello");
+	// println!("{}", 2525);
+
+	Ok(0,)
 }
 
 // /// `efi_main`でのエラー処理を楽にする為に、処理中に投げられたResult::Errをここで一度吸収する

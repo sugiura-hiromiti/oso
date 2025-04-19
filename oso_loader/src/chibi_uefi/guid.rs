@@ -6,9 +6,7 @@ use alloc::format;
 #[macro_export]
 macro_rules! guid {
 	($s:literal) => {{
-		const GUID: $crate::raw::types::Guid = Guid::fix_by($s,);
-		GUID
-	}};
+		const GUID: $crate::raw::types::Guid = Guid::fix_by($s,); GUID }};
 }
 
 impl Guid {
@@ -174,7 +172,3 @@ impl<const BYTES: usize,> const AsBytes<BYTES,> for [Hex; BYTES] {
 		rslt
 	}
 }
-
-// fn le_hex_to_primitive<const N: usize,>(hex_array: [Hex; N],) -> u128 {
-// 	todo!()
-// }

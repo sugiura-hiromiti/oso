@@ -1,5 +1,7 @@
 //! uefi implementation
 
+use core::ffi::c_void;
+
 use crate::Rslt;
 use crate::error::OsoLoaderError;
 
@@ -8,6 +10,8 @@ pub mod memory;
 pub mod misc;
 pub mod text;
 pub mod time;
+
+pub type UnsafeHandle = *mut c_void;
 
 #[repr(C)]
 pub struct Header {
@@ -63,5 +67,5 @@ impl Guid {
 
 #[oso_proc_macro::status_from_spec(2.11)]
 #[repr(usize)]
-#[derive(Eq, PartialEq, Clone,)]
+#[derive(Eq, PartialEq, Clone, Debug,)]
 pub enum Status {}
