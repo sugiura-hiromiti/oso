@@ -1,6 +1,5 @@
 use super::protocol::DevicePathProtocol;
 use super::protocol::InterfaceType;
-use super::protocol::LocateSearchType;
 use super::protocol::OpenProtocolInformationEntry;
 use super::types::Boolean;
 use super::types::Guid;
@@ -178,7 +177,7 @@ pub struct BootServices {
 		registration: *mut *const c_void,
 	) -> Status,
 	pub locate_handle: unsafe extern "efiapi" fn(
-		search_type: LocateSearchType,
+		search_type: i32,
 		protocol: *const Guid,
 		search_key: *const c_void,
 		buffer_size: *mut usize,
@@ -266,7 +265,7 @@ pub struct BootServices {
 		protocol_buffer_count: *mut usize,
 	) -> Status,
 	pub locate_handle_buffer: unsafe extern "efiapi" fn(
-		search_type: LocateSearchType,
+		search_type: i32,
 		protocol: *const Guid,
 		search_key: *const c_void,
 		handles_count: *mut usize,

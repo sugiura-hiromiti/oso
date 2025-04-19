@@ -3,7 +3,6 @@ use super::image_handle;
 use super::table::boot_services;
 use crate::Rslt;
 use crate::guid;
-use crate::raw::protocol::LocateSearchType;
 use crate::raw::protocol::TextOutputProtocol;
 use crate::raw::service::BootServices;
 use crate::raw::types::Guid;
@@ -24,28 +23,21 @@ impl Protocol for TextOutputProtocol {
 impl BootServices {
 	pub unsafe fn locate_handle_buffer(&self, ty: HandleSearchType,) -> Rslt<&mut [Handle],> {
 		let (ty, guid, key,) = match ty {
-			HandleSearchType::AllHandles => {
-				(LocateSearchType::AllHandles, ptr::null(), ptr::null(),)
+			HandleSearchType::AllHandles => (0, ptr::null(), ptr::null(),),
+			HandleSearchType::ByRegisterNotify(protocol_search_key,) => {
+				(1, ptr::null(), protocol_search_key.0.as_ptr().cast_const(),)
 			},
-			HandleSearchType::ByRegisterNotify(protocol_search_key,) => (
-				LocateSearchType::ByRegisterNotify,
-				ptr::null(),
-				protocol_search_key.0.as_ptr().cast_const(),
-			),
-			HandleSearchType::ByProtocol(guid,) => {
-				(LocateSearchType::ByProtocol, ptr::from_ref(guid,), ptr::null(),)
-			},
+			HandleSearchType::ByProtocol(guid,) => (2, ptr::from_ref(guid,), ptr::null(),),
 		};
 
 		let mut num_handles: usize = 0;
 		let mut buffer: *mut UnsafeHandle = ptr::null_mut();
 
 		let handlers =
-			unsafe { (self.locate_handle_buffer)(ty, guid, key, &mut num_handles, &mut buffer,) }
-				.ok_or_with(|| {
-				panic!();
-				(num_handles, buffer,)
-			},)?;
+			unsafe { (self.locate_handle_buffer)(ty, guid, key, &mut num_handles, &mut buffer,) };
+		panic!();
+		//.ok_or_with(|| (num_handles, buffer,),)?;
+		let handlers = (num_handles, buffer,);
 
 		let handler_range =
 			unsafe { core::slice::from_raw_parts_mut::<Handle,>(handlers.1.cast(), handlers.0,) };

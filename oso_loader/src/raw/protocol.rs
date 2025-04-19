@@ -59,12 +59,12 @@ pub enum InterfaceType {
 	NativeInterface,
 }
 
-#[repr(C)]
-pub enum LocateSearchType {
-	AllHandles,
-	ByRegisterNotify,
-	ByProtocol,
-}
+// #[repr(i32)]
+// pub enum LocateSearchType {
+// 	AllHandles,
+// 	ByRegisterNotify,
+// 	ByProtocol,
+// }
 
 #[repr(C)]
 pub struct DevicePathProtocol {
