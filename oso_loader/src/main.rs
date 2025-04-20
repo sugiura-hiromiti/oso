@@ -15,40 +15,20 @@ use oso_loader::error::OsoLoaderError;
 use oso_loader::init;
 use oso_loader::println;
 use oso_loader::raw::table::SystemTable;
-
-// #[uefi::entry]
-// fn efi_main() -> Status {
-// 	uefi::helpers::init().unwrap();
-//
-// 	oso_loader::mmio::mmio_descriptor().unwrap();
-//
-// 	let (kernel_addr, frame_buf_conf,) = match app() {
-// 		Ok(rslt,) => rslt,
-// 		Err(e,) => {
-// 			oso_loader::on_error!(e, "while executing app()");
-// 			uefi::boot::stall(10_000_000,);
-// 			return Status::ABORTED;
-// 		},
-// 	};
-//
-// 	debug!("exit boot services");
-// 	exit_boot_services();
-// 	exec_kernel(frame_buf_conf, kernel_addr,);
-// 	Status::SUCCESS
-// }
+use oso_loader::raw::types::Status;
+use oso_loader::raw::types::UnsafeHandle;
 
 #[unsafe(export_name = "efi_main")]
 pub extern "efiapi" fn efi_image_entry_point(
-	image_handle: *const c_void,
-	system_table: *const SystemTable,
-) {
-	init(unsafe { system_table.as_ref() }.expect("system_table is null",),)
-		.expect("failed to initialized application",);
+	image_handle: UnsafeHandle,
+	system_table: *const c_void,
+) -> Status {
+	init(image_handle, system_table.cast(),).expect("failed to initialized application",);
 	app().expect("error arise while executing application",);
 	loop {
 		unsafe {
 			#[cfg(target_arch = "aarch64")]
-			asm!("wfe");
+			asm!("wfi");
 			#[cfg(target_arch = "x86_64")]
 			asm!("hlt");
 		}
@@ -60,7 +40,7 @@ fn panic(panic: &core::panic::PanicInfo,) -> ! {
 	loop {
 		unsafe {
 			#[cfg(target_arch = "aarch64")]
-			asm!("wfi");
+			asm!("wfe");
 			#[cfg(target_arch = "x86_64")]
 			asm!("hlt");
 		}

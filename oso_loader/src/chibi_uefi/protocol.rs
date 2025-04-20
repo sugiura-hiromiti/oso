@@ -3,6 +3,7 @@ use super::image_handle;
 use super::table::boot_services;
 use crate::Rslt;
 use crate::guid;
+use crate::raw::protocol::DevicePathProtocol;
 use crate::raw::protocol::TextOutputProtocol;
 use crate::raw::service::BootServices;
 use crate::raw::types::Guid;
@@ -17,7 +18,11 @@ pub trait Protocol {
 }
 
 impl Protocol for TextOutputProtocol {
-	const GUID: Guid = guid!("387477c1-69c7-11d2-8e3900a0c969723b");
+	const GUID: Guid = guid!("387477c2-69c7-11d2-8e39-00a0c969723b");
+}
+
+impl Protocol for DevicePathProtocol {
+	const GUID: Guid = guid!("09576e91-6d3f-11d2-8e39-00a0c969723b");
 }
 
 impl BootServices {
@@ -33,10 +38,21 @@ impl BootServices {
 		let mut num_handles: usize = 0;
 		let mut buffer: *mut UnsafeHandle = ptr::null_mut();
 
+		// upi is not null
+		let upi = self.uninstall_protocol_interface as *const ();
+		assert!(!upi.is_null());
+
+		// hp is null
+		let hp = self.handle_protocol as *const ();
+		assert!(!hp.is_null());
+
+		let lhb = self.locate_handle_buffer as *const ();
+		assert!(!lhb.is_null());
+
 		let handlers =
 			unsafe { (self.locate_handle_buffer)(ty, guid, key, &mut num_handles, &mut buffer,) };
 		panic!();
-		//.ok_or_with(|| (num_handles, buffer,),)?;
+		//.ok_or_with(|_| (num_handles, buffer,),)?;
 		let handlers = (num_handles, buffer,);
 
 		let handler_range =
@@ -88,7 +104,7 @@ impl BootServices {
 				Handle::opt_to_ptr(necessity.controller.clone(),),
 				attr.0,
 			)
-			.ok_or_with(|| ProtocolInterface {
+			.ok_or_with(|_| ProtocolInterface {
 				interface: if interface.is_null() {
 					None
 				} else {

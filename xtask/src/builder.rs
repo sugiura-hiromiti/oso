@@ -1,4 +1,4 @@
-use crate::qemu::Ovmf;
+use crate::qemu::Firmware;
 use crate::shell::Architecture;
 use crate::shell::Opts;
 use crate::shell::Run;
@@ -20,15 +20,15 @@ const KERNEL_FILE: &str = "oso_kernel.elf";
 pub struct Builder {
 	opts:      Opts,
 	workspace: OsoWorkSpace,
-	ovmf:      Ovmf,
+	firmware:      Firmware,
 }
 
 impl Builder {
 	pub fn new() -> Rslt<Self,> {
 		let opts = Opts::new();
 		let workspace = OsoWorkSpace::new()?;
-		let ovmf = Ovmf::new(&opts.arch,)?;
-		Ok(Self { opts, workspace, ovmf, },)
+		let ovmf = Firmware::new(&opts.arch,)?;
+		Ok(Self { opts, workspace, firmware: ovmf, },)
 	}
 
 	pub fn build(&self,) -> Rslt<(),> {
@@ -58,51 +58,32 @@ impl Builder {
 		&self.opts.arch
 	}
 
-	pub fn ovmf_code(&self,) -> Rslt<PathBuf,> {
-		let tmp_path = self.ovmf_tmp_code()?;
+	pub fn firmware_code(&self,) -> Rslt<PathBuf,> {
+		let tmp_path = self.firmware_tmp_code()?;
 		if !tmp_path.exists() {
-			let original = self.ovmf.code();
+			let original = self.firmware.code();
 			fs_err::copy(original, &tmp_path,)?;
 		}
 		Ok(tmp_path,)
 	}
 
-	fn ovmf_tmp_code(&self,) -> Rslt<PathBuf,> {
-		Ok(self.build_dir()?.join("ovmf_code",),)
+	fn firmware_tmp_code(&self,) -> Rslt<PathBuf,> {
+		Ok(self.build_dir()?.join("mv_firmware_code",),)
 	}
 
-	pub fn ovmf_vars(&self,) -> Rslt<PathBuf,> {
-		let tmp_file = self.ovmf_tmp_vars()?;
+	pub fn firmware_vars(&self,) -> Rslt<PathBuf,> {
+		let tmp_file = self.firmware_tmp_vars()?;
 		if !tmp_file.exists() {
-			let orignal = self.ovmf.vars();
+			let orignal = self.firmware.vars();
 			fs_err::copy(orignal, &tmp_file,)?;
 		}
 
 		Ok(tmp_file,)
 	}
 
-	fn ovmf_tmp_vars(&self,) -> Rslt<PathBuf,> {
-		Ok(self.build_dir()?.join("ovmf_vars",),)
+	fn firmware_tmp_vars(&self,) -> Rslt<PathBuf,> {
+		Ok(self.build_dir()?.join("mv_firmware_vars",),)
 	}
-
-	pub fn ovmf_shell(&self,) -> &PathBuf {
-		&self.ovmf.shell()
-	}
-
-	// pub fn build_mount_point(&self,) -> Rslt<PathBuf,> {
-	// 	let build_dir = self.workspace.root.join("target",).join(self.opts.build_mode.to_string(),);
-	// 	// mount point
-	// 	let mount_point = build_dir.join("mnt",);
-	//
-	// 	// create boot dir
-	// 	let boot_dir = mount_point.join("efi/boot",);
-	//
-	// 	// if boot dir does not exist, create it
-	// 	if !boot_dir.exists() {
-	// 		fs_err::create_dir_all(&boot_dir,)?;
-	// 	}
-	// 	todo!()
-	// }
 
 	pub fn run(self,) -> Rslt<(),> {
 		let mounted_disk = self.mount_img()?;
@@ -114,11 +95,11 @@ impl Builder {
 		let qemu_system = self.qemu();
 		let qemu_args = self.qemu_args()?;
 
-		if !self.ovmf_code()?.exists() {
-			panic!("ovmf_code: {}, path does not exist", self.ovmf_tmp_code()?.display());
+		if !self.firmware_code()?.exists() {
+			panic!("ovmf_code: {}, path does not exist", self.firmware_tmp_code()?.display());
 		}
-		if !self.ovmf_vars()?.exists() {
-			panic!("ovmf_vars: {}, path does not exist", self.ovmf_tmp_vars()?.display());
+		if !self.firmware_vars()?.exists() {
+			panic!("ovmf_vars: {}, path does not exist", self.firmware_tmp_vars()?.display());
 		}
 
 		Command::new("eza",).args(["/Users/a/Downloads/QwQ/oso/target/xtask", "-T",],).run()?;

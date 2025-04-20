@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = ["oso_kernel", "oso_loader", "xtask"]
+exclude = ["archive_oso_loader"]
 
 [profile.dev.package.xtask]
 opt-level = 3

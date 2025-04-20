@@ -51,16 +51,21 @@ impl Status {
 	pub fn is_success(&self,) -> bool {
 		self.clone() == Self::EFI_SUCCESS
 	}
-
-	pub fn ok_or_with<T,>(self, with: impl FnOnce() -> T,) -> Rslt<T,> {
-		self.ok_or()?;
-		Ok(with(),)
-	}
 }
+
 pub fn image_handle() -> Handle {
 	let p = IMAGE_HANDLE.load(Ordering::Acquire,);
 	unsafe { Handle::from_ptr(p,).expect("set_image_handle has not been called",) }
 }
-pub fn set_image_handle(image_handle: Handle,) {
+unsafe fn set_image_handle(image_handle: Handle,) {
 	IMAGE_HANDLE.store(image_handle.as_ptr(), Ordering::Release,);
+}
+
+pub(crate) fn set_image_handle_panicking(image_handle: UnsafeHandle,) {
+	assert!(!image_handle.is_null());
+
+	let image_handle = unsafe { Handle::from_ptr(image_handle,).unwrap() };
+	unsafe { set_image_handle(image_handle,) };
+
+	assert!(!IMAGE_HANDLE.load(Ordering::Acquire,).is_null());
 }

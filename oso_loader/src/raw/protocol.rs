@@ -1,5 +1,8 @@
 use super::types::Boolean;
 use super::types::Status;
+use super::types::UnsafeHandle;
+use super::types::protocol::DeviceSubType;
+use super::types::protocol::DeviceType;
 use super::types::text::InputKey;
 use super::types::text::TextOutputModePtr;
 use crate::Rslt;
@@ -54,29 +57,19 @@ fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> *const u16 {
 	utf16_repr.as_ptr()
 }
 
-#[repr(C)]
-pub enum InterfaceType {
-	NativeInterface,
-}
-
-// #[repr(i32)]
-// pub enum LocateSearchType {
-// 	AllHandles,
-// 	ByRegisterNotify,
-// 	ByProtocol,
-// }
-
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash,)]
 #[repr(C)]
 pub struct DevicePathProtocol {
-	path_type: u8,
-	subtype:   u8,
-	length:    [u8; 2],
+	pub major_type: DeviceType,
+	pub subtype:    DeviceSubType,
+	pub length:     [u8; 2],
 }
 
+#[derive(Debug,)]
 #[repr(C)]
 pub struct OpenProtocolInformationEntry {
-	agent_handle:      *mut c_void,
-	controller_handle: *mut c_void,
-	attributes:        u32,
-	open_count:        u32,
+	pub agent_handle:      UnsafeHandle,
+	pub controller_handle: UnsafeHandle,
+	pub attributes:        u32,
+	pub open_count:        u32,
 }

@@ -18,8 +18,10 @@ impl Builder {
 		let mut args = basic_args(self.arch(),);
 
 		// configure persistent flash memory
-		let pflash_code = persistent_flash_memory_args(&self.ovmf_code()?, PflashMode::ReadOnly,);
-		let pflash_var = persistent_flash_memory_args(&self.ovmf_vars()?, PflashMode::ReadWrite,);
+		let pflash_code =
+			persistent_flash_memory_args(&self.firmware_code()?, PflashMode::ReadOnly,);
+		let pflash_var =
+			persistent_flash_memory_args(&self.firmware_vars()?, PflashMode::ReadWrite,);
 		args.extend(pflash_code,);
 		args.extend(pflash_var,);
 
@@ -41,21 +43,34 @@ impl Builder {
 
 /// manage ovmf files
 #[derive(Debug,)]
-pub struct Ovmf {
-	code:  PathBuf,
-	vars:  PathBuf,
-	shell: PathBuf,
+pub struct Firmware {
+	code: PathBuf,
+	vars: PathBuf,
 }
 
-impl Ovmf {
+impl Firmware {
 	pub fn new(arch: &Architecture,) -> Rslt<Self,> {
 		let path = PathBuf::from_str("/tmp/",)?;
 		let ovmf_files = Prebuilt::fetch(Source::LATEST, path,)?;
-		let code = ovmf_files.get_file(arch.into(), FileType::Code,);
-		let vars = ovmf_files.get_file(arch.into(), FileType::Vars,);
-		let shell = ovmf_files.get_file(arch.into(), FileType::Shell,);
+		let (code, vars,) = match arch {
+			Architecture::Aarch64 => {
+				let code = PathBuf::from_str(
+					"/opt/homebrew/Cellar/qemu/9.2.3/share/qemu/edk2-aarch64-code.fd",
+				)?;
+				let vars = PathBuf::from_str(
+					"/opt/homebrew/Cellar/qemu/9.2.3/share/qemu/edk2-arm-vars.fd",
+				)?;
+				(code, vars,)
+			},
+			Architecture::Riscv64 => todo!(),
+			Architecture::X86_64 => {
+				let code = ovmf_files.get_file(arch.into(), FileType::Code,);
+				let vars = ovmf_files.get_file(arch.into(), FileType::Vars,);
+				(code, vars,)
+			},
+		};
 
-		Ok(Self { code, vars, shell, },)
+		Ok(Self { code, vars, },)
 	}
 
 	pub fn code(&self,) -> &PathBuf {
@@ -64,10 +79,6 @@ impl Ovmf {
 
 	pub fn vars(&self,) -> &PathBuf {
 		&self.vars
-	}
-
-	pub fn shell(&self,) -> &PathBuf {
-		&self.shell
 	}
 }
 
@@ -106,10 +117,10 @@ fn basic_args(arch: &Architecture,) -> Vec<String,> {
 			"-cpu".to_string(),
 			"cortex-a72".to_string(),
 			// graphics device
-			// "-device".to_string(),
-			// // keep using ramfb until implementing Linux-style driver
+			"-device".to_string(),
 			// "virtio-gpu-pci".to_string(),
-			//"ramfb".to_string(),
+			// // keep using ramfb until implementing Linux-style driver
+			"ramfb".to_string(),
 		],
 		Architecture::Riscv64 => todo!(),
 		Architecture::X86_64 => {

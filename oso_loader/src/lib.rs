@@ -13,11 +13,13 @@ pub mod chibi_uefi;
 pub mod error;
 pub mod raw;
 
+use chibi_uefi::Handle;
 use chibi_uefi::console::console_mut;
 use chibi_uefi::table::system_table;
 use error::OsoLoaderError;
 use raw::table::SystemTable;
 use raw::types::Status;
+use raw::types::UnsafeHandle;
 
 pub type Rslt<T = Status,> = Result<T, OsoLoaderError,>;
 
@@ -29,27 +31,6 @@ macro_rules! on_error {
 		log::error!("error msg:");
 		log::error!("{}", $e);
 	}};
-}
-
-#[macro_export]
-/// `AsRef<str>`を実装する型の変数をuefi::CStr16型へ変換する
-/// 所有権の問題で関数ではなくマクロになっている
-macro_rules! string_to_cstr16 {
-	($str:expr, $rslt:ident) => {
-		//let $rslt = alloc::string::ToString::to_string($string,);
-		let $rslt = $str.as_ref();
-		let $rslt: alloc::vec::Vec<u16,> = $rslt.chars().map(|c| c as u16,).collect();
-		let $rslt = match uefi::CStr16::from_u16_with_nul(&$rslt[..],) {
-			Ok(cstr16,) => cstr16,
-			Err(e,) => {
-				log::error!("{:?}", e);
-				panic!(
-					"failed to convert &[u16] to CStr16\ninvalid code may included or not null \
-					 terminated",
-				);
-			},
-		};
-	};
 }
 
 #[macro_export]
@@ -75,9 +56,8 @@ pub fn print(args: core::fmt::Arguments,) {
 	c.write_fmt(args,).unwrap();
 }
 
-pub fn init(syst: &SystemTable,) -> Rslt<(),> {
-	unsafe { chibi_uefi::table::set_system_table(syst,) };
-	let syst = system_table();
-	chibi_uefi::memory::init(unsafe { syst.as_ref().boot_services.as_ref().unwrap() },);
+pub fn init(image_handle: UnsafeHandle, syst: *const SystemTable,) -> Rslt<(),> {
+	chibi_uefi::table::set_system_table_panicking(syst,);
+	chibi_uefi::set_image_handle_panicking(image_handle,);
 	chibi_uefi::console::init()
 }

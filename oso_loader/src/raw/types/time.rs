@@ -1,3 +1,5 @@
+use crate::c_style_enum;
+
 use super::Boolean;
 
 #[repr(C)]
@@ -15,6 +17,7 @@ pub struct Time {
 	pad2:        u8,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash,)]
 #[repr(C)]
 pub struct TimeCapabilities {
 	resolution:   u32,
@@ -22,9 +25,10 @@ pub struct TimeCapabilities {
 	sets_to_zero: Boolean,
 }
 
-#[repr(C)]
-pub enum TimerDelay {
-	Cancel,
-	Periodic,
-	Relative,
+c_style_enum! {
+	pub enum TimerDelay: i32 => {
+		CANCEL = 0,
+		PERIODIC = 1,
+		RELATIVE = 2,
+	}
 }

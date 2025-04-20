@@ -86,8 +86,8 @@ pub fn gen_wrapper_fn(attr: TokenStream, item: TokenStream,) -> TokenStream {
 }
 
 /// attr specifies version of uefi
-#[proc_macro_attribute]
-pub fn status_from_spec(version: TokenStream, item: TokenStream,) -> TokenStream {
+#[proc_macro]
+pub fn status_from_spec(version: TokenStream,) -> TokenStream {
 	let syn::Lit::Float(f,) = parse_macro_input!(version as syn::Lit) else {
 		panic!("version have to be floating point literal")
 	};
@@ -100,69 +100,14 @@ pub fn status_from_spec(version: TokenStream, item: TokenStream,) -> TokenStream
 		},
 	};
 
-	let success: Vec<_,> = spec_page
-		.success
-		.iter()
-		.map(|sci| {
-			let msg = &sci.desc;
-			let mnemonic = syn::Ident::new(&sci.mnemonic, Span::call_site(),);
-			let value =
-				syn::Lit::Float(LitFloat::new(&format!("{}", sci.value), Span::call_site(),),);
-			quote::quote! {
-				#[doc = #msg]
-				#mnemonic = #value,
-			}
-		},)
-		.collect();
-
-	let error: Vec<_,> = spec_page
-		.error
-		.iter()
-		.map(|sci| {
-			let msg = &sci.desc;
-			let mnemonic = syn::Ident::new(&sci.mnemonic, Span::call_site(),);
-			let value =
-				syn::Lit::Float(LitFloat::new(&format!("{}", sci.value), Span::call_site(),),);
-			quote::quote! {
-				#[doc = #msg]
-				#mnemonic = #value,
-			}
-		},)
-		.collect();
-	let warn: Vec<_,> = spec_page
-		.warn
-		.iter()
-		.map(|sci| {
-			let msg = &sci.desc;
-			let mnemonic = syn::Ident::new(&sci.mnemonic, Span::call_site(),);
-			let value =
-				syn::Lit::Float(LitFloat::new(&format!("{}", sci.value), Span::call_site(),),);
-			quote::quote! {
-				#[doc = #msg]
-				#mnemonic = #value,
-			}
-		},)
-		.collect();
-
-	let enum_def = parse_macro_input!(item as syn::ItemEnum);
-	let enum_impl =
-		helper::impl_ok_or(&enum_def, &spec_page.success, &spec_page.warn, &spec_page.error,);
-
-	let attrs = enum_def.attrs;
-	let vis = enum_def.vis;
-	let ident = enum_def.ident;
-	let generics = enum_def.generics;
+	let c_enum_impl = helper::impl_status(&spec_page,);
 
 	let enum_def = quote::quote! {
-			#(#attrs)*
-			#vis enum #ident #generics
-			 {
-				#(#success)*
-				#(#warn)*
-				#(#error)*
-			}
+			#[repr(transparent)]
+			#[derive(Eq, PartialEq, Clone, Debug,)]
+			pub struct Status(pub usize);
 
-			#enum_impl
+			#c_enum_impl
 	};
 
 	enum_def.into()

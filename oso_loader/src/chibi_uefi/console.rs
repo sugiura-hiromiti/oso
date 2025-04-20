@@ -11,12 +11,13 @@ static CONSOLE: AtomicPtr<TextOutputProtocol,> = AtomicPtr::new(ptr::null_mut(),
 /// setup console
 pub(crate) fn init() -> Rslt<(),> {
 	let bt = boot_services();
+
 	let handlers = unsafe { bt.handle_for_protocol::<TextOutputProtocol>() }?;
 	//  WARN: this may drop after exitting this function
 	let console = bt.open_protocol_exclusive::<TextOutputProtocol>(handlers[0].clone(),)?;
 	unsafe { set_console(console.interface(),) };
 
-	unsafe { CONSOLE.load(Ordering::Acquire,).as_mut() }.unwrap().output("0w0",)?;
+	console_mut().output("0w0",)?;
 	Ok((),)
 }
 
