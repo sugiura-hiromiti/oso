@@ -7,7 +7,9 @@ use crate::raw::protocol::DevicePathProtocol;
 use crate::raw::protocol::TextOutputProtocol;
 use crate::raw::service::BootServices;
 use crate::raw::types::Guid;
+use crate::raw::types::Status;
 use crate::raw::types::UnsafeHandle;
+use crate::wfi;
 use core::assert_matches::assert_matches;
 use core::ffi::c_void;
 use core::ptr;
@@ -26,7 +28,7 @@ impl Protocol for DevicePathProtocol {
 }
 
 impl BootServices {
-	pub unsafe fn locate_handle_buffer(&self, ty: HandleSearchType,) -> Rslt<&mut [Handle],> {
+	pub unsafe fn locate_handle_buffer(&self, ty: HandleSearchType,) -> Rslt<&mut [UnsafeHandle],> {
 		let (ty, guid, key,) = match ty {
 			HandleSearchType::AllHandles => (0, ptr::null(), ptr::null(),),
 			HandleSearchType::ByRegisterNotify(protocol_search_key,) => {
@@ -37,26 +39,14 @@ impl BootServices {
 
 		let mut num_handles: usize = 0;
 		let mut buffer: *mut UnsafeHandle = ptr::null_mut();
-
-		// upi is not null
-		let upi = self.uninstall_protocol_interface as *const ();
-		assert!(!upi.is_null());
-
-		// hp is null
-		let hp = self.handle_protocol as *const ();
-		assert!(!hp.is_null());
-
-		let lhb = self.locate_handle_buffer as *const ();
-		assert!(!lhb.is_null());
-
 		let handlers =
-			unsafe { (self.locate_handle_buffer)(ty, guid, key, &mut num_handles, &mut buffer,) };
-		panic!();
-		//.ok_or_with(|_| (num_handles, buffer,),)?;
-		let handlers = (num_handles, buffer,);
+			unsafe { (self.locate_handle_buffer)(ty, guid, key, &mut num_handles, &mut buffer,) }
+				//.ok_or()?
+					;
 
-		let handler_range =
-			unsafe { core::slice::from_raw_parts_mut::<Handle,>(handlers.1.cast(), handlers.0,) };
+		assert_eq!(handlers, Status::EFI_NOT_FOUND);
+		let handler_range = unsafe { core::slice::from_raw_parts_mut(buffer, num_handles,) };
+
 		Ok(handler_range,)
 	}
 
@@ -65,7 +55,7 @@ impl BootServices {
 		HandleSearchType::ByProtocol(&P::GUID,)
 	}
 
-	pub unsafe fn handle_for_protocol<P: Protocol,>(&self,) -> Rslt<&mut [Handle],> {
+	pub unsafe fn handle_for_protocol<P: Protocol,>(&self,) -> Rslt<&mut [UnsafeHandle],> {
 		let search_ty = self.protocol_for::<P>();
 		unsafe { self.locate_handle_buffer(search_ty,) }
 	}

@@ -13,6 +13,8 @@ pub mod chibi_uefi;
 pub mod error;
 pub mod raw;
 
+use core::arch::asm;
+
 use chibi_uefi::Handle;
 use chibi_uefi::console::console_mut;
 use chibi_uefi::table::system_table;
@@ -60,4 +62,16 @@ pub fn init(image_handle: UnsafeHandle, syst: *const SystemTable,) -> Rslt<(),> 
 	chibi_uefi::table::set_system_table_panicking(syst,);
 	chibi_uefi::set_image_handle_panicking(image_handle,);
 	chibi_uefi::console::init()
+}
+
+#[inline(always)]
+pub fn wfi() -> ! {
+	loop {
+		unsafe {
+			#[cfg(target_arch = "aarch64")]
+			asm!("wfi");
+			#[cfg(target_arch = "x86_64")]
+			asm!("hlt");
+		}
+	}
 }

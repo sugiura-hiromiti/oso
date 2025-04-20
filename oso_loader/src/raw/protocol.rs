@@ -49,6 +49,10 @@ impl TextOutputProtocol {
 		let utf16_repr = into_null_terminated_utf16(s,);
 		unsafe { (self.test)(self, utf16_repr,) }.is_success()
 	}
+
+	pub fn clear(&mut self,) -> Rslt {
+		unsafe { (self.clear)(self,) }.ok_or()
+	}
 }
 
 fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> *const u16 {

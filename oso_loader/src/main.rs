@@ -17,6 +17,7 @@ use oso_loader::println;
 use oso_loader::raw::table::SystemTable;
 use oso_loader::raw::types::Status;
 use oso_loader::raw::types::UnsafeHandle;
+use oso_loader::wfi;
 
 #[unsafe(export_name = "efi_main")]
 pub extern "efiapi" fn efi_image_entry_point(
@@ -25,14 +26,7 @@ pub extern "efiapi" fn efi_image_entry_point(
 ) -> Status {
 	init(image_handle, system_table.cast(),).expect("failed to initialized application",);
 	app().expect("error arise while executing application",);
-	loop {
-		unsafe {
-			#[cfg(target_arch = "aarch64")]
-			asm!("wfi");
-			#[cfg(target_arch = "x86_64")]
-			asm!("hlt");
-		}
-	}
+	wfi();
 }
 
 #[panic_handler]

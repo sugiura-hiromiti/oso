@@ -51,25 +51,30 @@ pub struct Firmware {
 impl Firmware {
 	pub fn new(arch: &Architecture,) -> Rslt<Self,> {
 		let path = PathBuf::from_str("/tmp/",)?;
-		let ovmf_files = Prebuilt::fetch(Source::LATEST, path,)?;
-		let (code, vars,) = match arch {
-			Architecture::Aarch64 => {
-				let code = PathBuf::from_str(
-					"/opt/homebrew/Cellar/qemu/9.2.3/share/qemu/edk2-aarch64-code.fd",
-				)?;
-				let vars = PathBuf::from_str(
-					"/opt/homebrew/Cellar/qemu/9.2.3/share/qemu/edk2-arm-vars.fd",
-				)?;
-				(code, vars,)
-			},
-			Architecture::Riscv64 => todo!(),
-			Architecture::X86_64 => {
-				let code = ovmf_files.get_file(arch.into(), FileType::Code,);
-				let vars = ovmf_files.get_file(arch.into(), FileType::Vars,);
-				(code, vars,)
-			},
-		};
+		// NOTE: consider uncomment & implement if aarch64 boot failed
+		//
+		// let (code, vars,) = match arch {
+		// 	Architecture::Aarch64 => {
+		// 		let code = PathBuf::from_str(
+		// 			"/opt/homebrew/Cellar/qemu/9.2.3/share/qemu/edk2-aarch64-code.fd",
+		// 		)?;
+		// 		let vars = PathBuf::from_str(
+		// 			"/opt/homebrew/Cellar/qemu/9.2.3/share/qemu/edk2-arm-vars.fd",
+		// 		)?;
+		// 		(code, vars,)
+		// 	},
+		// 	Architecture::Riscv64 => todo!(),
+		// 	Architecture::X86_64 => {
+		// 		let ovmf_files = Prebuilt::fetch(Source::LATEST, path,)?;
+		// 		let code = ovmf_files.get_file(arch.into(), FileType::Code,);
+		// 		let vars = ovmf_files.get_file(arch.into(), FileType::Vars,);
+		// 		(code, vars,)
+		// 	},
+		// };
 
+		let ovmf_files = Prebuilt::fetch(Source::LATEST, path,)?;
+		let code = ovmf_files.get_file(arch.into(), FileType::Code,);
+		let vars = ovmf_files.get_file(arch.into(), FileType::Vars,);
 		Ok(Self { code, vars, },)
 	}
 
@@ -80,6 +85,18 @@ impl Firmware {
 	pub fn vars(&self,) -> &PathBuf {
 		&self.vars
 	}
+}
+
+/// # Params
+///
+/// - path
+/// root path where fetched files are places
+///
+/// # Return
+///
+/// returns path to (code.fd, vars.fd)
+fn fetch_aa64_firmware(path: PathBuf,) -> (PathBuf, PathBuf,) {
+	todo!()
 }
 
 impl From<&Architecture,> for Arch {
@@ -118,9 +135,9 @@ fn basic_args(arch: &Architecture,) -> Vec<String,> {
 			"cortex-a72".to_string(),
 			// graphics device
 			"-device".to_string(),
-			// "virtio-gpu-pci".to_string(),
+			"virtio-gpu-pci".to_string(),
 			// // keep using ramfb until implementing Linux-style driver
-			"ramfb".to_string(),
+			// "ramfb".to_string(),
 		],
 		Architecture::Riscv64 => todo!(),
 		Architecture::X86_64 => {
