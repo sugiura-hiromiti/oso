@@ -3,7 +3,8 @@ use super::image_handle;
 use super::table::boot_services;
 use crate::Rslt;
 use crate::guid;
-use crate::raw::protocol::DevicePathProtocol;
+use crate::raw::protocol::device_path::DevicePathProtocol;
+use crate::raw::protocol::file::SimpleFileSystemProtocol;
 use crate::raw::protocol::text::TextOutputProtocol;
 use crate::raw::service::BootServices;
 use crate::raw::types::Guid;
@@ -24,6 +25,10 @@ impl Protocol for TextOutputProtocol {
 
 impl Protocol for DevicePathProtocol {
 	const GUID: Guid = guid!("09576e91-6d3f-11d2-8e39-00a0c969723b");
+}
+
+impl Protocol for SimpleFileSystemProtocol {
+	const GUID: Guid = guid!("964e5b22-6459-11d2-8e39-00a0c969723b");
 }
 
 impl BootServices {
