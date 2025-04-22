@@ -6,13 +6,13 @@ extern crate alloc;
 use alloc::vec::Vec;
 use core::arch::asm;
 use core::ffi::c_void;
-use core::usize;
 use goblin::elf;
 use oso_bridge::graphic::FrameBufConf;
 use oso_bridge::graphic::PixelFormatConf;
 use oso_loader::Rslt;
 use oso_loader::error::OsoLoaderError;
 use oso_loader::init;
+use oso_loader::print;
 use oso_loader::println;
 use oso_loader::raw::table::SystemTable;
 use oso_loader::raw::types::Status;
@@ -22,9 +22,9 @@ use oso_loader::wfi;
 #[unsafe(export_name = "efi_main")]
 pub extern "efiapi" fn efi_image_entry_point(
 	image_handle: UnsafeHandle,
-	system_table: *const c_void,
+	system_table: *const SystemTable,
 ) -> Status {
-	init(image_handle, system_table.cast(),).expect("failed to initialized application",);
+	init(image_handle, system_table,);
 	app().expect("error arise while executing application",);
 	wfi();
 }
@@ -42,8 +42,8 @@ fn panic(panic: &core::panic::PanicInfo,) -> ! {
 }
 
 fn app() -> Rslt<u64,> {
-	// println!("hello");
-	// println!("{}", 2525);
+	println!("hello");
+	println!("{}", 2525);
 
 	Ok(0,)
 }

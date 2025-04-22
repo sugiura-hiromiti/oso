@@ -1,11 +1,11 @@
-use super::protocol::TextInputProtocol;
-use super::protocol::TextOutputProtocol;
 use super::service::BootServices;
 use super::service::RuntimeServices;
 use super::types::Char16;
 use super::types::Guid;
 use super::types::Header;
 use super::types::UnsafeHandle;
+use crate::raw::protocol::text::TextInputProtocol;
+use crate::raw::protocol::text::TextOutputProtocol;
 use core::ffi::c_void;
 
 #[repr(C)]

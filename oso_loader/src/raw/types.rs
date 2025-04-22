@@ -8,6 +8,7 @@ use crate::error::OsoLoaderError;
 
 pub mod capsule;
 pub mod event;
+pub mod file;
 pub mod memory;
 pub mod misc;
 pub mod protocol;

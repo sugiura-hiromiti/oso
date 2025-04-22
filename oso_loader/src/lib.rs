@@ -11,13 +11,11 @@ extern crate alloc;
 
 pub mod chibi_uefi;
 pub mod error;
+pub mod load;
 pub mod raw;
 
 use core::arch::asm;
 
-use chibi_uefi::Handle;
-use chibi_uefi::console::console_mut;
-use chibi_uefi::table::system_table;
 use error::OsoLoaderError;
 use raw::table::SystemTable;
 use raw::types::Status;
@@ -35,33 +33,12 @@ macro_rules! on_error {
 	}};
 }
 
-#[macro_export]
-macro_rules! print {
-	($($args:tt)*) => {
-		$crate::print(format_args!($($args)*),);
-	};
-}
-
-#[macro_export]
-macro_rules! println {
-	() => {
-		$crate::print!("\n");
-	};
-	($($args:tt)*)=>{
-		$crate::print!("{}\n", format_args!($($args)*));
-	}
-}
-
-pub fn print(args: core::fmt::Arguments,) {
-	use core::fmt::Write;
-	let c = console_mut();
-	c.write_fmt(args,).unwrap();
-}
-
-pub fn init(image_handle: UnsafeHandle, syst: *const SystemTable,) -> Rslt<(),> {
+/// # Panics
+///
+/// panics  when initialization failed
+pub fn init(image_handle: UnsafeHandle, syst: *const SystemTable,) {
 	chibi_uefi::table::set_system_table_panicking(syst,);
 	chibi_uefi::set_image_handle_panicking(image_handle,);
-	chibi_uefi::console::init()
 }
 
 #[inline(always)]
