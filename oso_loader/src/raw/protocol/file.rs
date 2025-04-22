@@ -9,8 +9,9 @@ use crate::raw::types::file::OpenMode;
 
 #[repr(C)]
 pub struct SimpleFileSystemProtocol {
-	revision:    u64,
-	open_volume: unsafe extern "efiapi" fn(*mut Self, root: *mut *mut FileProtocolV1,)->Status,
+	pub revision:    u64,
+	pub open_volume:
+		unsafe extern "efiapi" fn(*mut Self, root: *mut *mut FileProtocolV1,) -> Status,
 }
 
 /**
@@ -666,24 +667,24 @@ type FileFlushEx =
 
 #[repr(C)]
 pub struct FileProtocolV1 {
-	revision:     u64,
-	open:         FileOpen,
-	close:        FileClose,
-	delete:       FileDelete,
-	read:         FileRead,
-	write:        FileWrite,
-	get_position: FileGetPosition,
-	set_position: FileSetPosition,
-	get_info:     FileGetInfo,
-	set_info:     FileSetInfo,
-	flush:        FileFlush,
+	pub revision:     u64,
+	pub open:         FileOpen,
+	pub close:        FileClose,
+	pub delete:       FileDelete,
+	pub read:         FileRead,
+	pub write:        FileWrite,
+	pub get_position: FileGetPosition,
+	pub set_position: FileSetPosition,
+	pub get_info:     FileGetInfo,
+	pub set_info:     FileSetInfo,
+	pub flush:        FileFlush,
 }
 
 #[repr(C)]
 pub struct FileProtocolV2 {
-	v1:    FileProtocolV1,
-	open:  FileOpenEx,
-	read:  FileReadEx,
-	write: FileWriteEx,
-	flush: FileFlushEx,
+	pub v1:    FileProtocolV1,
+	pub open:  FileOpenEx,
+	pub read:  FileReadEx,
+	pub write: FileWriteEx,
+	pub flush: FileFlushEx,
 }

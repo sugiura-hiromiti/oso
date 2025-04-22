@@ -16,6 +16,7 @@ pub mod raw;
 
 use core::arch::asm;
 
+use alloc::vec::Vec;
 use error::OsoLoaderError;
 use raw::table::SystemTable;
 use raw::types::Status;
@@ -51,4 +52,10 @@ pub fn wfi() -> ! {
 			asm!("hlt");
 		}
 	}
+}
+
+fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> *const u16 {
+	let mut utf16_repr: Vec<u16,> = s.as_ref().encode_utf16().collect();
+	utf16_repr.push(0,);
+	utf16_repr.as_ptr()
 }

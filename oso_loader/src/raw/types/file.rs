@@ -6,6 +6,7 @@ use super::Status;
 #[repr(transparent)]
 pub struct OpenMode(pub u64,);
 
+// TODO: use c_style_enum! macro
 impl OpenMode {
 	pub const CREATE: u64 = 0x8000000000000000;
 	pub const READ: u64 = 0x1;
@@ -15,6 +16,7 @@ impl OpenMode {
 #[repr(transparent)]
 pub struct FileAttributes(pub u64,);
 
+// TODO: use c_style_enum! macro
 impl FileAttributes {
 	pub const ARCHIVE: u64 = 0x0000000000000020;
 	pub const DIRECTORY: u64 = 0x0000000000000010;

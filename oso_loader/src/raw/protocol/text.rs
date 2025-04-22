@@ -1,9 +1,9 @@
 use crate::Rslt;
+use crate::into_null_terminated_utf16;
 use crate::raw::types::Boolean;
 use crate::raw::types::Status;
 use crate::raw::types::text::InputKey;
 use crate::raw::types::text::TextOutputModePtr;
-use alloc::vec::Vec;
 use core::ffi::c_void;
 
 #[repr(C)]
@@ -50,10 +50,4 @@ impl TextOutputProtocol {
 	pub fn clear(&mut self,) -> Rslt {
 		unsafe { (self.clear)(self,) }.ok_or()
 	}
-}
-
-fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> *const u16 {
-	let mut utf16_repr: Vec<u16,> = s.as_ref().encode_utf16().collect();
-	utf16_repr.push(0,);
-	utf16_repr.as_ptr()
 }

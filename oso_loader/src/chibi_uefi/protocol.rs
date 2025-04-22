@@ -1,7 +1,10 @@
+use alloc::string::ToString;
+
 use super::Handle;
 use super::image_handle;
 use super::table::boot_services;
 use crate::Rslt;
+use crate::error::OsoLoaderError;
 use crate::guid;
 use crate::raw::protocol::device_path::DevicePathProtocol;
 use crate::raw::protocol::file::SimpleFileSystemProtocol;
@@ -59,9 +62,18 @@ impl BootServices {
 		HandleSearchType::ByProtocol(&P::GUID,)
 	}
 
-	pub unsafe fn handle_for_protocol<P: Protocol,>(&self,) -> Rslt<&mut [UnsafeHandle],> {
+	pub unsafe fn handles_for_protocol<P: Protocol,>(&self,) -> Rslt<&mut [UnsafeHandle],> {
 		let search_ty = self.protocol_for::<P>();
 		unsafe { self.locate_handle_buffer(search_ty,) }
+	}
+
+	pub unsafe fn handle_for_protocol<P: Protocol,>(&self,) -> Rslt<Handle,> {
+		let handles = unsafe { self.handles_for_protocol::<P>() }?;
+		let first_handle = *handles
+			.first()
+			.ok_or(OsoLoaderError::Uefi("no handle for protocol obtained".to_string(),),)?;
+		unsafe { Handle::from_ptr(first_handle,) }
+			.ok_or(OsoLoaderError::Uefi("handle is null".to_string(),),)
 	}
 
 	/// # Parms
