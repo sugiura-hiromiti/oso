@@ -1,5 +1,3 @@
-use alloc::string::ToString;
-
 use super::Handle;
 use super::image_handle;
 use super::table::boot_services;
@@ -13,6 +11,10 @@ use crate::raw::service::BootServices;
 use crate::raw::types::Guid;
 use crate::raw::types::Status;
 use crate::raw::types::UnsafeHandle;
+use crate::raw::types::file::FileInfo;
+use crate::raw::types::file::FileSystemInfo;
+use crate::raw::types::file::FileSystemVolumeLabel;
+use alloc::string::ToString;
 use core::assert_matches::assert_matches;
 use core::ffi::c_void;
 use core::ptr;
@@ -32,6 +34,18 @@ impl Protocol for DevicePathProtocol {
 
 impl Protocol for SimpleFileSystemProtocol {
 	const GUID: Guid = guid!("964e5b22-6459-11d2-8e39-00a0c969723b");
+}
+
+impl Protocol for FileInfo {
+	const GUID: Guid = guid!("09576e92-6d3f-11d2-8e39-00a0c969723b");
+}
+
+impl Protocol for FileSystemInfo {
+	const GUID: Guid = guid!("09576e93-6d3f-11d2-8e39-00a0c969723b");
+}
+
+impl Protocol for FileSystemVolumeLabel {
+	const GUID: Guid = guid!("db47d7d3-fe81-11d3-9a35-0090273fC14d");
 }
 
 impl BootServices {

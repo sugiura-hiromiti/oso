@@ -13,7 +13,7 @@ pub fn kernel() -> Rslt<PhysicalAddress,> {
 	let sfs_handle = unsafe { bs.handle_for_protocol::<SimpleFileSystemProtocol>() }?;
 
 	let kernel_file = unsafe {
-		bs.open_protocol_exclusive::<SimpleFileSystemProtocol>(sfs_handle,)?.interface().as_ref()
+		bs.open_protocol_exclusive::<SimpleFileSystemProtocol>(sfs_handle,)?.interface().as_mut()
 	}
 	.open_volume()?
 	.open("kernel.elf", open_mode, attrs,)?;
