@@ -3,6 +3,7 @@ use crate::c_style_enum;
 use super::Boolean;
 
 #[repr(C)]
+#[derive(Clone, Copy, Debug,)]
 pub struct Time {
 	year:        u16,
 	month:       u8,

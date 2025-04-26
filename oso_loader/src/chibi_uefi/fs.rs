@@ -1,7 +1,5 @@
 use core::ptr;
-
-use alloc::vec;
-use alloc::vec::Vec;
+use core::ptr::NonNull;
 
 use crate::Rslt;
 use crate::error::OsoLoaderError;
@@ -14,6 +12,8 @@ use crate::raw::types::file::FileAttributes;
 use crate::raw::types::file::FileInfo;
 use crate::raw::types::file::FileInformation;
 use crate::raw::types::file::OpenMode;
+use alloc::string::ToString;
+use alloc::vec;
 
 impl SimpleFileSystemProtocol {
 	pub fn open_volume(&mut self,) -> Rslt<&mut FileProtocolV1,> {
@@ -50,15 +50,21 @@ impl FileProtocolV1 {
 		unsafe { (self.read)(self, &mut len, buf.as_mut_ptr().cast(),) }.ok_or_with(|_| len,)
 	}
 
-	pub fn get_info<F: FileInformation,>(&mut self,) -> Rslt<F,> {
-		let mut len = self.info_size()?;
-		let mut buf = vec![0; len];
+	pub fn get_info<F: FileInformation,>(&mut self, buf: &mut [u8],) -> Rslt<*mut F,> {
+		let mut len = buf.len();
+		unsafe { (self.get_info)(self, &F::GUID, &mut len, buf.as_mut_ptr().cast(),) }.ok_or()?;
 
-		unsafe { (self.get_info)(self, &F::GUID, &mut len, buf.as_mut_ptr().cast(),) };
+		NonNull::new(buf,)
+			.ok_or(OsoLoaderError::Uefi("file information is null".to_string(),),)
+			.map(|s| s.as_ptr().cast(),)
 	}
 
 	pub fn get_file_info(&mut self,) -> Rslt<FileInfo,> {
-		todo!()
+		let info_size = self.info_size::<FileInfo>()?;
+		let mut buf = vec![0u8; info_size];
+		let buf: &mut [u8] = buf.as_mut();
+		let file_info = self.get_info(buf,)?;
+		Ok(unsafe { *file_info },)
 	}
 
 	pub fn info_size<F: FileInformation,>(&mut self,) -> Rslt<usize,> {

@@ -1,4 +1,3 @@
-use super::protocol::DevicePathProtocol;
 use super::protocol::OpenProtocolInformationEntry;
 use super::types::Boolean;
 use super::types::Char16;
@@ -19,6 +18,7 @@ use super::types::time::Time;
 use super::types::time::TimeCapabilities;
 use super::types::time::TimerDelay;
 use super::types::variable::VariableAttributes;
+use crate::raw::protocol::device_path::DevicePathProtocol;
 use crate::raw::types::protocol::InterfaceType;
 use core::ffi::c_void;
 

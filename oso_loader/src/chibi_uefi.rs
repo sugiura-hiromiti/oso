@@ -7,6 +7,7 @@ use core::sync::atomic::AtomicPtr;
 use core::sync::atomic::Ordering;
 
 pub mod console;
+pub mod controller;
 pub mod fs;
 pub mod guid;
 pub mod memory;

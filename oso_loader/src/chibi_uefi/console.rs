@@ -4,7 +4,7 @@ use crate::raw::protocol::text::TextOutputProtocol;
 #[macro_export]
 macro_rules! print {
 	($($args:tt)*) => {
-		$crate::chibi_uefi::console::print(format_args!($($args)*),);
+		$crate::chibi_uefi::console::print(core::format_args!($($args)*),);
 	};
 }
 
@@ -14,7 +14,7 @@ macro_rules! println {
 		$crate::print!("\n");
 	};
 	($($args:tt)*)=>{
-		print!("{}\n", format_args!($($args)*));
+		print!("{}{}", core::format_args!($($args)*), "\n");
 	}
 }
 

@@ -4,6 +4,8 @@ use super::table::boot_services;
 use crate::Rslt;
 use crate::error::OsoLoaderError;
 use crate::guid;
+use crate::print;
+use crate::println;
 use crate::raw::protocol::device_path::DevicePathProtocol;
 use crate::raw::protocol::file::SimpleFileSystemProtocol;
 use crate::raw::protocol::text::TextOutputProtocol;
@@ -50,6 +52,8 @@ impl Protocol for FileSystemVolumeLabel {
 
 impl BootServices {
 	pub unsafe fn locate_handle_buffer(&self, ty: HandleSearchType,) -> Rslt<&mut [UnsafeHandle],> {
+		println!("ty: {ty:?}");
+
 		let (ty, guid, key,) = match ty {
 			HandleSearchType::AllHandles => (0, ptr::null(), ptr::null(),),
 			HandleSearchType::ByRegisterNotify(protocol_search_key,) => {
@@ -60,12 +64,9 @@ impl BootServices {
 
 		let mut num_handles: usize = 0;
 		let mut buffer: *mut UnsafeHandle = ptr::null_mut();
-		let handlers =
-			unsafe { (self.locate_handle_buffer)(ty, guid, key, &mut num_handles, &mut buffer,) }
-				//.ok_or()?
-					;
+		unsafe { (self.locate_handle_buffer)(ty, guid, key, &mut num_handles, &mut buffer,) }
+			.ok_or()?;
 
-		assert_eq!(handlers, Status::EFI_NOT_FOUND);
 		let handler_range = unsafe { core::slice::from_raw_parts_mut(buffer, num_handles,) };
 
 		Ok(handler_range,)
@@ -141,6 +142,19 @@ impl BootServices {
 	) -> Rslt<ProtocolInterface<P,>,> {
 		let necessity = OpenProtoNecessity::for_app(handle,);
 		unsafe { self.open_protocol(necessity, OpenProtoAttr::EXCULSIVE,) }
+	}
+
+	pub fn handle_protocol<P: Protocol,>(
+		&self,
+		handle: Handle,
+	) -> Rslt<NonNull<ProtocolInterface<P,>,>,> {
+		let interface = ptr::null_mut();
+		unsafe {
+			(self.handle_protocol)(handle.as_ptr(), &P::GUID, interface,).ok_or_with(|_| {
+				let interface = (*interface).cast::<ProtocolInterface<P,>>();
+				NonNull::new(interface,).expect("interface is null",)
+			},)
+		}
 	}
 }
 

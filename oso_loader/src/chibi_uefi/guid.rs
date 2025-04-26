@@ -6,19 +6,26 @@ use alloc::format;
 #[macro_export]
 macro_rules! guid {
 	($s:literal) => {{
-		const GUID: $crate::raw::types::Guid = Guid::fix_by($s,); GUID }};
+		const GUID: $crate::raw::types::Guid = Guid::fix_by($s,);
+		GUID
+	}};
 }
 
 impl Guid {
 	#[track_caller]
 	pub fn from_str(s: impl AsRef<str,>,) -> Rslt<Self,> {
 		let mut s = s.as_ref().chars().filter_map(|c| Hex::try_from(c,).ok(),).map(|h| h as u8,);
-		let time_low: [u8; 4] = s.next_chunk().unwrap();
-		let time_mid: [u8; 2] = s.next_chunk().unwrap();
-		let time_high_and_version: [u8; 2] = s.next_chunk().unwrap();
+		let mut time_low: [u8; 4] = s.next_chunk().unwrap();
+		time_low.reverse();
+		let mut time_mid: [u8; 2] = s.next_chunk().unwrap();
+		time_mid.reverse();
+		let mut time_high_and_version: [u8; 2] = s.next_chunk().unwrap();
+		time_high_and_version.reverse();
+
 		let clock_seq_high_and_reserved = s.next().unwrap();
 		let clock_seq_low = s.next().unwrap();
-		let node: [u8; 6] = s.next_chunk().unwrap();
+		let mut node: [u8; 6] = s.next_chunk().unwrap();
+		node.reverse();
 
 		Ok(Self::new(
 			time_low,
@@ -46,12 +53,12 @@ impl Guid {
 			i += 1;
 		}
 
-		let time_low = [hex[0], hex[1], hex[2], hex[3],].as_bytes();
-		let time_mid = [hex[4], hex[5],].as_bytes();
-		let time_high_and_version = [hex[6], hex[7],].as_bytes();
+		let time_low = [hex[3], hex[2], hex[1], hex[0],].as_bytes();
+		let time_mid = [hex[5], hex[4],].as_bytes();
+		let time_high_and_version = [hex[7], hex[6],].as_bytes();
 		let clock_seq_high_and_reserved = hex[8] as u8;
 		let clock_seq_low = hex[9] as u8;
-		let node = [hex[10], hex[11], hex[12], hex[13], hex[14], hex[15],].as_bytes();
+		let node = [hex[15], hex[14], hex[13], hex[12], hex[11], hex[10],].as_bytes();
 		Guid::new(
 			time_low,
 			time_mid,

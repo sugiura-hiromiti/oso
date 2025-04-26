@@ -9,18 +9,22 @@
 
 extern crate alloc;
 
+use alloc::vec::Vec;
+use chibi_uefi::Handle;
+use chibi_uefi::protocol::HandleSearchType;
+use chibi_uefi::protocol::Protocol;
+use chibi_uefi::table::boot_services;
+use core::arch::asm;
+use error::OsoLoaderError;
+use raw::protocol::device_path::DevicePathProtocol;
+use raw::table::SystemTable;
+use raw::types::Status;
+use raw::types::UnsafeHandle;
+
 pub mod chibi_uefi;
 pub mod error;
 pub mod load;
 pub mod raw;
-
-use core::arch::asm;
-
-use alloc::vec::Vec;
-use error::OsoLoaderError;
-use raw::table::SystemTable;
-use raw::types::Status;
-use raw::types::UnsafeHandle;
 
 pub type Rslt<T = Status,> = Result<T, OsoLoaderError,>;
 
@@ -38,8 +42,48 @@ macro_rules! on_error {
 ///
 /// panics  when initialization failed
 pub fn init(image_handle: UnsafeHandle, syst: *const SystemTable,) {
+	unsafe { syst.as_ref().unwrap().stdout.as_mut().unwrap().clear().unwrap() };
 	chibi_uefi::table::set_system_table_panicking(syst,);
 	chibi_uefi::set_image_handle_panicking(image_handle,);
+
+	// connect devices
+	let bs = boot_services();
+
+	// uefi only installs DevicePathProtocol on devices that are fully connected
+	// `AllHandles` is the only way to find unconnected devices
+	let handles = unsafe {
+		bs.locate_handle_buffer(HandleSearchType::AllHandles,)
+			.expect("failed to locate all handles ",)
+	};
+	handles
+		.iter()
+		.filter(|h| {
+			if (**h).is_null() {
+				return false;
+			}
+
+			bs.handle_protocol::<DevicePathProtocol>(unsafe {
+				Handle::from_ptr(**h,).expect("null check not work",)
+			},)
+				.is_ok()
+		},)
+		.for_each(|handle| {
+			print!("connecting device");
+			print!("\n");
+			bs.connect_controller(
+				unsafe {
+					Handle::from_ptr(*handle,).expect(
+						"failed to convert ptr to Handle\nmake be sure that ptr is not null",
+					)
+				},
+				None,
+				None,
+				raw::types::Boolean::TRUE,
+			)
+			.expect("failed to connect controller",);
+		},);
+
+	println!("devices are connected");
 }
 
 #[inline(always)]

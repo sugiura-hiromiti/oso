@@ -12,6 +12,7 @@ use oso_bridge::graphic::PixelFormatConf;
 use oso_loader::Rslt;
 use oso_loader::error::OsoLoaderError;
 use oso_loader::init;
+use oso_loader::load::kernel;
 use oso_loader::print;
 use oso_loader::println;
 use oso_loader::raw::table::SystemTable;
@@ -31,6 +32,7 @@ pub extern "efiapi" fn efi_image_entry_point(
 
 #[panic_handler]
 fn panic(panic: &core::panic::PanicInfo,) -> ! {
+	println!("{panic:#?}");
 	loop {
 		unsafe {
 			#[cfg(target_arch = "aarch64")]
@@ -42,8 +44,8 @@ fn panic(panic: &core::panic::PanicInfo,) -> ! {
 }
 
 fn app() -> Rslt<u64,> {
-	println!("hello");
-	println!("{}", 2525);
+	let kernel_addr = kernel()?;
+	println!("kernel_addr: {kernel_addr}");
 
 	Ok(0,)
 }

@@ -7,9 +7,6 @@ use crate::c_style_enum;
 use crate::chibi_uefi::protocol::Protocol;
 use core::ffi::c_void;
 
-//#[repr(transparent)]
-//pub struct OpenMode(pub u64,);
-
 c_style_enum! {
 	pub enum OpenMode : u64 => {
 		CREATE = 0x8000000000000000,
@@ -38,11 +35,12 @@ pub struct FileIoToken {
 	buf:      *mut c_void,
 }
 
-pub trait FileInformation: Protocol {}
+pub trait FileInformation: Protocol + Copy {}
 impl FileInformation for FileInfo {}
 impl FileInformation for FileSystemInfo {}
 
 #[repr(C)]
+#[derive(Clone, Copy, Debug,)]
 pub struct FileInfo {
 	size:             u64,
 	file_size:        u64,
@@ -56,6 +54,7 @@ pub struct FileInfo {
 }
 
 #[repr(C)]
+#[derive(Clone, Copy, Debug,)]
 pub struct FileSystemInfo {
 	size:         u64,
 	read_only:    Boolean,

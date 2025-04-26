@@ -3,6 +3,7 @@ use crate::chibi_uefi::table::boot_services;
 use crate::raw::protocol::file::SimpleFileSystemProtocol;
 use crate::raw::types::PhysicalAddress;
 use crate::raw::types::file::FileAttributes;
+use crate::raw::types::file::FileInfo;
 use crate::raw::types::file::OpenMode;
 
 pub fn kernel() -> Rslt<PhysicalAddress,> {
@@ -17,5 +18,6 @@ pub fn kernel() -> Rslt<PhysicalAddress,> {
 	}
 	.open_volume()?
 	.open("kernel.elf", open_mode, attrs,)?;
-	todo!()
+	let file_info = kernel_file.get_file_info()?;
+	todo!("{file_info:?}");
 }
