@@ -52,8 +52,6 @@ impl Protocol for FileSystemVolumeLabel {
 
 impl BootServices {
 	pub unsafe fn locate_handle_buffer(&self, ty: HandleSearchType,) -> Rslt<&mut [UnsafeHandle],> {
-		println!("ty: {ty:?}");
-
 		let (ty, guid, key,) = match ty {
 			HandleSearchType::AllHandles => (0, ptr::null(), ptr::null(),),
 			HandleSearchType::ByRegisterNotify(protocol_search_key,) => {
@@ -66,6 +64,8 @@ impl BootServices {
 		let mut buffer: *mut UnsafeHandle = ptr::null_mut();
 		unsafe { (self.locate_handle_buffer)(ty, guid, key, &mut num_handles, &mut buffer,) }
 			.ok_or()?;
+		println!("---------");
+		println!();
 
 		let handler_range = unsafe { core::slice::from_raw_parts_mut(buffer, num_handles,) };
 

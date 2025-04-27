@@ -55,33 +55,10 @@ pub fn init(image_handle: UnsafeHandle, syst: *const SystemTable,) {
 		bs.locate_handle_buffer(HandleSearchType::AllHandles,)
 			.expect("failed to locate all handles ",)
 	};
-	handles
-		.iter()
-		.filter(|h| {
-			if (**h).is_null() {
-				return false;
-			}
-
-			bs.handle_protocol::<DevicePathProtocol>(unsafe {
-				Handle::from_ptr(**h,).expect("null check not work",)
-			},)
-				.is_ok()
-		},)
-		.for_each(|handle| {
-			print!("connecting device");
-			print!("\n");
-			bs.connect_controller(
-				unsafe {
-					Handle::from_ptr(*handle,).expect(
-						"failed to convert ptr to Handle\nmake be sure that ptr is not null",
-					)
-				},
-				None,
-				None,
-				raw::types::Boolean::TRUE,
-			)
-			.expect("failed to connect controller",);
-		},);
+	handles.iter().for_each(|handle| {
+		// ignore errors from connect_controller intendly
+		unsafe { bs.connect_controller(*handle, None, None, raw::types::Boolean::TRUE,) };
+	},);
 
 	println!("devices are connected");
 }

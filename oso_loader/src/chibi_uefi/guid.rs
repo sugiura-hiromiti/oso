@@ -53,12 +53,16 @@ impl Guid {
 			i += 1;
 		}
 
-		let time_low = [hex[3], hex[2], hex[1], hex[0],].as_bytes();
-		let time_mid = [hex[5], hex[4],].as_bytes();
-		let time_high_and_version = [hex[7], hex[6],].as_bytes();
-		let clock_seq_high_and_reserved = hex[8] as u8;
-		let clock_seq_low = hex[9] as u8;
-		let node = [hex[15], hex[14], hex[13], hex[12], hex[11], hex[10],].as_bytes();
+		let time_low: [u8; 4] =
+			[hex[0], hex[1], hex[2], hex[3], hex[4], hex[5], hex[6], hex[7],].as_le_bytes();
+		let time_mid: [u8; 2] = [hex[8], hex[9], hex[10], hex[11],].as_le_bytes();
+		let time_high_and_version: [u8; 2] = [hex[12], hex[13], hex[14], hex[15],].as_le_bytes();
+		let clock_seq_high_and_reserved = [hex[16], hex[17],].le_u8();
+		let clock_seq_low = [hex[18], hex[19],].le_u8();
+		let node: [u8; 6] = AsBytes::<12, [u8; 6],>::as_bytes(&[
+			hex[20], hex[21], hex[22], hex[23], hex[24], hex[25], hex[26], hex[27], hex[28],
+			hex[29], hex[30], hex[31],
+		],);
 		Guid::new(
 			time_low,
 			time_mid,
@@ -141,13 +145,34 @@ impl TryFrom<char,> for Hex {
 #[const_trait]
 pub trait BytesToInt<const N: usize,> {
 	fn le_u128(&self,) -> u128;
+	fn le_u64(&self,) -> u64 {
+		self.le_u128() as u64
+	}
+	fn le_u32(&self,) -> u32 {
+		self.le_u128() as u32
+	}
+	fn le_u16(&self,) -> u16 {
+		self.le_u128() as u16
+	}
+	fn le_u8(&self,) -> u8 {
+		self.le_u128() as u8
+	}
 }
 
-pub trait BytesCondition<const B: bool,> {}
-impl<const BYTES: usize,> BytesCondition<{ BYTES <= 32 },> for [Hex; BYTES] {}
+pub trait BytesNotTooLong<const B: bool,> {}
+impl<const BYTES: usize,> BytesNotTooLong<{ bytes_not_too_long::<BYTES,>() },> for [Hex; BYTES] {}
+const fn bytes_not_too_long<const BYTES: usize,>() -> bool {
+	BYTES <= 32
+}
+
+pub trait BytesIsEven<const B: bool, const N: usize,> {}
+impl<const BYTES: usize,> BytesIsEven<{ bytes_is_even::<BYTES,>() }, BYTES,> for [Hex; BYTES] {}
+const fn bytes_is_even<const BYTES: usize,>() -> bool {
+	BYTES % 2 == 0
+}
 
 impl<const N: usize,> const BytesToInt<N,> for [Hex; N]
-where [Hex; N]: BytesCondition<true,>
+where [Hex; N]: BytesNotTooLong<true,>
 {
 	fn le_u128(&self,) -> u128 {
 		let mut i = 0;
@@ -163,19 +188,65 @@ where [Hex; N]: BytesCondition<true,>
 #[const_trait]
 pub trait AsBytes<const BYTES: usize, O = Self,> {
 	type Output = O;
+	//const LIMIT: usize = BYTES / 2;
 	fn as_bytes(&self,) -> Self::Output;
 }
 
-impl<const BYTES: usize,> const AsBytes<BYTES,> for [Hex; BYTES] {
-	type Output = [u8; BYTES];
+impl<const BYTES: usize,> const AsBytes<BYTES, [u8; BYTES / 2],> for [Hex; BYTES]
+where [Hex; BYTES]: BytesNotTooLong<true,> + BytesIsEven<true, BYTES,>
+{
+	fn as_bytes(&self,) -> Self::Output {
+		let mut rslt = [0; BYTES / 2];
+		let mut i = 0;
+		while i < BYTES / 2 {
+			let left = (self[i * 2 + 1] as u8) << 4;
+			let right = self[i * 2] as u8;
+			rslt[i] = left + right;
 
+			i += 1;
+		}
+		rslt
+	}
+}
+
+impl<const BYTES: usize,> const AsBytes<BYTES, [u8; BYTES],> for [Hex; BYTES] {
 	fn as_bytes(&self,) -> Self::Output {
 		let mut rslt = [0; BYTES];
 		let mut i = 0;
 		while i < BYTES {
 			rslt[i] = self[i] as u8;
-			i += 1;
+			i += 1
 		}
 		rslt
+	}
+}
+
+#[const_trait]
+trait AsLeBytes<const BYTES: usize, O = Self,>:
+	AsBytes<BYTES, O,> + BytesNotTooLong<true,> + BytesIsEven<true, BYTES,>
+{
+	fn as_le_bytes(&self,) -> Self::Output;
+	fn idx(i: usize,) -> usize {
+		let mut idx = BYTES / 2 - i - 1;
+		if idx % 2 == 0 {
+			idx += 1;
+		} else {
+			idx -= 1;
+		}
+		idx
+	}
+}
+
+impl<const BYTES: usize,> const AsLeBytes<BYTES, [u8; BYTES / 2],> for [Hex; BYTES]
+where [Hex; BYTES]: BytesNotTooLong<true,> + BytesIsEven<true, BYTES,>
+{
+	fn as_le_bytes(&self,) -> Self::Output {
+		let mut le_ordered_hexes = [Hex::Zero; BYTES / 2];
+		let mut i = 0;
+		while i < BYTES / 2 {
+			le_ordered_hexes[i] = self[Self::idx(i,)];
+			i += 1;
+		}
+		le_ordered_hexes.as_bytes()
 	}
 }
