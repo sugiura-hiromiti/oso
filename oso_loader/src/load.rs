@@ -22,7 +22,6 @@ pub fn kernel() -> Rslt<PhysicalAddress,> {
 		assert_eq!(guid.clock_seq_high_and_reserved, 0x8e);
 		assert_eq!(guid.clock_seq_low, 0x39);
 		assert_eq!(guid.node, [0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b]);
-
 	}
 
 	let sfs_handle = unsafe { bs.handle_for_protocol::<SimpleFileSystemProtocol>() }?;
