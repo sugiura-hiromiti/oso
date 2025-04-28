@@ -28,6 +28,19 @@ pub mod raw;
 
 pub type Rslt<T = Status,> = Result<T, OsoLoaderError,>;
 
+#[panic_handler]
+fn panic(panic: &core::panic::PanicInfo,) -> ! {
+	println!("{panic:#?}");
+	loop {
+		unsafe {
+			#[cfg(target_arch = "aarch64")]
+			asm!("wfe");
+			#[cfg(target_arch = "x86_64")]
+			asm!("hlt");
+		}
+	}
+}
+
 #[macro_export]
 /// ?演算子で処理できないエラーがあった場合に使う
 macro_rules! on_error {
