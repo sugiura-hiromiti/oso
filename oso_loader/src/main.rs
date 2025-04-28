@@ -26,21 +26,12 @@ pub extern "efiapi" fn efi_image_entry_point(
 	system_table: *const SystemTable,
 ) -> Status {
 	init(image_handle, system_table,);
+
+	#[cfg(test)]
+	test_main();
+
 	app().expect("error arise while executing application",);
 	wfi();
-}
-
-#[panic_handler]
-fn panic(panic: &core::panic::PanicInfo,) -> ! {
-	println!("{panic:#?}");
-	loop {
-		unsafe {
-			#[cfg(target_arch = "aarch64")]
-			asm!("wfe");
-			#[cfg(target_arch = "x86_64")]
-			asm!("hlt");
-		}
-	}
 }
 
 fn app() -> Rslt<u64,> {

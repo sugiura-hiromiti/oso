@@ -1,9 +1,11 @@
 use crate::Rslt;
+use crate::guid;
 use crate::chibi_uefi::protocol::Protocol;
 use crate::chibi_uefi::table::boot_services;
 use crate::print;
 use crate::println;
 use crate::raw::protocol::file::SimpleFileSystemProtocol;
+use crate::raw::types::Guid;
 use crate::raw::types::PhysicalAddress;
 use crate::raw::types::file::FileAttributes;
 use crate::raw::types::file::FileInfo;
@@ -15,13 +17,17 @@ pub fn kernel() -> Rslt<PhysicalAddress,> {
 
 	let bs = boot_services();
 	{
-		let guid = SimpleFileSystemProtocol::GUID;
-		assert_eq!(guid.time_low, 0x964e5b22);
-		assert_eq!(guid.time_mid, [0x59, 0x64]);
-		assert_eq!(guid.time_high_and_version, [0xd2, 0x64]);
-		assert_eq!(guid.clock_seq_high_and_reserved, 0x8e);
-		assert_eq!(guid.clock_seq_low, 0x39);
-		assert_eq!(guid.node, [0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b]);
+		assert_eq!(
+			guid!("01234567-89ab-cdef-0123-456789abcdef"),
+			Guid::new(
+				[0x67, 0x45, 0x23, 0x01],
+				[0xab, 0x89],
+				[0xef, 0xcd],
+				0x01,
+				0x23,
+				[0x45, 0x67, 0x89, 0xab, 0xcd, 0xef],
+			)
+		);
 	}
 
 	let sfs_handle = unsafe { bs.handle_for_protocol::<SimpleFileSystemProtocol>() }?;
