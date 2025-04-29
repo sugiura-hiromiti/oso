@@ -1,12 +1,24 @@
+use core::num::ZeroablePrimitive;
+use core::ops::Add;
+use core::ops::AddAssign;
+use core::ops::Div;
+use core::ops::DivAssign;
+use core::ops::Mul;
+use core::ops::MulAssign;
+use core::ops::Shl;
+use core::ops::Shr;
+use core::ops::Sub;
+use core::ops::SubAssign;
+
 use crate::Rslt;
 use crate::error::OsoLoaderError;
 use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-const ELF_MAGIC_NUMBER_SIZE: usize = 4;
 /// used to check magic number
 const ELF_MAGIC_NUMBER: &[u8; ELF_MAGIC_NUMBER_SIZE] = b"\x7felf";
+const ELF_MAGIC_NUMBER_SIZE: usize = 4;
 /// size of ident in elf header
 const ELF_IDENT_SIZE: usize = 16;
 /// file class byte index
@@ -17,6 +29,12 @@ const ELF_32_BIT_OBJECT: u8 = 1;
 const ELF_64_BIT_OBJECT: u8 = 2;
 /// index to flag of data encoding(endianness) in ident of elf header
 const ELF_ENDIANNESS_INDEX: usize = 5;
+/// index to elf version flag
+const ELF_VERSION_INDEX: usize = 6;
+/// index to target os abi flag
+const ELF_OS_ABI_INDEX: usize = 7;
+/// index to abi version flag
+const ELF_ABI_VERSION_INDEX: usize = 8;
 
 pub struct Elf {
 	pub header:                             ElfHeader,
@@ -60,7 +78,7 @@ impl Elf {
 }
 
 pub struct ElfHeader {
-	pub ident: [u8; ELF_IDENT_SIZE],
+	pub ident: ElfHeaderIdent,
 	pub ty: u16,
 	pub machine: u16,
 	pub version: u32,
@@ -79,22 +97,22 @@ pub struct ElfHeader {
 impl ElfHeader {
 	pub fn parse(binary: &Vec<u8,>,) -> Rslt<Self,> {
 		let ident = &binary[..ELF_IDENT_SIZE];
-
-		// check magic number
-		// size of elf magic number is 4
-		if &ident[0..4] != ELF_MAGIC_NUMBER {
-			return Err(OsoLoaderError::EfiParse(format!("bad magic number: {:?}", &ident[0..4]),),);
-		}
-
-		let file_class = ident[ELF_FILE_CLASS_INDEX];
-		let endianness = ident[ELF_ENDIANNESS_INDEX];
-
-		match file_class {
-			ELF_32_BIT_OBJECT => todo!(),
-			ELF_64_BIT_OBJECT => todo!(),
-			_ => Err(OsoLoaderError::EfiParse(format!("invalid elf class {:x}", file_class),),),
-		}
+		let ident = ElfHeaderIdent::new(ident,)?;
+		let remain = &binary[ELF_IDENT_SIZE..];
+		let header = parse_elf_header(&ident, remain,)?;
+		Ok(header,)
 	}
+}
+
+fn parse_elf_header(ident: &ElfHeaderIdent, binary: &[u8],) -> Rslt<ElfHeader,> {
+	todo!()
+}
+
+fn read_le_bytes<I: Integer,>(offset: &mut usize, binary: &[u8],) -> I {
+	let size = size_of::<I,>();
+	let mut window = &mut binary[*offset..*offset + size];
+
+	let val = window.iter().enumerate().map(|(i, b,)| *b << i * 8,).sum();
 }
 
 pub struct ElfHeaderIdent {
@@ -105,9 +123,46 @@ pub struct ElfHeaderIdent {
 	abi_version:   AbiVersion,
 }
 
+impl ElfHeaderIdent {
+	fn new(ident: &[u8],) -> Rslt<Self,> {
+		if ident.len() == ELF_IDENT_SIZE {
+			return Err(OsoLoaderError::EfiParse(format!(
+				"ident len is 16, but given ident len is {}",
+				ident.len(),
+			),),);
+		}
+
+		// check magic number
+		// size of elf magic number is 4
+		if &ident[0..4] != ELF_MAGIC_NUMBER {
+			return Err(OsoLoaderError::EfiParse(format!("bad magic number: {:?}", &ident[0..4]),),);
+		}
+
+		let file_class = FileClass::try_from(ident[ELF_FILE_CLASS_INDEX],)?;
+		let endianness = Endian::try_from(ident[ELF_ENDIANNESS_INDEX],)?;
+		let elf_version = ElfVersion(ident[ELF_VERSION_INDEX],);
+		let target_os_abi = TargetOsAbi::try_from(ident[ELF_OS_ABI_INDEX],)?;
+		let abi_version = AbiVersion(ident[ELF_ABI_VERSION_INDEX],);
+
+		Ok(Self { file_class, endianness, elf_version, target_os_abi, abi_version, },)
+	}
+}
+
 pub enum FileClass {
 	Bit32,
 	Bit64,
+}
+
+impl TryFrom<u8,> for FileClass {
+	type Error = OsoLoaderError;
+
+	fn try_from(value: u8,) -> Result<Self, Self::Error,> {
+		match value {
+			ELF_32_BIT_OBJECT => Ok(Self::Bit32,),
+			ELF_64_BIT_OBJECT => Ok(Self::Bit64,),
+			_ => Err(OsoLoaderError::EfiParse(format!("invalid file class: {}", value),),),
+		}
+	}
 }
 
 pub struct ElfVersion(pub u8,);
@@ -123,9 +178,25 @@ pub enum TargetOsAbi {
 	Standalone,
 }
 
-pub struct AbiVersion(pub u8);
+impl TryFrom<u8,> for TargetOsAbi {
+	type Error = OsoLoaderError;
+
+	fn try_from(value: u8,) -> Result<Self, Self::Error,> {
+		match value {
+			0x0 => Ok(Self::SysV,),
+			0x53 => Ok(Self::Arm,),
+			0x61 => Ok(Self::Standalone,),
+			_ => Err(OsoLoaderError::EfiParse(format!(
+				"target os abi value is invalid or unsupported: {}",
+				value
+			),),),
+		}
+	}
+}
+
+pub struct AbiVersion(pub u8,);
 impl AbiVersion {
-    const ONE:Self=Self(0);
+	const ONE: Self = Self(0,);
 }
 
 pub struct ProgramHeader {
@@ -186,6 +257,20 @@ pub enum Container {
 pub enum Endian {
 	Little,
 	Big,
+}
+
+impl TryFrom<u8,> for Endian {
+	type Error = OsoLoaderError;
+
+	fn try_from(value: u8,) -> Result<Self, Self::Error,> {
+		match value {
+			1 => Ok(Self::Little,),
+			2 => Ok(Self::Big,),
+			_ => {
+				Err(OsoLoaderError::EfiParse(format!("invalid endianness flag value: {}", value),),)
+			},
+		}
+	}
 }
 
 pub struct Dynamic {
@@ -262,6 +347,29 @@ pub struct VersionNeededSection {
 	bytes:   Vec<u8,>,
 	count:   usize,
 	context: Context,
+}
+
+trait Integer:
+	Add
+	+ AddAssign
+	+ Sub
+	+ SubAssign
+	+ Mul
+	+ MulAssign
+	+ Div
+	+ DivAssign
+	+ Shl
+	+ Shr
+	+ ZeroablePrimitive
+	+ Sized
+{
+	fn cast_int<T: Integer,>(self,) -> T {}
+}
+
+macro_rules! init_impl {
+	($ty:ty) => {
+		impl Integer for $ty {}
+	};
 }
 
 pub fn parse_elf(content: Vec<u8,>,) {}

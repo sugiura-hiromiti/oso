@@ -6,6 +6,7 @@
 #![feature(generic_const_exprs)]
 #![feature(associated_type_defaults)]
 #![feature(assert_matches)]
+#![feature(nonzero_internals)]
 
 extern crate alloc;
 
