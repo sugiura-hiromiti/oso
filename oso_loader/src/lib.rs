@@ -22,6 +22,7 @@ use raw::types::Status;
 use raw::types::UnsafeHandle;
 
 pub mod chibi_uefi;
+pub mod elf;
 pub mod error;
 pub mod load;
 pub mod raw;

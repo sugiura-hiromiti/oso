@@ -55,7 +55,8 @@ impl FileProtocolV1 {
 	pub fn read_as_bytes(&mut self,) -> Rslt<Vec<u8,>,> {
 		let file_info = self.get_file_info()?;
 		let mut buf = vec![0; file_info.file_size as usize];
-		unsafe { self.read(buf.as_mut_slice(),) }?;
+		let read_len = unsafe { self.read(buf.as_mut_slice(),) }?;
+		assert_eq!(read_len, file_info.file_size as usize);
 		Ok(buf,)
 	}
 
