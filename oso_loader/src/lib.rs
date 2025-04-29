@@ -72,8 +72,6 @@ pub fn init(image_handle: UnsafeHandle, syst: *const SystemTable,) {
 		// ignore errors from connect_controller intendly
 		unsafe { bs.connect_controller(*handle, None, None, raw::types::Boolean::TRUE,) };
 	},);
-
-	println!("devices are connected");
 }
 
 #[inline(always)]
@@ -88,8 +86,8 @@ pub fn wfi() -> ! {
 	}
 }
 
-fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> *const u16 {
+fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,> {
 	let mut utf16_repr: Vec<u16,> = s.as_ref().encode_utf16().collect();
 	utf16_repr.push(0,);
-	utf16_repr.as_ptr()
+	utf16_repr
 }

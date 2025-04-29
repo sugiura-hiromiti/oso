@@ -64,8 +64,6 @@ impl BootServices {
 		let mut buffer: *mut UnsafeHandle = ptr::null_mut();
 		unsafe { (self.locate_handle_buffer)(ty, guid, key, &mut num_handles, &mut buffer,) }
 			.ok_or()?;
-		println!("---------");
-		println!();
 
 		let handler_range = unsafe { core::slice::from_raw_parts_mut(buffer, num_handles,) };
 
@@ -220,8 +218,6 @@ impl<P: Protocol,> Drop for ProtocolInterface<P,> {
 			)
 		}
 		.ok_or();
-
-		assert_matches!(rslt, Err(_));
 	}
 }
 

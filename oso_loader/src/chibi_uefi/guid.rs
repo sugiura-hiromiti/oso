@@ -1,5 +1,7 @@
 use crate::Rslt;
 use crate::error::OsoLoaderError;
+use crate::print;
+use crate::println;
 use crate::raw::types::Guid;
 use alloc::format;
 
@@ -38,31 +40,17 @@ impl Guid {
 	}
 
 	pub const fn fix_by(s: &str,) -> Self {
-		let len = s.len();
-		let s_ptr = s.as_ptr();
 		let mut hex = [const { Hex::Zero }; 32];
+		read_to_hex(s, &mut hex,);
 
-		let mut i = 0;
-		let mut hex_i = 0;
-		while i < len {
-			let ith = unsafe { *s_ptr.add(i,) };
-			if Hex::is_valid_hex(ith,) {
-				hex[hex_i] = Hex::to_hex(ith,);
-				hex_i += 1;
-			}
-			i += 1;
-		}
+		let hex: [u8; 16] = AsBytes::<32, [u8; 16],>::as_bytes(&hex,);
 
-		let time_low: [u8; 4] =
-			[hex[0], hex[1], hex[2], hex[3], hex[4], hex[5], hex[6], hex[7],].as_le_bytes();
-		let time_mid: [u8; 2] = [hex[8], hex[9], hex[10], hex[11],].as_le_bytes();
-		let time_high_and_version: [u8; 2] = [hex[12], hex[13], hex[14], hex[15],].as_le_bytes();
-		let clock_seq_high_and_reserved = [hex[16], hex[17],].le_u8();
-		let clock_seq_low = [hex[18], hex[19],].le_u8();
-		let node: [u8; 6] = AsBytes::<12, [u8; 6],>::as_bytes(&[
-			hex[20], hex[21], hex[22], hex[23], hex[24], hex[25], hex[26], hex[27], hex[28],
-			hex[29], hex[30], hex[31],
-		],);
+		let time_low: [u8; 4] = [hex[3], hex[2], hex[1], hex[0],];
+		let time_mid: [u8; 2] = [hex[5], hex[4],];
+		let time_high_and_version: [u8; 2] = [hex[7], hex[6],];
+		let clock_seq_high_and_reserved = hex[8];
+		let clock_seq_low = hex[9];
+		let node: [u8; 6] = [hex[10], hex[11], hex[12], hex[13], hex[14], hex[15],];
 		Guid::new(
 			time_low,
 			time_mid,
@@ -74,9 +62,25 @@ impl Guid {
 	}
 }
 
+pub const fn read_to_hex<const N: usize,>(s: &str, buf: &mut [Hex; N],) {
+	let s_ptr = s.as_ptr();
+	let s_len = s.len();
+	let mut i = 0;
+	let mut hex_i = 0;
+
+	while i < s_len {
+		let ith = unsafe { *s_ptr.add(i,) };
+		if Hex::is_valid_hex(ith,) {
+			buf[hex_i] = Hex::to_hex(ith,);
+			hex_i += 1;
+		}
+		i += 1;
+	}
+}
+
 #[repr(u8)]
-#[derive(Clone, Copy,)]
-enum Hex {
+#[derive(Clone, Copy, Debug,)]
+pub enum Hex {
 	Zero,
 	One,
 	Two,
@@ -199,8 +203,8 @@ where [Hex; BYTES]: BytesNotTooLong<true,> + BytesIsEven<true, BYTES,>
 		let mut rslt = [0; BYTES / 2];
 		let mut i = 0;
 		while i < BYTES / 2 {
-			let left = (self[i * 2 + 1] as u8) << 4;
-			let right = self[i * 2] as u8;
+			let left = (self[i * 2] as u8) << 4;
+			let right = self[i * 2 + 1] as u8;
 			rslt[i] = left + right;
 
 			i += 1;
@@ -226,25 +230,16 @@ trait AsLeBytes<const BYTES: usize, O = Self,>:
 	AsBytes<BYTES, O,> + BytesNotTooLong<true,> + BytesIsEven<true, BYTES,>
 {
 	fn as_le_bytes(&self,) -> Self::Output;
-	fn idx(i: usize,) -> usize {
-		let mut idx = BYTES / 2 - i - 1;
-		if idx % 2 == 0 {
-			idx += 1;
-		} else {
-			idx -= 1;
-		}
-		idx
-	}
 }
 
-impl<const BYTES: usize,> const AsLeBytes<BYTES, [u8; BYTES / 2],> for [Hex; BYTES]
+impl<const BYTES: usize,> const AsLeBytes<BYTES, [u8; BYTES],> for [Hex; BYTES]
 where [Hex; BYTES]: BytesNotTooLong<true,> + BytesIsEven<true, BYTES,>
 {
 	fn as_le_bytes(&self,) -> Self::Output {
-		let mut le_ordered_hexes = [Hex::Zero; BYTES / 2];
+		let mut le_ordered_hexes = [Hex::Zero; BYTES];
 		let mut i = 0;
-		while i < BYTES / 2 {
-			le_ordered_hexes[i] = self[Self::idx(i,)];
+		while i < BYTES {
+			le_ordered_hexes[i] = self[BYTES - i - 1];
 			i += 1;
 		}
 		le_ordered_hexes.as_bytes()

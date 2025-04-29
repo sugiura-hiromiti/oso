@@ -67,8 +67,14 @@ fn ok_match(mnemonic: &syn::Ident,) -> proc_macro2::TokenStream {
 }
 
 fn err_match(mnemonic: &syn::Ident, msg: &String,) -> proc_macro2::TokenStream {
+	let mnemonic_str = mnemonic.to_string();
 	quote::quote! {
-	Self::#mnemonic => Err(OsoLoaderError::Uefi(#msg.to_string())),
+	Self::#mnemonic => {
+		let mut mnemonic = #mnemonic_str.to_string();
+		mnemonic.push_str(": ");
+		mnemonic.push_str(#msg);
+		Err(OsoLoaderError::Uefi(mnemonic))
+	},
 	}
 }
 

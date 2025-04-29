@@ -27,9 +27,6 @@ pub extern "efiapi" fn efi_image_entry_point(
 ) -> Status {
 	init(image_handle, system_table,);
 
-	#[cfg(test)]
-	test_main();
-
 	app().expect("error arise while executing application",);
 	wfi();
 }

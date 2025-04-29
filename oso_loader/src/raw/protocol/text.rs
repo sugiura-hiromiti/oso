@@ -38,12 +38,14 @@ impl TextOutputProtocol {
 	/// this function expects `s` to be encoded as utf8
 	pub fn output(&mut self, s: impl AsRef<str,>,) -> Rslt {
 		let utf16_repr = into_null_terminated_utf16(s,);
+		let utf16_repr = utf16_repr.as_ptr();
 		unsafe { (self.output)(self, utf16_repr,) }.ok_or()
 	}
 
 	/// wrapper function of `(TextOutputProtocol.test)(ptr_of_u16)` call
 	pub fn test(&mut self, s: impl AsRef<str,>,) -> bool {
 		let utf16_repr = into_null_terminated_utf16(s,);
+		let utf16_repr = utf16_repr.as_ptr();
 		unsafe { (self.test)(self, utf16_repr,) }.is_success()
 	}
 

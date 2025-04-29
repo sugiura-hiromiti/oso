@@ -1,9 +1,8 @@
-use core::ptr;
-use core::ptr::NonNull;
-
 use crate::Rslt;
 use crate::error::OsoLoaderError;
 use crate::into_null_terminated_utf16;
+use crate::print;
+use crate::println;
 use crate::raw::protocol::file::FileProtocolV1;
 use crate::raw::protocol::file::SimpleFileSystemProtocol;
 use crate::raw::types::Char16;
@@ -14,14 +13,14 @@ use crate::raw::types::file::FileInformation;
 use crate::raw::types::file::OpenMode;
 use alloc::string::ToString;
 use alloc::vec;
+use core::ptr;
+use core::ptr::NonNull;
 
 impl SimpleFileSystemProtocol {
 	pub fn open_volume(&mut self,) -> Rslt<&mut FileProtocolV1,> {
-		let root = ptr::null_mut();
-		unsafe { (self.open_volume)(self, root,) }.ok_or_with(|_| {
-			unsafe { (*root).as_mut() }
-				.expect("tried to open volume. but returned file protocol is null",)
-		},)
+		let mut root = ptr::null_mut();
+		unsafe { (self.open_volume)(self, &mut root,) }
+			.ok_or_with(|_| unsafe { root.as_mut() }.expect("root directory handle is null",),)
 	}
 }
 
@@ -34,10 +33,24 @@ impl FileProtocolV1 {
 		attrs: FileAttributes,
 	) -> Rslt<&mut FileProtocolV1,> {
 		let path = into_null_terminated_utf16(path,);
-		let file = ptr::null_mut();
+		let path = path.as_ptr();
 
-		unsafe { (self.open)(self, file, path, mode, attrs,) }
-			.ok_or_with(|_| unsafe { (*file).as_mut() }.unwrap(),)
+		{
+			let mut i = 0;
+			loop {
+				let utf16_code = unsafe { *path.add(i,) };
+				print!("{}, ", utf16_code);
+
+				if utf16_code == 0 {
+					break;
+				}
+				i += 1;
+			}
+		}
+		let mut file = ptr::null_mut();
+
+		let s = unsafe { (self.open)(self, &mut file, path, mode, attrs,) };
+		s.ok_or_with(|_| unsafe { file.as_mut() }.expect("file handle is null",),)
 	}
 
 	/// reads file content to buf

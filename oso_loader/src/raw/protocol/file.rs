@@ -11,7 +11,7 @@ use crate::raw::types::file::OpenMode;
 pub struct SimpleFileSystemProtocol {
 	pub revision:    u64,
 	pub open_volume:
-		unsafe extern "efiapi" fn(*mut Self, root: *mut *mut FileProtocolV1,) -> Status,
+		unsafe extern "efiapi" fn(this: *mut Self, root: *mut *mut FileProtocolV1,) -> Status,
 }
 
 /**
