@@ -20,7 +20,7 @@ const KERNEL_FILE: &str = "oso_kernel.elf";
 pub struct Builder {
 	opts:      Opts,
 	workspace: OsoWorkSpace,
-	firmware:      Firmware,
+	firmware:  Firmware,
 }
 
 impl Builder {
@@ -94,15 +94,6 @@ impl Builder {
 		// run qemu
 		let qemu_system = self.qemu();
 		let qemu_args = self.qemu_args()?;
-
-		if !self.firmware_code()?.exists() {
-			panic!("ovmf_code: {}, path does not exist", self.firmware_tmp_code()?.display());
-		}
-		if !self.firmware_vars()?.exists() {
-			panic!("ovmf_vars: {}, path does not exist", self.firmware_tmp_vars()?.display());
-		}
-
-		Command::new("eza",).args(["/Users/a/Downloads/QwQ/oso/target/xtask", "-T",],).run()?;
 
 		Command::new(qemu_system,).args(qemu_args,).run()?;
 		Ok((),)
@@ -278,5 +269,12 @@ fn cargo_build(opts: &Opts,) -> Rslt<Command,> {
 }
 
 pub fn detatch(mounted_disk: &String,) -> Rslt<(),> {
+	Command::new("eza",)
+		.args(
+			"-ahlF --icons --group-directories-first --sort=extension --time-style=iso --git \
+			 --no-user --no-time -T target/xtask"
+				.split_whitespace(),
+		)
+		.run()?;
 	Command::new("hdiutil",).args(["detach", mounted_disk,],).run()
 }

@@ -13,6 +13,7 @@ use crate::raw::types::file::FileInformation;
 use crate::raw::types::file::OpenMode;
 use alloc::string::ToString;
 use alloc::vec;
+use alloc::vec::Vec;
 use core::ptr;
 use core::ptr::NonNull;
 
@@ -35,18 +36,6 @@ impl FileProtocolV1 {
 		let path = into_null_terminated_utf16(path,);
 		let path = path.as_ptr();
 
-		{
-			let mut i = 0;
-			loop {
-				let utf16_code = unsafe { *path.add(i,) };
-				print!("{}, ", utf16_code);
-
-				if utf16_code == 0 {
-					break;
-				}
-				i += 1;
-			}
-		}
 		let mut file = ptr::null_mut();
 
 		let s = unsafe { (self.open)(self, &mut file, path, mode, attrs,) };
@@ -58,9 +47,16 @@ impl FileProtocolV1 {
 	/// # Return
 	///
 	/// returns bytes amount of read data
-	pub unsafe fn read(&mut self, buf: &mut [Char16],) -> Rslt<usize,> {
+	pub unsafe fn read(&mut self, buf: &mut [u8],) -> Rslt<usize,> {
 		let mut len = buf.len();
 		unsafe { (self.read)(self, &mut len, buf.as_mut_ptr().cast(),) }.ok_or_with(|_| len,)
+	}
+
+	pub fn read_as_bytes(&mut self,) -> Rslt<Vec<u8,>,> {
+		let file_info = self.get_file_info()?;
+		let mut buf = vec![0; file_info.file_size as usize];
+		unsafe { self.read(buf.as_mut_slice(),) }?;
+		Ok(buf,)
 	}
 
 	pub fn get_info<F: FileInformation,>(&mut self, buf: &mut [u8],) -> Rslt<*mut F,> {

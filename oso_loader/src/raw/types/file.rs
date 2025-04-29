@@ -42,15 +42,15 @@ impl FileInformation for FileSystemInfo {}
 #[repr(C)]
 #[derive(Clone, Copy, Debug,)]
 pub struct FileInfo {
-	size:             u64,
-	file_size:        u64,
-	physical_size:    u64,
-	created_at:       Time,
-	last_accessed_at: Time,
-	modified_at:      Time,
-	attr:             FileAttributes,
+	pub size:             u64,
+	pub file_size:        u64,
+	pub physical_size:    u64,
+	pub created_at:       Time,
+	pub last_accessed_at: Time,
+	pub modified_at:      Time,
+	pub attr:             FileAttributes,
 	/// must be null terminated
-	file_name:        [Char16; 0],
+	pub file_name:        [Char16; 0],
 }
 
 #[repr(C)]
