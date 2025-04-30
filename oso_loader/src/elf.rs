@@ -1,4 +1,4 @@
-use core::num::ZeroablePrimitive;
+use core::iter::Sum;
 use core::ops::Add;
 use core::ops::AddAssign;
 use core::ops::Div;
@@ -99,28 +99,68 @@ impl ElfHeader {
 		let ident = &binary[..ELF_IDENT_SIZE];
 		let ident = ElfHeaderIdent::new(ident,)?;
 		let remain = &binary[ELF_IDENT_SIZE..];
-		let header = parse_elf_header(&ident, remain,)?;
+		let header = header_flag_fields(ident, remain,);
 		Ok(header,)
 	}
 }
 
-fn parse_elf_header(ident: &ElfHeaderIdent, binary: &[u8],) -> Rslt<ElfHeader,> {
-	todo!()
+fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> ElfHeader {
+	let offset = &mut 0;
+
+	let ty = read_le_bytes(offset, ident_remain,);
+	let machine = read_le_bytes(offset, ident_remain,);
+	let version = read_le_bytes(offset, ident_remain,);
+	let entry = read_le_bytes(offset, ident_remain,);
+	let program_header_offset = read_le_bytes(offset, ident_remain,);
+	let section_header_offset = read_le_bytes(offset, ident_remain,);
+	let flags = read_le_bytes(offset, ident_remain,);
+	let elf_header_size = read_le_bytes(offset, ident_remain,);
+	let program_header_entry_size = read_le_bytes(offset, ident_remain,);
+	let program_header_count = read_le_bytes(offset, ident_remain,);
+	let section_header_entry_size = read_le_bytes(offset, ident_remain,);
+	let section_header_count = read_le_bytes(offset, ident_remain,);
+	let section_header_index_of_section_name_string_table = read_le_bytes(offset, ident_remain,);
+
+	ElfHeader {
+		ident,
+		ty,
+		machine,
+		version,
+		entry,
+		program_header_offset,
+		section_header_offset,
+		flags,
+		elf_header_size,
+		program_header_entry_size,
+		program_header_count,
+		section_header_entry_size,
+		section_header_count,
+		section_header_index_of_section_name_string_table,
+	}
 }
 
-fn read_le_bytes<I: Integer,>(offset: &mut usize, binary: &[u8],) -> I {
+fn read_le_bytes<I: PrimitiveInteger + Sum<<I as Shl<usize,>>::Output,>,>(
+	offset: &mut usize,
+	binary: &[u8],
+) -> I
+where
+	u8: Integer<I,>,
+{
 	let size = size_of::<I,>();
-	let mut window = &mut binary[*offset..*offset + size];
+	let window = &binary[*offset..*offset + size];
 
-	let val = window.iter().enumerate().map(|(i, b,)| *b << i * 8,).sum();
+	let val =
+		window.iter().enumerate().map(|(i, b,)| Integer::<I,>::cast_int(*b,) << i * 8,).sum::<I>();
+	*offset += size;
+	val
 }
 
 pub struct ElfHeaderIdent {
-	file_class:    FileClass,
-	endianness:    Endian,
-	elf_version:   ElfVersion,
-	target_os_abi: TargetOsAbi,
-	abi_version:   AbiVersion,
+	pub file_class:    FileClass,
+	pub endianness:    Endian,
+	pub elf_version:   ElfVersion,
+	pub target_os_abi: TargetOsAbi,
+	pub abi_version:   AbiVersion,
 }
 
 impl ElfHeaderIdent {
@@ -168,7 +208,7 @@ impl TryFrom<u8,> for FileClass {
 pub struct ElfVersion(pub u8,);
 
 impl ElfVersion {
-	const ONE: Self = Self(0,);
+	pub const ONE: Self = Self(0,);
 }
 
 #[non_exhaustive]
@@ -196,7 +236,7 @@ impl TryFrom<u8,> for TargetOsAbi {
 
 pub struct AbiVersion(pub u8,);
 impl AbiVersion {
-	const ONE: Self = Self(0,);
+	pub const ONE: Self = Self(0,);
 }
 
 pub struct ProgramHeader {
@@ -224,9 +264,9 @@ pub struct SectionHeader {
 }
 
 pub struct StringTable {
-	delimitor: StringContext,
-	bytes:     Vec<u8,>,
-	strings:   Vec<(usize, String,),>,
+	pub delimitor: StringContext,
+	pub bytes:     Vec<u8,>,
+	pub strings:   Vec<(usize, String,),>,
 }
 
 pub enum StringContext {
@@ -236,11 +276,11 @@ pub enum StringContext {
 }
 
 pub struct SymbolTable {
-	bytes: Vec<u8,>,
-	count: usize,
-	ctx:   Context,
-	start: usize,
-	end:   usize,
+	pub bytes: Vec<u8,>,
+	pub count: usize,
+	pub ctx:   Context,
+	pub start: usize,
+	pub end:   usize,
 }
 
 pub struct Context {
@@ -323,33 +363,33 @@ pub struct DynamicInfo {
 }
 
 pub struct RelocationSection {
-	bytes:   Vec<u8,>,
-	count:   usize,
-	context: RelocationContext,
-	start:   usize,
-	end:     usize,
+	pub bytes:   Vec<u8,>,
+	pub count:   usize,
+	pub context: RelocationContext,
+	pub start:   usize,
+	pub end:     usize,
 }
 
 pub type RelocationContext = (bool, Context,);
 
 pub struct SymbolVersionSection {
-	bytes:   Vec<u8,>,
-	context: Context,
+	pub bytes:   Vec<u8,>,
+	pub context: Context,
 }
 
 pub struct VersionDefinitionSection {
-	bytes:   Vec<u8,>,
-	count:   usize,
-	context: Context,
+	pub bytes:   Vec<u8,>,
+	pub count:   usize,
+	pub context: Context,
 }
 
 pub struct VersionNeededSection {
-	bytes:   Vec<u8,>,
-	count:   usize,
-	context: Context,
+	pub bytes:   Vec<u8,>,
+	pub count:   usize,
+	pub context: Context,
 }
 
-trait Integer:
+trait Integer<T: PrimitiveInteger,>:
 	Add
 	+ AddAssign
 	+ Sub
@@ -360,16 +400,71 @@ trait Integer:
 	+ DivAssign
 	+ Shl
 	+ Shr
-	+ ZeroablePrimitive
+	+ Clone
+	+ Sum
 	+ Sized
 {
-	fn cast_int<T: Integer,>(self,) -> T {}
+	fn cast_int(self,) -> T;
 }
 
-macro_rules! init_impl {
-	($ty:ty) => {
-		impl Integer for $ty {}
-	};
+trait PrimitiveInteger:
+	Add
+	+ AddAssign
+	+ Sub
+	+ SubAssign
+	+ Mul
+	+ MulAssign
+	+ Div
+	+ DivAssign
+	+ Shl<usize, Output: Sum,>
+	+ Shr
+	+ Clone
+	+ Sum
+	+ Sized
+{
+}
+
+impl PrimitiveInteger for u8 {}
+impl PrimitiveInteger for u16 {}
+impl PrimitiveInteger for u32 {}
+impl PrimitiveInteger for u64 {}
+impl PrimitiveInteger for u128 {}
+impl PrimitiveInteger for usize {}
+
+impl Integer<u8,> for u8 {
+	fn cast_int(self,) -> u8 {
+		self
+	}
+}
+
+impl Integer<u16,> for u8 {
+	fn cast_int(self,) -> u16 {
+		self as u16
+	}
+}
+
+impl Integer<u32,> for u8 {
+	fn cast_int(self,) -> u32 {
+		self as u32
+	}
+}
+
+impl Integer<u64,> for u8 {
+	fn cast_int(self,) -> u64 {
+		self as u64
+	}
+}
+
+impl Integer<u128,> for u8 {
+	fn cast_int(self,) -> u128 {
+		self as u128
+	}
+}
+
+impl Integer<usize,> for u8 {
+	fn cast_int(self,) -> usize {
+		self as usize
+	}
 }
 
 pub fn parse_elf(content: Vec<u8,>,) {}
