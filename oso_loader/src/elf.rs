@@ -50,7 +50,7 @@ pub struct Elf {
 	pub dynamic_relocation:                 RelocationSection,
 	pub procedure_linkage_table_relocation: RelocationSection,
 	pub section_relocations:                Vec<(usize, RelocationSection,),>,
-	pub soname:                             Option<String,>,
+	pub shared_object_name:                 Option<String,>,
 	pub interpreter:                        Option<String,>,
 	pub libraries:                          Vec<String,>,
 	pub runtime_search_path_deprecated:     Vec<String,>,
@@ -106,6 +106,17 @@ impl ElfHeader {
 
 fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> ElfHeader {
 	let offset = &mut 0;
+
+	'test: {
+		let a: u16 = read_le_bytes(&mut 0, &[0x34, 0x12,],);
+		assert_eq!(0x1234, a);
+
+		let b: u32 = read_le_bytes(&mut 0, &[0x78, 0x56, 0x34, 0x12,],);
+		assert_eq!(0x12345678, b);
+
+		let c: u64 = read_le_bytes(&mut 0, &[0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x23, 0x01,],);
+		assert_eq!(0x0123456789abcdef, c);
+	}
 
 	let ty = read_le_bytes(offset, ident_remain,);
 	let machine = read_le_bytes(offset, ident_remain,);
