@@ -1,5 +1,3 @@
-use core::ptr::NonNull;
-
 use crate::Rslt;
 use crate::chibi_uefi::guid::AsBytes;
 use crate::chibi_uefi::guid::Hex;
@@ -16,6 +14,7 @@ use crate::raw::types::PhysicalAddress;
 use crate::raw::types::file::FileAttributes;
 use crate::raw::types::file::FileInfo;
 use crate::raw::types::file::OpenMode;
+use core::ptr::NonNull;
 
 pub fn kernel() -> Rslt<PhysicalAddress,> {
 	let mut kernel_file = open_kernel_file()?;

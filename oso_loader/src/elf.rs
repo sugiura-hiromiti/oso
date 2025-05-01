@@ -1,3 +1,8 @@
+use crate::Rslt;
+use crate::error::OsoLoaderError;
+use alloc::format;
+use alloc::string::String;
+use alloc::vec::Vec;
 use core::iter::Sum;
 use core::ops::Add;
 use core::ops::AddAssign;
@@ -9,12 +14,6 @@ use core::ops::Shl;
 use core::ops::Shr;
 use core::ops::Sub;
 use core::ops::SubAssign;
-
-use crate::Rslt;
-use crate::error::OsoLoaderError;
-use alloc::format;
-use alloc::string::String;
-use alloc::vec::Vec;
 
 /// used to check magic number
 const ELF_MAGIC_NUMBER: &[u8; ELF_MAGIC_NUMBER_SIZE] = b"\x7felf";
@@ -160,8 +159,8 @@ where
 	let size = size_of::<I,>();
 	let window = &binary[*offset..*offset + size];
 
-	let val =
-		window.iter().enumerate().map(|(i, b,)| Integer::<I,>::cast_int(*b,) << i * 8,).sum::<I>();
+	// let val =
+	// 	window.iter().enumerate().map(|(i, b,)| Integer::<I,>::cast_int(*b,) << i * 8,).sum::<I>();
 	*offset += size;
 	val
 }
@@ -476,6 +475,12 @@ impl Integer<usize,> for u8 {
 	fn cast_int(self,) -> usize {
 		self as usize
 	}
+}
+
+trait AsInt {
+    fn from_bytes() {
+
+    }
 }
 
 pub fn parse_elf(content: Vec<u8,>,) {}
