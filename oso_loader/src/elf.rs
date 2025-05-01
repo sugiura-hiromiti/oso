@@ -149,19 +149,15 @@ fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> ElfHeader 
 	}
 }
 
-fn read_le_bytes<I: PrimitiveInteger + Sum<<I as Shl<usize,>>::Output,>,>(
-	offset: &mut usize,
-	binary: &[u8],
-) -> I
-where
-	u8: Integer<I,>,
-{
-	let size = size_of::<I,>();
-	let window = &binary[*offset..*offset + size];
-
+//fn read_le_bytes<I: PrimitiveInteger + Sum<<I as Shl<usize,>>::Output,>,>(
+fn read_le_bytes<I: PrimitiveInteger,>(offset: &mut usize, binary: &[u8],) -> I
+where for<'a> &'a [u8]: AsInt<I,> {
+	//let window = &binary[*offset..*offset + size];
 	// let val =
 	// 	window.iter().enumerate().map(|(i, b,)| Integer::<I,>::cast_int(*b,) << i * 8,).sum::<I>();
-	*offset += size;
+
+	let val = (&binary[*offset..]).as_int();
+	*offset += size_of::<I,>();
 	val
 }
 
@@ -477,10 +473,39 @@ impl Integer<usize,> for u8 {
 	}
 }
 
-trait AsInt {
-    fn from_bytes() {
+trait AsInt<T: PrimitiveInteger,> {
+	fn as_int(&self,) -> T;
+}
 
-    }
+//  TODO: add trait constraint which describe relation betwen uXX primitive type and [u8; N]
+impl AsInt<u8,> for &[u8] {
+	fn as_int(&self,) -> u8 {
+		unsafe { *(&self[..1] as *const _ as *const u8) }
+	}
+}
+
+impl AsInt<u16,> for &[u8] {
+	fn as_int(&self,) -> u16 {
+		unsafe { *(&self[..2] as *const _ as *const u16) }
+	}
+}
+
+impl AsInt<u32,> for &[u8] {
+	fn as_int(&self,) -> u32 {
+		unsafe { *(&self[..4] as *const _ as *const u32) }
+	}
+}
+
+impl AsInt<u64,> for &[u8] {
+	fn as_int(&self,) -> u64 {
+		unsafe { *(&self[..8] as *const _ as *const u64) }
+	}
+}
+
+impl AsInt<u128,> for &[u8] {
+	fn as_int(&self,) -> u128 {
+		unsafe { *(&self[..16] as *const _ as *const u128) }
+	}
 }
 
 pub fn parse_elf(content: Vec<u8,>,) {}
