@@ -1,5 +1,7 @@
 use crate::Rslt;
 use crate::error::OsoLoaderError;
+use crate::print;
+use crate::println;
 use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
@@ -106,7 +108,7 @@ impl ElfHeader {
 fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> ElfHeader {
 	let offset = &mut 0;
 
-	'test: {
+	{
 		let a: u16 = read_le_bytes(&mut 0, &[0x34, 0x12,],);
 		assert_eq!(0x1234, a);
 
@@ -115,6 +117,9 @@ fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> ElfHeader 
 
 		let c: u64 = read_le_bytes(&mut 0, &[0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x23, 0x01,],);
 		assert_eq!(0x0123456789abcdef, c);
+
+		println!("-------------------------------");
+		println!("\n");
 	}
 
 	let ty = read_le_bytes(offset, ident_remain,);

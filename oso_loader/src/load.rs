@@ -1,3 +1,4 @@
+use crate::elf::Elf;
 use crate::Rslt;
 use crate::chibi_uefi::guid::AsBytes;
 use crate::chibi_uefi::guid::Hex;
@@ -19,6 +20,7 @@ use core::ptr::NonNull;
 pub fn kernel() -> Rslt<PhysicalAddress,> {
 	let mut kernel_file = open_kernel_file()?;
 	let contents = unsafe { kernel_file.as_mut() }.read_as_bytes()?;
+	let elf=Elf::parse(&contents)?;
 
 	todo!("nyi!!!!");
 }
