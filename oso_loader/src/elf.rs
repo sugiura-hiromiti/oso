@@ -485,6 +485,7 @@ trait AsInt<T: PrimitiveInteger,> {
 //  TODO: add trait constraint which describe relation betwen uXX primitive type and [u8; N]
 impl AsInt<u8,> for &[u8] {
 	fn as_int(&self,) -> u8 {
+		let bytes = &self[..1];
 		unsafe { *(&self[..1] as *const _ as *const u8) }
 	}
 }
