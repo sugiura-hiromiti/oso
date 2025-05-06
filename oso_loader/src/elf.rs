@@ -18,6 +18,7 @@ use core::ops::Shl;
 use core::ops::Shr;
 use core::ops::Sub;
 use core::ops::SubAssign;
+use program_header::ProgramHeaderType;
 
 mod program_header;
 mod section_header;
@@ -77,6 +78,15 @@ impl Elf {
 		let mut offset = header.program_header_offset as usize;
 		let program_headers =
 			ProgramHeader::parse(binary, &mut offset, header.program_header_count as usize,)?;
+
+		let mut interpreter = None;
+
+		for program_header in &program_headers {
+			if program_header.ty == ProgramHeaderType::Interp && program_header.file_size != 0 {
+				let count = program_header.file_size as usize - 1;
+				let offset = program_header.offset as usize;
+			}
+		}
 
 		todo!(
 			"
