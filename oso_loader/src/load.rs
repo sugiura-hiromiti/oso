@@ -1,10 +1,10 @@
-use crate::elf::Elf;
 use crate::Rslt;
 use crate::chibi_uefi::guid::AsBytes;
 use crate::chibi_uefi::guid::Hex;
 use crate::chibi_uefi::guid::read_to_hex;
 use crate::chibi_uefi::protocol::Protocol;
 use crate::chibi_uefi::table::boot_services;
+use crate::elf::Elf;
 use crate::guid;
 use crate::print;
 use crate::println;
@@ -20,7 +20,7 @@ use core::ptr::NonNull;
 pub fn kernel() -> Rslt<PhysicalAddress,> {
 	let mut kernel_file = open_kernel_file()?;
 	let contents = unsafe { kernel_file.as_mut() }.read_as_bytes()?;
-	let elf=Elf::parse(&contents)?;
+	let elf = Elf::parse(&contents,)?;
 
 	todo!("nyi!!!!");
 }

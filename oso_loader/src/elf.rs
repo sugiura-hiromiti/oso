@@ -1,4 +1,6 @@
 use crate::Rslt;
+use crate::elf::program_header::ProgramHeader;
+use crate::elf::section_header::SectionHeader;
 use crate::error::OsoLoaderError;
 use crate::print;
 use crate::println;
@@ -17,8 +19,11 @@ use core::ops::Shr;
 use core::ops::Sub;
 use core::ops::SubAssign;
 
+mod program_header;
+mod section_header;
+
 /// used to check magic number
-const ELF_MAGIC_NUMBER: &[u8; ELF_MAGIC_NUMBER_SIZE] = b"\x7felf";
+const ELF_MAGIC_NUMBER: &[u8; ELF_MAGIC_NUMBER_SIZE] = b"\x7fELF";
 const ELF_MAGIC_NUMBER_SIZE: usize = 4;
 /// size of ident in elf header
 const ELF_IDENT_SIZE: usize = 16;
@@ -68,6 +73,11 @@ pub struct Elf {
 impl Elf {
 	pub fn parse(binary: &Vec<u8,>,) -> Rslt<Self,> {
 		let header = ElfHeader::parse(binary,)?;
+
+		let mut offset = header.program_header_offset as usize;
+		let program_headers =
+			ProgramHeader::parse(binary, &mut offset, header.program_header_count as usize,)?;
+
 		todo!(
 			"
 			pub trait Pread<Ctx: Copy, E>
@@ -76,11 +86,23 @@ impl Elf {
 			"
 		)
 	}
+
+	pub fn is_64(&self,) -> bool {
+		self.header.is_64()
+	}
+
+	pub fn is_lib(&self,) -> bool {
+		self.header.is_lib()
+	}
+
+	pub fn is_little_endian(&self,) -> bool {
+		self.header.is_little_endian()
+	}
 }
 
 pub struct ElfHeader {
 	pub ident: ElfHeaderIdent,
-	pub ty: u16,
+	pub ty: ElfType,
 	pub machine: u16,
 	pub version: u32,
 	pub entry: u64,
@@ -100,12 +122,23 @@ impl ElfHeader {
 		let ident = &binary[..ELF_IDENT_SIZE];
 		let ident = ElfHeaderIdent::new(ident,)?;
 		let remain = &binary[ELF_IDENT_SIZE..];
-		let header = header_flag_fields(ident, remain,);
-		Ok(header,)
+		header_flag_fields(ident, remain,)
+	}
+
+	fn is_64(&self,) -> bool {
+		self.ident.is_64()
+	}
+
+	fn is_lib(&self,) -> bool {
+		self.ty.is_lib()
+	}
+
+	fn is_little_endian(&self,) -> bool {
+		self.ident.is_little_endian()
 	}
 }
 
-fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> ElfHeader {
+fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> Rslt<ElfHeader,> {
 	let offset = &mut 0;
 
 	{
@@ -122,21 +155,24 @@ fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> ElfHeader 
 		println!("\n");
 	}
 
-	let ty = read_le_bytes(offset, ident_remain,);
-	let machine = read_le_bytes(offset, ident_remain,);
-	let version = read_le_bytes(offset, ident_remain,);
-	let entry = read_le_bytes(offset, ident_remain,);
-	let program_header_offset = read_le_bytes(offset, ident_remain,);
-	let section_header_offset = read_le_bytes(offset, ident_remain,);
-	let flags = read_le_bytes(offset, ident_remain,);
-	let elf_header_size = read_le_bytes(offset, ident_remain,);
-	let program_header_entry_size = read_le_bytes(offset, ident_remain,);
-	let program_header_count = read_le_bytes(offset, ident_remain,);
-	let section_header_entry_size = read_le_bytes(offset, ident_remain,);
-	let section_header_count = read_le_bytes(offset, ident_remain,);
-	let section_header_index_of_section_name_string_table = read_le_bytes(offset, ident_remain,);
+	let ty: u16 = read_le_bytes(offset, ident_remain,);
+	let machine: u16 = read_le_bytes(offset, ident_remain,);
+	let version: u32 = read_le_bytes(offset, ident_remain,);
+	let entry: u64 = read_le_bytes(offset, ident_remain,);
+	let program_header_offset: u64 = read_le_bytes(offset, ident_remain,);
+	let section_header_offset: u64 = read_le_bytes(offset, ident_remain,);
+	let flags: u32 = read_le_bytes(offset, ident_remain,);
+	let elf_header_size: u16 = read_le_bytes(offset, ident_remain,);
+	let program_header_entry_size: u16 = read_le_bytes(offset, ident_remain,);
+	let program_header_count: u16 = read_le_bytes(offset, ident_remain,);
+	let section_header_entry_size: u16 = read_le_bytes(offset, ident_remain,);
+	let section_header_count: u16 = read_le_bytes(offset, ident_remain,);
+	let section_header_index_of_section_name_string_table: u16 =
+		read_le_bytes(offset, ident_remain,);
 
-	ElfHeader {
+	let ty = ElfType::try_from(ty,)?;
+
+	Ok(ElfHeader {
 		ident,
 		ty,
 		machine,
@@ -151,7 +187,7 @@ fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> ElfHeader 
 		section_header_entry_size,
 		section_header_count,
 		section_header_index_of_section_name_string_table,
-	}
+	},)
 }
 
 //fn read_le_bytes<I: PrimitiveInteger + Sum<<I as Shl<usize,>>::Output,>,>(
@@ -166,6 +202,47 @@ where for<'a> &'a [u8]: AsInt<I,> {
 	val
 }
 
+#[derive(PartialEq, Eq,)]
+pub enum ElfType {
+	None,
+	Relocatable,
+	Executable,
+	SharedObject,
+	Core,
+	NumberOfDefined,
+	OsSpecificRangeStart,
+	OsSpecificRangeEnd,
+	ProcessorSpecificRangeStart,
+	ProcessorSpecificRangeEnd,
+}
+
+impl ElfType {
+	fn is_lib(&self,) -> bool {
+		*self == Self::SharedObject
+	}
+}
+
+impl TryFrom<u16,> for ElfType {
+	type Error = OsoLoaderError;
+
+	fn try_from(value: u16,) -> Result<Self, Self::Error,> {
+		let ty = match value {
+			0 => Self::None,
+			1 => Self::Relocatable,
+			2 => Self::Executable,
+			3 => Self::SharedObject,
+			4 => Self::Core,
+			5 => Self::NumberOfDefined,
+			0xfe00 => Self::OsSpecificRangeStart,
+			0xfeff => Self::OsSpecificRangeEnd,
+			0xff00 => Self::ProcessorSpecificRangeStart,
+			0xffff => Self::OsSpecificRangeEnd,
+			_ => return Err(OsoLoaderError::EfiParse(format!("unknown type: {value}"),),),
+		};
+		Ok(ty,)
+	}
+}
+
 pub struct ElfHeaderIdent {
 	pub file_class:    FileClass,
 	pub endianness:    Endian,
@@ -176,7 +253,7 @@ pub struct ElfHeaderIdent {
 
 impl ElfHeaderIdent {
 	fn new(ident: &[u8],) -> Rslt<Self,> {
-		if ident.len() == ELF_IDENT_SIZE {
+		if ident.len() != ELF_IDENT_SIZE {
 			return Err(OsoLoaderError::EfiParse(format!(
 				"ident len is 16, but given ident len is {}",
 				ident.len(),
@@ -197,11 +274,26 @@ impl ElfHeaderIdent {
 
 		Ok(Self { file_class, endianness, elf_version, target_os_abi, abi_version, },)
 	}
+
+	fn is_64(&self,) -> bool {
+		self.file_class.is_64()
+	}
+
+	fn is_little_endian(&self,) -> bool {
+		self.endianness.is_little_endian()
+	}
 }
 
+#[derive(PartialEq, Eq,)]
 pub enum FileClass {
 	Bit32,
 	Bit64,
+}
+
+impl FileClass {
+	fn is_64(&self,) -> bool {
+		*self == FileClass::Bit64
+	}
 }
 
 impl TryFrom<u8,> for FileClass {
@@ -219,7 +311,7 @@ impl TryFrom<u8,> for FileClass {
 pub struct ElfVersion(pub u8,);
 
 impl ElfVersion {
-	pub const ONE: Self = Self(0,);
+	pub const ONE: Self = Self(1,);
 }
 
 #[non_exhaustive]
@@ -248,30 +340,6 @@ impl TryFrom<u8,> for TargetOsAbi {
 pub struct AbiVersion(pub u8,);
 impl AbiVersion {
 	pub const ONE: Self = Self(0,);
-}
-
-pub struct ProgramHeader {
-	pub ty:               u32,
-	pub flags:            u32,
-	pub offset:           u64,
-	pub virtual_addres:   u64,
-	pub physical_address: u64,
-	pub file_size:        u64,
-	pub memory_size:      u64,
-	pub aligh:            u64,
-}
-
-pub struct SectionHeader {
-	pub name:          usize,
-	pub ty:            u32,
-	pub flags:         u64,
-	pub address:       u64,
-	pub offset:        u64,
-	pub size:          u64,
-	pub link:          u64,
-	pub info:          u64,
-	pub section_align: u64,
-	pub entry_size:    u64,
 }
 
 pub struct StringTable {
@@ -305,9 +373,16 @@ pub enum Container {
 	Big,
 }
 
+#[derive(PartialEq, Eq,)]
 pub enum Endian {
 	Little,
 	Big,
+}
+
+impl Endian {
+	fn is_little_endian(&self,) -> bool {
+		*self == Self::Little
+	}
 }
 
 impl TryFrom<u8,> for Endian {
@@ -514,4 +589,8 @@ impl AsInt<u128,> for &[u8] {
 	}
 }
 
-pub fn parse_elf(content: Vec<u8,>,) {}
+impl AsInt<usize,> for &[u8] {
+	fn as_int(&self,) -> usize {
+		unsafe { *(&self[..8] as *const _ as *const usize) }
+	}
+}

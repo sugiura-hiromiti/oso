@@ -26,12 +26,6 @@ impl Display for OsoLoaderError {
 	}
 }
 
-impl From<goblin::error::Error,> for OsoLoaderError {
-	fn from(value: goblin::error::Error,) -> Self {
-		Self::EfiParse(format!("{value:?}"),)
-	}
-}
-
 impl From<OsoLoaderError,> for core::fmt::Error {
 	fn from(value: OsoLoaderError,) -> Self {
 		core::fmt::Error
