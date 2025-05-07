@@ -1,7 +1,32 @@
-use alloc::vec::Vec;
-
+use super::StringTable;
 use crate::Rslt;
 use crate::elf::read_le_bytes;
+use alloc::vec::Vec;
+
+/// Undefined section.
+pub const SHN_UNDEF: u32 = 0;
+/// Start of reserved indices.
+pub const SHN_LORESERVE: u32 = 0xff00;
+/// Start of processor-specific.
+pub const SHN_LOPROC: u32 = 0xff00;
+/// Order section before all others (Solaris).
+pub const SHN_BEFORE: u32 = 0xff00;
+/// Order section after all others (Solaris).
+pub const SHN_AFTER: u32 = 0xff01;
+/// End of processor-specific.
+pub const SHN_HIPROC: u32 = 0xff1f;
+/// Start of OS-specific.
+pub const SHN_LOOS: u32 = 0xff20;
+/// End of OS-specific.
+pub const SHN_HIOS: u32 = 0xff3f;
+/// Associated symbol is absolute.
+pub const SHN_ABS: u32 = 0xfff1;
+/// Associated symbol is common.
+pub const SHN_COMMON: u32 = 0xfff2;
+/// Index is in extra table.
+pub const SHN_XINDEX: u32 = 0xffff;
+/// End of reserved indices.
+pub const SHN_HIRESERVE: u32 = 0xffff;
 
 pub struct SectionHeader {
 	pub name:          usize,
@@ -54,4 +79,14 @@ impl SectionHeader {
 
 		Ok(section_headers,)
 	}
+}
+
+pub fn get_string_table(section_headers: &[SectionHeader], mut idx: usize,) -> StringTable {
+	if idx == SHN_XINDEX as usize {
+		if section_headers.is_empty() {
+			return StringTable::default();
+		}
+	}
+
+	todo!()
 }

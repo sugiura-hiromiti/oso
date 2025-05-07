@@ -6,6 +6,8 @@ use crate::print;
 use crate::println;
 use alloc::format;
 use alloc::string::String;
+use alloc::string::ToString;
+use alloc::vec;
 use alloc::vec::Vec;
 use core::iter::Sum;
 use core::ops::Add;
@@ -80,13 +82,18 @@ impl Elf {
 			ProgramHeader::parse(binary, &mut offset, header.program_header_count as usize,)?;
 
 		let mut interpreter = None;
-
 		for program_header in &program_headers {
 			if program_header.ty == ProgramHeaderType::Interp && program_header.file_size != 0 {
 				let count = program_header.file_size as usize - 1;
 				let offset = program_header.offset as usize;
+
+				interpreter = Some(StringContext::Length(count,).read_bytes(&binary[offset..],),);
 			}
 		}
+
+		offset = header.section_header_offset as usize;
+		let section_headers =
+			SectionHeader::parse(binary, &mut offset, header.section_header_count as usize,)?;
 
 		todo!(
 			"
@@ -210,6 +217,10 @@ where for<'a> &'a [u8]: AsInt<I,> {
 	let val = (&binary[*offset..]).as_int();
 	*offset += size_of::<I,>();
 	val
+}
+
+fn bytes_to_str(offset: usize, binary: &[u8], context: StringContext,) -> String {
+	todo!()
 }
 
 #[derive(PartialEq, Eq,)]
@@ -358,10 +369,35 @@ pub struct StringTable {
 	pub strings:   Vec<(usize, String,),>,
 }
 
+impl Default for StringTable {
+	fn default() -> Self {
+		Self { delimitor: StringContext::default(), bytes: vec![], strings: vec![], }
+	}
+}
+
 pub enum StringContext {
 	Delimiter(u8,),
 	DelimiterUntil(u8, usize,),
 	Length(usize,),
+}
+
+impl StringContext {
+	fn read_bytes(&self, bytes: &[u8],) -> String {
+		let bytes = match self {
+			StringContext::Delimiter(_,) => todo!(),
+			StringContext::DelimiterUntil(..,) => todo!(),
+			StringContext::Length(l,) => &bytes[..*l],
+		};
+		let rslt = String::from_utf8_lossy(bytes,);
+		rslt.to_string()
+	}
+}
+
+impl Default for StringContext {
+	fn default() -> Self {
+		// null delimiter
+		Self::Delimiter(0,)
+	}
 }
 
 pub struct SymbolTable {
