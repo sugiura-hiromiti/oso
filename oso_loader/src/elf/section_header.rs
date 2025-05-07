@@ -86,7 +86,11 @@ pub fn get_string_table(section_headers: &[SectionHeader], mut idx: usize,) -> S
 		if section_headers.is_empty() {
 			return StringTable::default();
 		}
+
+		idx = section_headers[0].link as usize;
 	}
+
+	if idx >= section_headers.len() {}
 
 	todo!()
 }
