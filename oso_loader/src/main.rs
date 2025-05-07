@@ -6,7 +6,6 @@ extern crate alloc;
 use alloc::vec::Vec;
 use core::arch::asm;
 use core::ffi::c_void;
-use goblin::elf;
 use oso_bridge::graphic::FrameBufConf;
 use oso_bridge::graphic::PixelFormatConf;
 use oso_loader::Rslt;

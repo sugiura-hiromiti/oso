@@ -375,6 +375,46 @@ impl Default for StringTable {
 	}
 }
 
+impl StringTable {
+	/// # Params
+	///
+	/// - bytes
+	///
+	/// bytes expected to be entire elf file
+	pub fn parse(binary: &Vec<u8,>, offset: usize, len: usize, delimiter: u8,) -> Rslt<Self,> {
+		let (end, overflow,) = offset.overflowing_add(len,);
+		if overflow || end > binary.len() {
+			return Err(OsoLoaderError::EfiParse(format!(
+				"string table size ({}) + offset ({}) is out of bounds for {} bytes. overflowed: \
+				 {}",
+				len,
+				offset,
+				binary.len(),
+				overflow
+			),),);
+		}
+
+		let mut rslt = Self::from_slice(&binary[offset..offset + len], delimiter,);
+		let mut i = 0;
+		while i < rslt.bytes.len() {
+			let s = rslt.delimitor.read_bytes(&binary[i..],)?;
+			let len = s.len();
+			rslt.strings.push((i, s,),);
+			i += len + 1;
+		}
+
+		Ok(rslt,)
+	}
+
+	fn from_slice(bytes: &[u8], delimiter: u8,) -> Self {
+		Self {
+			delimitor: StringContext::Delimiter(delimiter,),
+			bytes:     bytes.to_vec(),
+			strings:   vec![],
+		}
+	}
+}
+
 pub enum StringContext {
 	Delimiter(u8,),
 	DelimiterUntil(u8, usize,),
@@ -382,14 +422,30 @@ pub enum StringContext {
 }
 
 impl StringContext {
-	fn read_bytes(&self, bytes: &[u8],) -> String {
+	fn read_bytes(&self, bytes: &[u8],) -> Rslt<String,> {
 		let bytes = match self {
-			StringContext::Delimiter(_,) => todo!(),
+			StringContext::Delimiter(delimiter,) => {
+				let mut i = 0;
+				while let a = &bytes[i..=i]
+					&& a != &[*delimiter,]
+				{
+					i += 1;
+					if i >= bytes.len() {
+						return Err(OsoLoaderError::EfiParse(format!(
+							"delimiter: {delimiter} not found"
+						),),);
+					}
+				}
+
+				&bytes[..i]
+			},
 			StringContext::DelimiterUntil(..,) => todo!(),
 			StringContext::Length(l,) => &bytes[..*l],
 		};
+
+		// TODO: check encoding is actually utf8
 		let rslt = String::from_utf8_lossy(bytes,);
-		rslt.to_string()
+		Ok(rslt.to_string(),)
 	}
 }
 
