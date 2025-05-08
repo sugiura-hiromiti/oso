@@ -109,7 +109,13 @@ impl Elf {
 		{
 			let size = section_header.entry_size;
 			let count = if size == 0 { 0 } else { section_header.size / size };
-			symbol_table = SymbolTable::parse()?;
+			let context = Context::default();
+			symbol_table = SymbolTable::parse(
+				binary,
+				section_header.offset as usize,
+				count as usize,
+				context,
+			)?;
 		}
 
 		todo!(
@@ -479,7 +485,25 @@ pub struct SymbolTable {
 }
 
 impl SymbolTable {
-	fn parse(binary: &Vec<u8,>, offset: usize, count: usize,) -> Self {}
+	/// size of symbol structure in 64bit.
+	const SIZE_OF_SYMBOL_64: usize = 4 + 1 + 1 + 2 + 8 + 8;
+
+	fn parse(binary: &Vec<u8,>, offset: usize, count: usize, context: Context,) -> Rslt<Self,> {
+		let size = count
+			.checked_mul(match context.container {
+				Container::Little => todo!(),
+				Container::Big => Self::SIZE_OF_SYMBOL_64,
+			},)
+			.ok_or_else(|| {
+				OsoLoaderError::EfiParse(format!(
+					"too many elf symbols offset: {offset:#x}, count {count}"
+				),)
+			},)?;
+
+		let bytes = binary[offset..offset + size].to_vec();
+
+		Ok(SymbolTable { bytes, count, ctx: context, start: offset, end: offset + size, },)
+	}
 }
 
 pub struct Context {
