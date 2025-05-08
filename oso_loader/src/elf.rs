@@ -109,7 +109,7 @@ impl Elf {
 		{
 			let size = section_header.entry_size;
 			let count = if size == 0 { 0 } else { section_header.size / size };
-			syms = SymbolTable::parse()?;
+			symbol_table = SymbolTable::parse()?;
 		}
 
 		todo!(
