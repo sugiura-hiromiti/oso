@@ -20,7 +20,10 @@ use core::ops::Shl;
 use core::ops::Shr;
 use core::ops::Sub;
 use core::ops::SubAssign;
+use core::usize;
 use program_header::ProgramHeaderType;
+use section_header::SHT_SYMTAB;
+use section_header::get_string_table;
 
 mod program_header;
 mod section_header;
@@ -94,6 +97,20 @@ impl Elf {
 		offset = header.section_header_offset as usize;
 		let section_headers =
 			SectionHeader::parse(binary, &mut offset, header.section_header_count as usize,)?;
+
+		let string_table_index = header.section_header_index_of_section_name_string_table as usize;
+		let section_header_string_table =
+			get_string_table(&section_headers, string_table_index, &binary,)?;
+
+		let mut symbol_table = SymbolTable::default();
+		let mut string_table = StringTable::default();
+		if let Some(section_header,) =
+			section_headers.iter().rfind(|section_header| section_header.ty as u32 == SHT_SYMTAB,)
+		{
+			let size = section_header.entry_size;
+			let count = if size == 0 { 0 } else { section_header.size / size };
+			syms = SymbolTable::parse()?;
+		}
 
 		todo!(
 			"
@@ -217,10 +234,6 @@ where for<'a> &'a [u8]: AsInt<I,> {
 	let val = (&binary[*offset..]).as_int();
 	*offset += size_of::<I,>();
 	val
-}
-
-fn bytes_to_str(offset: usize, binary: &[u8], context: StringContext,) -> String {
-	todo!()
 }
 
 #[derive(PartialEq, Eq,)]
@@ -456,6 +469,7 @@ impl Default for StringContext {
 	}
 }
 
+#[derive(Default,)]
 pub struct SymbolTable {
 	pub bytes: Vec<u8,>,
 	pub count: usize,
@@ -464,9 +478,19 @@ pub struct SymbolTable {
 	pub end:   usize,
 }
 
+impl SymbolTable {
+	fn parse(binary: &Vec<u8,>, offset: usize, count: usize,) -> Self {}
+}
+
 pub struct Context {
 	pub container: Container,
 	pub le:        Endian,
+}
+
+impl Default for Context {
+	fn default() -> Self {
+		Self { container: Container::default(), le: Endian::default(), }
+	}
 }
 
 /// the size of a binary container
@@ -475,10 +499,24 @@ pub enum Container {
 	Big,
 }
 
+impl Default for Container {
+	fn default() -> Self {
+		// TODO: add conditional compilation current implementation only support 64bit pointer width
+		Self::Big
+	}
+}
+
 #[derive(PartialEq, Eq,)]
 pub enum Endian {
 	Little,
 	Big,
+}
+
+impl Default for Endian {
+	fn default() -> Self {
+		// TODO: add conditional compilation current implementation only support 64bit pointer width
+		Self::Big
+	}
 }
 
 impl Endian {
