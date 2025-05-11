@@ -25,6 +25,11 @@ use core::ops::Sub;
 use core::ops::SubAssign;
 use core::usize;
 use program_header::ProgramHeaderType;
+use section_header::SHT_GNU_VERDEF;
+use section_header::SHT_GNU_VERNEED;
+use section_header::SHT_GNU_VERSYM;
+use section_header::SHT_REL;
+use section_header::SHT_RELA;
 use section_header::SHT_SYMTAB;
 use section_header::get_string_table;
 
@@ -71,13 +76,10 @@ pub struct Elf {
 	pub libraries:                          Vec<String,>,
 	pub runtime_search_path_deprecated:     Vec<String,>,
 	pub runtime_search_path:                Vec<String,>,
-	pub is_64:                              bool,
-	pub is_shared_object:                   bool,
-	pub entry_point_address:                u64,
-	pub little_endian:                      bool,
 	pub symbol_version_section:             Option<SymbolVersionSection,>,
 	pub version_definition_section:         Option<VersionDefinitionSection,>,
 	pub version_needed_section:             Option<VersionNeededSection,>,
+	pub is_position_independent_executable: bool,
 }
 
 impl Elf {
@@ -94,7 +96,7 @@ impl Elf {
 				let count = program_header.file_size as usize - 1;
 				let offset = program_header.offset as usize;
 
-				interpreter = Some(StringContext::Length(count,).read_bytes(&binary[offset..],),);
+				interpreter = Some(StringContext::Length(count,).read_bytes(&binary[offset..],)?,);
 			}
 		}
 
@@ -106,20 +108,18 @@ impl Elf {
 		let section_header_string_table =
 			get_string_table(&section_headers, string_table_index, &binary,)?;
 
+		let ctx = &Context::default();
 		let mut symbol_table = SymbolTable::default();
-		let mut string_table = StringTable::default();
+		let mut string_table_for_symbol_table = StringTable::default();
 		if let Some(section_header,) =
 			section_headers.iter().rfind(|section_header| section_header.ty as u32 == SHT_SYMTAB,)
 		{
 			let size = section_header.entry_size;
 			let count = if size == 0 { 0 } else { section_header.size / size };
-			let context = Context::default();
-			symbol_table = SymbolTable::parse(
-				binary,
-				section_header.offset as usize,
-				count as usize,
-				context,
-			)?;
+			symbol_table =
+				SymbolTable::parse(binary, section_header.offset as usize, count as usize, ctx,)?;
+			string_table_for_symbol_table =
+				get_string_table(&section_headers, section_header.link as usize, binary,)?;
 		}
 
 		let mut is_position_independent_executable = false;
@@ -133,8 +133,8 @@ impl Elf {
 		let mut procedure_linkage_table_relocation = RelocationSection::default();
 		let mut dynamic_string_table = StringTable::default();
 
-		let dynamic = Dynamic::parse(binary, &program_headers,)?;
-		if let Some(ref dynamic,) = dynamic {
+		let dynamic_info = Dynamic::parse(binary, &program_headers,)?;
+		if let Some(ref dynamic,) = dynamic_info {
 			let dyn_info = &dynamic.info;
 			is_position_independent_executable =
 				dyn_info.extended_flags & Dynamic::DF_EXTEND_PIE != 0;
@@ -165,7 +165,6 @@ impl Elf {
 				}
 			}
 
-			let ctx = &Context::default();
 			dynamic_relocation_with_addend = RelocationSection::parse(
 				binary,
 				dyn_info.relocation_addend,
@@ -209,13 +208,51 @@ impl Elf {
 				SymbolTable::parse(binary, dyn_info.symbol_table, symbols_count, ctx,)?;
 		}
 
-		todo!(
-			"
-			pub trait Pread<Ctx: Copy, E>
+		let mut section_relocations = vec![];
+		for (index, section,) in section_headers.iter().enumerate() {
+			let is_relocation_addrend = section.ty == SHT_RELA;
+			if is_relocation_addrend || section.ty == SHT_REL {
+				section.check_size(binary.len(),)?;
+				let section_header_relocation_section = RelocationSection::parse(
+					binary,
+					section.offset as usize,
+					section.size as usize,
+					is_relocation_addrend,
+					ctx,
+				)?;
+				section_relocations.push((index, section_header_relocation_section,),);
+			}
+		}
 
-			TryFromCtx<'a, Ctx, Self, Error = E>
-			"
-		)
+		let symbol_version_section = SymbolVersionSection::parse(binary, &section_headers, ctx,)?;
+		let version_definition_section =
+			VersionDefinitionSection::parse(binary, &section_headers, ctx,)?;
+		let version_needed_section = VersionNeededSection::parse(binary, &section_headers, ctx,)?;
+
+		Ok(Self {
+			header,
+			program_headers,
+			section_headers,
+			section_header_string_table,
+			dynamic_string_table,
+			dynamic_symbol_table,
+			symbol_table,
+			string_table_for_symbol_table,
+			dynamic_info,
+			dynamic_relocation_with_addend,
+			dynamic_relocation,
+			procedure_linkage_table_relocation,
+			section_relocations,
+			shared_object_name,
+			interpreter,
+			libraries,
+			runtime_search_path_deprecated,
+			runtime_search_path,
+			symbol_version_section,
+			version_definition_section,
+			version_needed_section,
+			is_position_independent_executable,
+		},)
 	}
 
 	pub fn is_64(&self,) -> bool {
@@ -223,11 +260,15 @@ impl Elf {
 	}
 
 	pub fn is_lib(&self,) -> bool {
-		self.header.is_lib()
+		self.header.is_lib() && !self.is_position_independent_executable
 	}
 
 	pub fn is_little_endian(&self,) -> bool {
 		self.header.is_little_endian()
+	}
+
+	pub fn entry_point_address(&self,) -> usize {
+		self.header.entry as usize
 	}
 }
 
@@ -967,7 +1008,7 @@ impl SymbolTable {
 	/// size of symbol structure in 64bit.
 	const SIZE_OF_SYMBOL_64: usize = 4 + 1 + 1 + 2 + 8 + 8;
 
-	fn parse(binary: &Vec<u8,>, offset: usize, count: usize, context: Context,) -> Rslt<Self,> {
+	fn parse(binary: &Vec<u8,>, offset: usize, count: usize, context: &Context,) -> Rslt<Self,> {
 		let size = count
 			.checked_mul(match context.container {
 				Container::Little => todo!(),
@@ -981,10 +1022,11 @@ impl SymbolTable {
 
 		let bytes = binary[offset..offset + size].to_vec();
 
-		Ok(SymbolTable { bytes, count, ctx: context, start: offset, end: offset + size, },)
+		Ok(SymbolTable { bytes, count, ctx: context.clone(), start: offset, end: offset + size, },)
 	}
 }
 
+#[derive(Clone,)]
 pub struct Context {
 	pub container: Container,
 	pub le:        Endian,
@@ -997,7 +1039,7 @@ impl Default for Context {
 }
 
 /// the size of a binary container
-#[derive(PartialEq, Eq,)]
+#[derive(PartialEq, Eq, Clone,)]
 pub enum Container {
 	Little,
 	Big,
@@ -1005,12 +1047,11 @@ pub enum Container {
 
 impl Default for Container {
 	fn default() -> Self {
-		// TODO: add conditional compilation current implementation only support 64bit pointer width
 		Self::Big
 	}
 }
 
-#[derive(PartialEq, Eq,)]
+#[derive(PartialEq, Eq, Clone,)]
 pub enum Endian {
 	Little,
 	Big,
@@ -1018,7 +1059,6 @@ pub enum Endian {
 
 impl Default for Endian {
 	fn default() -> Self {
-		// TODO: add conditional compilation current implementation only support 64bit pointer width
 		Self::Big
 	}
 }
@@ -1294,7 +1334,7 @@ impl Dyn {
 
 	fn size_of(Context { container, .. }: &Context,) -> usize {
 		match container {
-			Container::Little => todo!(),
+			Container::Little => Self::SIZE_OF_DYN_32,
 			Container::Big => Self::SIZE_OF_DYN_64,
 		}
 	}
@@ -1601,16 +1641,78 @@ pub struct SymbolVersionSection {
 	pub context: Context,
 }
 
+impl SymbolVersionSection {
+	fn parse(
+		binary: &Vec<u8,>,
+		section_headers: &Vec<SectionHeader,>,
+		ctx: &Context,
+	) -> Rslt<Option<Self,>,> {
+		let (offset, size,) = if let Some(section_header,) =
+			section_headers.iter().find(|section_header| section_header.ty == SHT_GNU_VERSYM,)
+		{
+			(section_header.offset as usize, section_header.size as usize,)
+		} else {
+			return Ok(None,);
+		};
+		let bytes = binary[offset..offset + size].to_vec();
+		Ok(Some(Self { bytes, context: ctx.clone(), },),)
+	}
+}
+
 pub struct VersionDefinitionSection {
 	pub bytes:   Vec<u8,>,
 	pub count:   usize,
 	pub context: Context,
 }
 
+impl VersionDefinitionSection {
+	fn parse(
+		binary: &Vec<u8,>,
+		section_headers: &Vec<SectionHeader,>,
+		ctx: &Context,
+	) -> Rslt<Option<Self,>,> {
+		let (offset, size, count,) = if let Some(section_header,) =
+			section_headers.iter().find(|section_header| section_header.ty == SHT_GNU_VERDEF,)
+		{
+			(
+				section_header.offset as usize,
+				section_header.size as usize,
+				section_header.info as usize,
+			)
+		} else {
+			return Ok(None,);
+		};
+		let bytes = binary[offset..offset + size].to_vec();
+		Ok(Some(Self { bytes, count, context: ctx.clone(), },),)
+	}
+}
+
 pub struct VersionNeededSection {
 	pub bytes:   Vec<u8,>,
 	pub count:   usize,
 	pub context: Context,
+}
+
+impl VersionNeededSection {
+	fn parse(
+		binary: &Vec<u8,>,
+		section_headers: &Vec<SectionHeader,>,
+		ctx: &Context,
+	) -> Rslt<Option<Self,>,> {
+		let (offset, size, count,) = if let Some(section_header,) =
+			section_headers.iter().find(|section_header| section_header.ty == SHT_GNU_VERNEED,)
+		{
+			(
+				section_header.offset as usize,
+				section_header.size as usize,
+				section_header.info as usize,
+			)
+		} else {
+			return Ok(None,);
+		};
+		let bytes = binary[offset..offset + size].to_vec();
+		Ok(Some(Self { bytes, count, context: ctx.clone(), },),)
+	}
 }
 
 trait Integer<T: PrimitiveInteger,>:
@@ -1699,7 +1801,7 @@ impl Integer<usize,> for u8 {
 
 impl Integer<i8,> for u8 {
 	fn cast_int(self,) -> i8 {
-		self
+		self as i8
 	}
 }
 

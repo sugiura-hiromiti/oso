@@ -1,19 +1,10 @@
 use crate::Rslt;
-use crate::chibi_uefi::guid::AsBytes;
-use crate::chibi_uefi::guid::Hex;
-use crate::chibi_uefi::guid::read_to_hex;
-use crate::chibi_uefi::protocol::Protocol;
 use crate::chibi_uefi::table::boot_services;
 use crate::elf::Elf;
-use crate::guid;
-use crate::print;
-use crate::println;
 use crate::raw::protocol::file::FileProtocolV1;
 use crate::raw::protocol::file::SimpleFileSystemProtocol;
-use crate::raw::types::Guid;
 use crate::raw::types::PhysicalAddress;
 use crate::raw::types::file::FileAttributes;
-use crate::raw::types::file::FileInfo;
 use crate::raw::types::file::OpenMode;
 use core::ptr::NonNull;
 
