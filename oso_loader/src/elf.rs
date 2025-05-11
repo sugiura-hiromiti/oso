@@ -11,6 +11,7 @@ use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
+use core::cmp;
 use core::iter::Sum;
 use core::ops::Add;
 use core::ops::AddAssign;
@@ -164,19 +165,20 @@ impl Elf {
 				}
 			}
 
+			let ctx = &Context::default();
 			dynamic_relocation_with_addend = RelocationSection::parse(
 				binary,
 				dyn_info.relocation_addend,
 				dyn_info.relocation_addend_size,
 				true,
-				Context::default(),
+				ctx,
 			)?;
 			dynamic_relocation = RelocationSection::parse(
 				binary,
 				dyn_info.relocation,
 				dyn_info.relocation_size,
 				false,
-				Context::default(),
+				ctx,
 			)?;
 			let is_relocation_addrend = dyn_info.plt_relocation_type == Dynamic::DT_RELA;
 			procedure_linkage_table_relocation = RelocationSection::parse(
@@ -184,18 +186,27 @@ impl Elf {
 				dyn_info.jmp_relocation_address,
 				dyn_info.plt_relocation_size,
 				is_relocation_addrend,
-				Context::default(),
+				ctx,
 			)?;
 
 			let mut symbols_count = if let Some(gnu_hash,) = dyn_info.gnu_hash {
-				gnu_hash_len(binary, gnu_hash as usize, Context::default(),)?
+				gnu_hash_len(binary, gnu_hash as usize, ctx,)?
 			} else if let Some(hash,) = dyn_info.hash {
-				hash_len(binary, hash as usize, header.machine, Context::default(),)?
+				hash_len(binary, hash as usize, header.machine, ctx,)?
 			} else {
 				0
 			};
 
-			//let max_relocation_symbol=dynamic_relocation_with_addend.iter
+			let max_relocation_symbol = dynamic_relocation_with_addend
+				.iter()
+				.chain(dynamic_relocation.iter(),)
+				.chain(procedure_linkage_table_relocation.iter(),)
+				.fold(0, |count, relocation| cmp::max(count, relocation.symbol_index,),);
+			if max_relocation_symbol != 0 {
+				symbols_count = cmp::max(symbols_count, max_relocation_symbol + 1,);
+			}
+			dynamic_symbol_table =
+				SymbolTable::parse(binary, dyn_info.symbol_table, symbols_count, ctx,)?;
 		}
 
 		todo!(
@@ -1436,15 +1447,15 @@ impl RelocationSection {
 		binary: &Vec<u8,>,
 		offset: usize,
 		size: usize,
-		is_relocation_addrend: bool,
-		ctx: Context,
+		is_addend: bool,
+		ctx: &Context,
 	) -> Rslt<Self,> {
 		let bytes = if size != 0 { &binary[offset..offset + size] } else { &[] }.to_vec();
 
 		Ok(Self {
 			bytes,
-			count: size / Self::size(is_relocation_addrend, &ctx,),
-			context: (is_relocation_addrend, ctx,),
+			count: size / Self::size(is_addend, ctx,),
+			context: (is_addend, ctx.clone(),),
 			start: offset,
 			end: offset + size,
 		},)
@@ -1457,6 +1468,10 @@ impl RelocationSection {
 			(false, Container::Little,) => Self::SIZE_OF_RELOCATION_32,
 			(false, Container::Big,) => Self::SIZE_OF_RELOCATION_64,
 		}
+	}
+
+	fn iter(&self,) -> RelocationIterator {
+		self.into_iter()
 	}
 }
 
@@ -1496,7 +1511,7 @@ pub struct Relocation {
 	/// address
 	pub offset:       u64,
 	/// addend
-	pub addend:       Option<u64,>,
+	pub addend:       Option<i64,>,
 	/// the index into the corresponding symbol table - either dynamic or regular
 	pub symbol_index: usize,
 	/// the relocation type
@@ -1504,8 +1519,80 @@ pub struct Relocation {
 }
 
 impl Relocation {
-	fn parse(bytes: &Vec<u8,>, offset: &mut usize, context: &Context,) -> Rslt<Self,> {
-		todo!()
+	fn parse(
+		bytes: &Vec<u8,>,
+		offset: &mut usize,
+		(is_relocation_addrend, context,): &RelocationContext,
+	) -> Rslt<Self,> {
+		let relocation = match (is_relocation_addrend, &context.container,) {
+			(true, Container::Little,) => todo!(),
+			(true, Container::Big,) => RelocAddend::parse(bytes, offset,).into(),
+			(false, Container::Little,) => todo!(),
+			(false, Container::Big,) => Reloc::parse(bytes, offset,).into(),
+		};
+		Ok(relocation,)
+	}
+}
+
+pub struct RelocAddend {
+	pub offset: u64,
+	pub info:   u64,
+	pub addend: i64,
+}
+
+impl RelocAddend {
+	fn parse(binary: &Vec<u8,>, offset: &mut usize,) -> Self {
+		let reloc_offset: u64 = read_le_bytes(offset, binary,);
+		let info: u64 = read_le_bytes(offset, binary,);
+		let addend: i64 = read_le_bytes(offset, binary,);
+		Self { offset: reloc_offset, info, addend, }
+	}
+}
+
+impl From<RelocAddend,> for Relocation {
+	fn from(value: RelocAddend,) -> Self {
+		Self {
+			offset:       value.offset,
+			addend:       Some(value.addend,),
+			symbol_index: relocation_symbol_index(value.info,) as usize,
+			ty:           relocation_type(value.info,),
+		}
+	}
+}
+
+fn relocation_symbol_index(info: u64,) -> u32 {
+	(info >> 32) as u32
+}
+
+fn relocation_type(info: u64,) -> u32 {
+	(info & 0xffff_ffff) as u32
+}
+
+fn relocation_info(symbol: u64, ty: u64,) -> u64 {
+	(symbol << 32) + ty
+}
+
+pub struct Reloc {
+	pub offset: u64,
+	pub info:   u64,
+}
+
+impl Reloc {
+	fn parse(binary: &Vec<u8,>, offset: &mut usize,) -> Self {
+		let reloc_offset: u64 = read_le_bytes(offset, binary,);
+		let info: u64 = read_le_bytes(offset, binary,);
+		Self { offset: reloc_offset, info, }
+	}
+}
+
+impl From<Reloc,> for Relocation {
+	fn from(value: Reloc,) -> Self {
+		Self {
+			offset:       value.offset,
+			addend:       None,
+			symbol_index: relocation_symbol_index(value.info,) as usize,
+			ty:           relocation_type(value.info,),
+		}
 	}
 }
 
@@ -1567,6 +1654,12 @@ impl PrimitiveInteger for u32 {}
 impl PrimitiveInteger for u64 {}
 impl PrimitiveInteger for u128 {}
 impl PrimitiveInteger for usize {}
+impl PrimitiveInteger for i8 {}
+impl PrimitiveInteger for i16 {}
+impl PrimitiveInteger for i32 {}
+impl PrimitiveInteger for i64 {}
+impl PrimitiveInteger for i128 {}
+impl PrimitiveInteger for isize {}
 
 impl Integer<u8,> for u8 {
 	fn cast_int(self,) -> u8 {
@@ -1604,42 +1697,198 @@ impl Integer<usize,> for u8 {
 	}
 }
 
+impl Integer<i8,> for u8 {
+	fn cast_int(self,) -> i8 {
+		self
+	}
+}
+
+impl Integer<i16,> for u8 {
+	fn cast_int(self,) -> i16 {
+		self as i16
+	}
+}
+
+impl Integer<i32,> for u8 {
+	fn cast_int(self,) -> i32 {
+		self as i32
+	}
+}
+
+impl Integer<i64,> for u8 {
+	fn cast_int(self,) -> i64 {
+		self as i64
+	}
+}
+
+impl Integer<i128,> for u8 {
+	fn cast_int(self,) -> i128 {
+		self as i128
+	}
+}
+
+impl Integer<isize,> for u8 {
+	fn cast_int(self,) -> isize {
+		self as isize
+	}
+}
+
 trait AsInt<T: PrimitiveInteger,> {
 	fn as_int(&self,) -> T;
 }
 
 impl AsInt<u8,> for &[u8] {
 	fn as_int(&self,) -> u8 {
-		unsafe { *(&self[..1] as *const _ as *const u8) }
+		//unsafe { *(&self[..1] as *const _ as *const u8) }
+		let mut rslt = 0;
+		for i in 0..size_of::<u8,>() {
+			rslt = rslt << 8;
+			rslt |= self.get(i,).unwrap();
+		}
+
+		rslt
 	}
 }
 
 impl AsInt<u16,> for &[u8] {
 	fn as_int(&self,) -> u16 {
-		unsafe { *(&self[..2] as *const _ as *const u16) }
+		// unsafe { *(&self[..2] as *const _ as *const u16) }
+		let mut rslt = 0;
+		for i in 0..size_of::<u16,>() {
+			rslt = rslt << 8;
+			rslt |= *self.get(i,).unwrap() as u16;
+		}
+
+		rslt
 	}
 }
 
 impl AsInt<u32,> for &[u8] {
 	fn as_int(&self,) -> u32 {
-		unsafe { *(&self[..4] as *const _ as *const u32) }
+		// unsafe { *(&self[..4] as *const _ as *const u32) }
+		let mut rslt = 0;
+		for i in 0..size_of::<u32,>() {
+			rslt = rslt << 8;
+			rslt |= *self.get(i,).unwrap() as u32;
+		}
+
+		rslt
 	}
 }
 
 impl AsInt<u64,> for &[u8] {
 	fn as_int(&self,) -> u64 {
-		unsafe { *(&self[..8] as *const _ as *const u64) }
+		// unsafe { *(&self[..8] as *const _ as *const u64) }
+		let mut rslt = 0;
+		for i in 0..size_of::<u64,>() {
+			rslt = rslt << 8;
+			rslt |= *self.get(i,).unwrap() as u64;
+		}
+
+		rslt
 	}
 }
 
 impl AsInt<u128,> for &[u8] {
 	fn as_int(&self,) -> u128 {
-		unsafe { *(&self[..16] as *const _ as *const u128) }
+		// unsafe { *(&self[..16] as *const _ as *const u128) }
+		let mut rslt = 0;
+		for i in 0..size_of::<u128,>() {
+			rslt = rslt << 8;
+			rslt |= *self.get(i,).unwrap() as u128;
+		}
+
+		rslt
 	}
 }
 
 impl AsInt<usize,> for &[u8] {
 	fn as_int(&self,) -> usize {
-		unsafe { *(&self[..8] as *const _ as *const usize) }
+		// unsafe { *(&self[..8] as *const _ as *const usize) }
+		let mut rslt = 0;
+		for i in 0..size_of::<usize,>() {
+			rslt = rslt << 8;
+			rslt |= *self.get(i,).unwrap() as usize;
+		}
+
+		rslt
+	}
+}
+
+impl AsInt<i8,> for &[u8] {
+	fn as_int(&self,) -> i8 {
+		//unsafe { *(&self[..1] as *const _ as *const u8) }
+		let mut rslt = 0;
+		for i in 0..size_of::<i8,>() {
+			rslt = rslt << 8;
+			rslt |= *self.get(i,).unwrap() as i8;
+		}
+
+		rslt
+	}
+}
+
+impl AsInt<i16,> for &[u8] {
+	fn as_int(&self,) -> i16 {
+		// unsafe { *(&self[..2] as *const _ as *const u16) }
+		let mut rslt = 0;
+		for i in 0..size_of::<i16,>() {
+			rslt = rslt << 8;
+			rslt |= *self.get(i,).unwrap() as i16;
+		}
+
+		rslt
+	}
+}
+
+impl AsInt<i32,> for &[u8] {
+	fn as_int(&self,) -> i32 {
+		// unsafe { *(&self[..4] as *const _ as *const u32) }
+		let mut rslt = 0;
+		for i in 0..size_of::<i32,>() {
+			rslt = rslt << 8;
+			rslt |= *self.get(i,).unwrap() as i32;
+		}
+
+		rslt
+	}
+}
+
+impl AsInt<i64,> for &[u8] {
+	fn as_int(&self,) -> i64 {
+		// unsafe { *(&self[..8] as *const _ as *const u64) }
+		let mut rslt = 0;
+		for i in 0..size_of::<i64,>() {
+			rslt = rslt << 8;
+			rslt |= *self.get(i,).unwrap() as i64;
+		}
+
+		rslt
+	}
+}
+
+impl AsInt<i128,> for &[u8] {
+	fn as_int(&self,) -> i128 {
+		// unsafe { *(&self[..16] as *const _ as *const u128) }
+		let mut rslt = 0;
+		for i in 0..size_of::<i128,>() {
+			rslt = rslt << 8;
+			rslt |= *self.get(i,).unwrap() as i128;
+		}
+
+		rslt
+	}
+}
+
+impl AsInt<isize,> for &[u8] {
+	fn as_int(&self,) -> isize {
+		// unsafe { *(&self[..8] as *const _ as *const usize) }
+		let mut rslt = 0;
+		for i in 0..size_of::<isize,>() {
+			rslt = rslt << 8;
+			rslt |= *self.get(i,).unwrap() as isize;
+		}
+
+		rslt
 	}
 }
