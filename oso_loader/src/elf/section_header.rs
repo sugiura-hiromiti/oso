@@ -1,7 +1,11 @@
+use core::error::Error;
+
 use super::StringTable;
 use crate::Rslt;
 use crate::elf::read_le_bytes;
 use crate::error::OsoLoaderError;
+use crate::print;
+use crate::println;
 use alloc::format;
 use alloc::vec::Vec;
 
@@ -113,7 +117,7 @@ pub struct SectionHeader {
 	pub link:          u64,
 	pub info:          u64,
 	pub section_align: u64,
-	pub entry_size: u64,
+	pub entry_size:    u64,
 }
 
 impl SectionHeader {
@@ -121,38 +125,62 @@ impl SectionHeader {
 
 	pub fn parse(binary: &[u8], offset: &mut usize, count: usize,) -> Rslt<Vec<Self,>,> {
 		assert!(count <= binary.len() / Self::SIZE_64, "binary is too small");
+		println!("count: {count}");
 
 		let mut section_headers = Vec::with_capacity(count,);
 
-		for _ in 0..count {
-			let name = read_le_bytes(offset, binary,);
-			let ty = read_le_bytes(offset, binary,);
-			let flags = read_le_bytes(offset, binary,);
-			let address = read_le_bytes(offset, binary,);
-			let segment_offset = read_le_bytes(offset, binary,);
-			let size = read_le_bytes(offset, binary,);
-			let link = read_le_bytes(offset, binary,);
-			let info = read_le_bytes(offset, binary,);
-			let section_align = read_le_bytes(offset, binary,);
-			let entry_size = read_le_bytes(offset, binary,);
-
-			let section_header = Self {
-				name,
-				ty,
-				flags,
-				address,
-				offset: segment_offset,
-				size,
-				link,
-				info,
-				section_align,
-				entry_size,
-			};
-
+		for _i in 0..count {
+			let section_header = Self::parse_fields(binary, offset,);
 			section_headers.push(section_header,);
 		}
 
 		Ok(section_headers,)
+	}
+
+	fn parse_fields(binary: &[u8], offset: &mut usize,) -> Rslt<Self,> {
+		macro_rules! fields {
+			($field:ident) => {
+				let Some($field,) = read_le_bytes(offset, binary,) else {
+					return Err(OsoLoaderError::EfiParse(format!(
+						"end of binary. unable to parse {} field of section header",
+						stringify!($field)
+					),),);
+				};
+			};
+			($($fields:ident,)*) => {
+				$(
+					fields!($fields);
+				)*
+			};
+		}
+
+		fields!(
+			name,
+			ty,
+			flags,
+			address,
+			segment_offset,
+			size,
+			link,
+			info,
+			section_align,
+			entry_size,
+		);
+
+		let section_header = Self {
+			name,
+			ty,
+			flags,
+			address,
+			offset: segment_offset,
+			size,
+			link,
+			info,
+			section_align,
+			entry_size,
+		};
+
+		Ok(section_header,)
 	}
 
 	pub fn check_size(&self, size: usize,) -> Rslt<(),> {

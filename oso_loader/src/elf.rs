@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use crate::Rslt;
 use crate::elf::hash::gnu_hash_len;
 use crate::elf::hash::hash_len;
@@ -689,33 +691,67 @@ fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> Rslt<ElfHe
 	let offset = &mut 0;
 
 	{
-		let a: u16 = read_le_bytes(&mut 0, &[0x34, 0x12,],);
+		let a: u16 = read_le_bytes(&mut 0, &[0x34, 0x12,],).unwrap();
 		assert_eq!(0x1234, a);
 
-		let b: u32 = read_le_bytes(&mut 0, &[0x78, 0x56, 0x34, 0x12,],);
+		let b: u32 = read_le_bytes(&mut 0, &[0x78, 0x56, 0x34, 0x12,],).unwrap();
 		assert_eq!(0x12345678, b);
 
-		let c: u64 = read_le_bytes(&mut 0, &[0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x23, 0x01,],);
+		let c: u64 =
+			read_le_bytes(&mut 0, &[0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x23, 0x01,],).unwrap();
 		assert_eq!(0x0123456789abcdef, c);
 
 		println!("-------------------------------");
 		println!("\n");
 	}
 
-	let ty: u16 = read_le_bytes(offset, ident_remain,);
-	let machine: u16 = read_le_bytes(offset, ident_remain,);
-	let version: u32 = read_le_bytes(offset, ident_remain,);
-	let entry: u64 = read_le_bytes(offset, ident_remain,);
-	let program_header_offset: u64 = read_le_bytes(offset, ident_remain,);
-	let section_header_offset: u64 = read_le_bytes(offset, ident_remain,);
-	let flags: u32 = read_le_bytes(offset, ident_remain,);
-	let elf_header_size: u16 = read_le_bytes(offset, ident_remain,);
-	let program_header_entry_size: u16 = read_le_bytes(offset, ident_remain,);
-	let program_header_count: u16 = read_le_bytes(offset, ident_remain,);
-	let section_header_entry_size: u16 = read_le_bytes(offset, ident_remain,);
-	let section_header_count: u16 = read_le_bytes(offset, ident_remain,);
-	let section_header_index_of_section_name_string_table: u16 =
-		read_le_bytes(offset, ident_remain,);
+	macro_rules! fields {
+		($field:ident) => {
+			let $field =
+				read_le_bytes(offset, ident_remain,).ok_or(OsoLoaderError::EfiParse(format!(
+					"end of binary. unable to parse {} field of header flag field",
+					stringify!($field)
+				),),)?;
+		};
+		($($fields:ident,)*)=>{
+			$(
+				fields!($fields);
+			)*
+		}
+	}
+
+	fields!(
+		machine,
+		version,
+		entry,
+		program_header_offset,
+		section_header_offset,
+		flags,
+		elf_header_size,
+		program_header_entry_size,
+		program_header_count,
+		section_header_entry_size,
+		section_header_count,
+		section_header_index_of_section_name_string_table,
+	);
+
+	let ty: u16 = read_le_bytes(offset, ident_remain,).ok_or(OsoLoaderError::EfiParse(format!(
+		"end of binary. unable to parse {} field of header flag field",
+		stringify!(ty)
+	),),)?;
+	// let machine: u16 = read_le_bytes(offset, ident_remain,);
+	// let version: u32 = read_le_bytes(offset, ident_remain,);
+	// let entry: u64 = read_le_bytes(offset, ident_remain,);
+	// let program_header_offset: u64 = read_le_bytes(offset, ident_remain,);
+	// let section_header_offset: u64 = read_le_bytes(offset, ident_remain,);
+	// let flags: u32 = read_le_bytes(offset, ident_remain,);
+	// let elf_header_size: u16 = read_le_bytes(offset, ident_remain,);
+	// let program_header_entry_size: u16 = read_le_bytes(offset, ident_remain,);
+	// let program_header_count: u16 = read_le_bytes(offset, ident_remain,);
+	// let section_header_entry_size: u16 = read_le_bytes(offset, ident_remain,);
+	// let section_header_count: u16 = read_le_bytes(offset, ident_remain,);
+	// let section_header_index_of_section_name_string_table: u16 =
+	// 	read_le_bytes(offset, ident_remain,);
 
 	let ty = ElfType::try_from(ty,)?;
 
@@ -738,15 +774,20 @@ fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> Rslt<ElfHe
 }
 
 //fn read_le_bytes<I: PrimitiveInteger + Sum<<I as Shl<usize,>>::Output,>,>(
-fn read_le_bytes<I: PrimitiveInteger,>(offset: &mut usize, binary: &[u8],) -> I
+fn read_le_bytes<I: PrimitiveInteger,>(offset: &mut usize, binary: &[u8],) -> Option<I,>
 where for<'a> &'a [u8]: AsInt<I,> {
 	//let window = &binary[*offset..*offset + size];
 	// let val =
 	// 	window.iter().enumerate().map(|(i, b,)| Integer::<I,>::cast_int(*b,) << i * 8,).sum::<I>();
+	let size = size_of::<I,>();
+	if size + *offset >= binary.len() {
+		*offset += size;
+		return None;
+	}
 
 	let val = (&binary[*offset..]).as_int();
-	*offset += size_of::<I,>();
-	val
+	*offset += size;
+	Some(val,)
 }
 
 #[derive(PartialEq, Eq,)]
@@ -1841,14 +1882,7 @@ trait AsInt<T: PrimitiveInteger,> {
 
 impl AsInt<u8,> for &[u8] {
 	fn as_int(&self,) -> u8 {
-		//unsafe { *(&self[..1] as *const _ as *const u8) }
-		let mut rslt = 0;
-		for i in 0..size_of::<u8,>() {
-			rslt = rslt << 8;
-			rslt |= self.get(i,).unwrap();
-		}
-
-		rslt
+		*self.get(0,).unwrap()
 	}
 }
 
@@ -1856,7 +1890,7 @@ impl AsInt<u16,> for &[u8] {
 	fn as_int(&self,) -> u16 {
 		// unsafe { *(&self[..2] as *const _ as *const u16) }
 		let mut rslt = 0;
-		for i in 0..size_of::<u16,>() {
+		for i in (0..size_of::<u16,>()).rev() {
 			rslt = rslt << 8;
 			rslt |= *self.get(i,).unwrap() as u16;
 		}
@@ -1869,7 +1903,7 @@ impl AsInt<u32,> for &[u8] {
 	fn as_int(&self,) -> u32 {
 		// unsafe { *(&self[..4] as *const _ as *const u32) }
 		let mut rslt = 0;
-		for i in 0..size_of::<u32,>() {
+		for i in (0..size_of::<u32,>()).rev() {
 			rslt = rslt << 8;
 			rslt |= *self.get(i,).unwrap() as u32;
 		}
@@ -1882,7 +1916,7 @@ impl AsInt<u64,> for &[u8] {
 	fn as_int(&self,) -> u64 {
 		// unsafe { *(&self[..8] as *const _ as *const u64) }
 		let mut rslt = 0;
-		for i in 0..size_of::<u64,>() {
+		for i in (0..size_of::<u64,>()).rev() {
 			rslt = rslt << 8;
 			rslt |= *self.get(i,).unwrap() as u64;
 		}
@@ -1895,7 +1929,7 @@ impl AsInt<u128,> for &[u8] {
 	fn as_int(&self,) -> u128 {
 		// unsafe { *(&self[..16] as *const _ as *const u128) }
 		let mut rslt = 0;
-		for i in 0..size_of::<u128,>() {
+		for i in (0..size_of::<u128,>()).rev() {
 			rslt = rslt << 8;
 			rslt |= *self.get(i,).unwrap() as u128;
 		}
@@ -1908,7 +1942,7 @@ impl AsInt<usize,> for &[u8] {
 	fn as_int(&self,) -> usize {
 		// unsafe { *(&self[..8] as *const _ as *const usize) }
 		let mut rslt = 0;
-		for i in 0..size_of::<usize,>() {
+		for i in (0..size_of::<usize,>()).rev() {
 			rslt = rslt << 8;
 			rslt |= *self.get(i,).unwrap() as usize;
 		}
@@ -1919,14 +1953,7 @@ impl AsInt<usize,> for &[u8] {
 
 impl AsInt<i8,> for &[u8] {
 	fn as_int(&self,) -> i8 {
-		//unsafe { *(&self[..1] as *const _ as *const u8) }
-		let mut rslt = 0;
-		for i in 0..size_of::<i8,>() {
-			rslt = rslt << 8;
-			rslt |= *self.get(i,).unwrap() as i8;
-		}
-
-		rslt
+		*self.get(0,).unwrap() as i8
 	}
 }
 
@@ -1934,7 +1961,7 @@ impl AsInt<i16,> for &[u8] {
 	fn as_int(&self,) -> i16 {
 		// unsafe { *(&self[..2] as *const _ as *const u16) }
 		let mut rslt = 0;
-		for i in 0..size_of::<i16,>() {
+		for i in (0..size_of::<i16,>()).rev() {
 			rslt = rslt << 8;
 			rslt |= *self.get(i,).unwrap() as i16;
 		}
@@ -1947,7 +1974,7 @@ impl AsInt<i32,> for &[u8] {
 	fn as_int(&self,) -> i32 {
 		// unsafe { *(&self[..4] as *const _ as *const u32) }
 		let mut rslt = 0;
-		for i in 0..size_of::<i32,>() {
+		for i in (0..size_of::<i32,>()).rev() {
 			rslt = rslt << 8;
 			rslt |= *self.get(i,).unwrap() as i32;
 		}
@@ -1960,7 +1987,7 @@ impl AsInt<i64,> for &[u8] {
 	fn as_int(&self,) -> i64 {
 		// unsafe { *(&self[..8] as *const _ as *const u64) }
 		let mut rslt = 0;
-		for i in 0..size_of::<i64,>() {
+		for i in (0..size_of::<i64,>()).rev() {
 			rslt = rslt << 8;
 			rslt |= *self.get(i,).unwrap() as i64;
 		}
@@ -1973,7 +2000,7 @@ impl AsInt<i128,> for &[u8] {
 	fn as_int(&self,) -> i128 {
 		// unsafe { *(&self[..16] as *const _ as *const u128) }
 		let mut rslt = 0;
-		for i in 0..size_of::<i128,>() {
+		for i in (0..size_of::<i128,>()).rev() {
 			rslt = rslt << 8;
 			rslt |= *self.get(i,).unwrap() as i128;
 		}
@@ -1986,7 +2013,7 @@ impl AsInt<isize,> for &[u8] {
 	fn as_int(&self,) -> isize {
 		// unsafe { *(&self[..8] as *const _ as *const usize) }
 		let mut rslt = 0;
-		for i in 0..size_of::<isize,>() {
+		for i in (0..size_of::<isize,>()).rev() {
 			rslt = rslt << 8;
 			rslt |= *self.get(i,).unwrap() as isize;
 		}
