@@ -25,14 +25,14 @@ impl ProgramHeader {
 		let mut program_headers = Vec::with_capacity(count,);
 
 		for _ in 0..count {
-			let ty: u32 = read_le_bytes(offset, binary,);
-			let flags = read_le_bytes(offset, binary,);
-			let segment_offset = read_le_bytes(offset, binary,);
-			let virtual_address = read_le_bytes(offset, binary,);
-			let physical_address = read_le_bytes(offset, binary,);
-			let file_size = read_le_bytes(offset, binary,);
-			let memory_size = read_le_bytes(offset, binary,);
-			let align = read_le_bytes(offset, binary,);
+			let ty: u32 = read_le_bytes(offset, binary,).unwrap();
+			let flags = read_le_bytes(offset, binary,).unwrap();
+			let segment_offset = read_le_bytes(offset, binary,).unwrap();
+			let virtual_address = read_le_bytes(offset, binary,).unwrap();
+			let physical_address = read_le_bytes(offset, binary,).unwrap();
+			let file_size = read_le_bytes(offset, binary,).unwrap();
+			let memory_size = read_le_bytes(offset, binary,).unwrap();
+			let align = read_le_bytes(offset, binary,).unwrap();
 
 			let ty = ProgramHeaderType::try_from(ty,)?;
 

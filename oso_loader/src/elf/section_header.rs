@@ -130,7 +130,7 @@ impl SectionHeader {
 		let mut section_headers = Vec::with_capacity(count,);
 
 		for _i in 0..count {
-			let section_header = Self::parse_fields(binary, offset,);
+			let section_header = Self::parse_fields(binary, offset,)?;
 			section_headers.push(section_header,);
 		}
 

@@ -92,6 +92,8 @@ impl Elf {
 		let program_headers =
 			ProgramHeader::parse(binary, &mut offset, header.program_header_count as usize,)?;
 
+		println!("program header: {}", program_headers.len());
+
 		let mut interpreter = None;
 		for program_header in &program_headers {
 			if program_header.ty == ProgramHeaderType::Interp && program_header.file_size != 0 {
@@ -671,6 +673,7 @@ impl ElfHeader {
 		let ident = &binary[..ELF_IDENT_SIZE];
 		let ident = ElfHeaderIdent::new(ident,)?;
 		let remain = &binary[ELF_IDENT_SIZE..];
+		println!("{ident:#?}");
 		header_flag_fields(ident, remain,)
 	}
 
@@ -708,18 +711,26 @@ fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> Rslt<ElfHe
 	macro_rules! fields {
 		($field:ident) => {
 			let $field =
-				read_le_bytes(offset, ident_remain,).ok_or(OsoLoaderError::EfiParse(format!(
+				read_le_bytes(offset, ident_remain,).ok_or_else(|| {
+					let field = stringify!($field);
+					OsoLoaderError::EfiParse(format!(
 					"end of binary. unable to parse {} field of header flag field",
-					stringify!($field)
-				),),)?;
+					field
+				),)
+				})?;
 		};
 		($($fields:ident,)*)=>{
 			$(
 				fields!($fields);
 			)*
-		}
+		};
 	}
 
+	let ty: u16 = read_le_bytes(offset, ident_remain,).ok_or(OsoLoaderError::EfiParse(format!(
+		"end of binary. unable to parse {} field of header flag field",
+		stringify!(ty)
+	),),)?;
+	let ty = ElfType::try_from(ty,)?;
 	fields!(
 		machine,
 		version,
@@ -734,26 +745,6 @@ fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> Rslt<ElfHe
 		section_header_count,
 		section_header_index_of_section_name_string_table,
 	);
-
-	let ty: u16 = read_le_bytes(offset, ident_remain,).ok_or(OsoLoaderError::EfiParse(format!(
-		"end of binary. unable to parse {} field of header flag field",
-		stringify!(ty)
-	),),)?;
-	// let machine: u16 = read_le_bytes(offset, ident_remain,);
-	// let version: u32 = read_le_bytes(offset, ident_remain,);
-	// let entry: u64 = read_le_bytes(offset, ident_remain,);
-	// let program_header_offset: u64 = read_le_bytes(offset, ident_remain,);
-	// let section_header_offset: u64 = read_le_bytes(offset, ident_remain,);
-	// let flags: u32 = read_le_bytes(offset, ident_remain,);
-	// let elf_header_size: u16 = read_le_bytes(offset, ident_remain,);
-	// let program_header_entry_size: u16 = read_le_bytes(offset, ident_remain,);
-	// let program_header_count: u16 = read_le_bytes(offset, ident_remain,);
-	// let section_header_entry_size: u16 = read_le_bytes(offset, ident_remain,);
-	// let section_header_count: u16 = read_le_bytes(offset, ident_remain,);
-	// let section_header_index_of_section_name_string_table: u16 =
-	// 	read_le_bytes(offset, ident_remain,);
-
-	let ty = ElfType::try_from(ty,)?;
 
 	Ok(ElfHeader {
 		ident,
@@ -780,7 +771,7 @@ where for<'a> &'a [u8]: AsInt<I,> {
 	// let val =
 	// 	window.iter().enumerate().map(|(i, b,)| Integer::<I,>::cast_int(*b,) << i * 8,).sum::<I>();
 	let size = size_of::<I,>();
-	if size + *offset >= binary.len() {
+	if size + *offset > binary.len() {
 		*offset += size;
 		return None;
 	}
@@ -831,6 +822,7 @@ impl TryFrom<u16,> for ElfType {
 	}
 }
 
+#[derive(Debug,)]
 pub struct ElfHeaderIdent {
 	pub file_class:    FileClass,
 	pub endianness:    Endian,
@@ -872,7 +864,7 @@ impl ElfHeaderIdent {
 	}
 }
 
-#[derive(PartialEq, Eq,)]
+#[derive(PartialEq, Eq, Debug,)]
 pub enum FileClass {
 	Bit32,
 	Bit64,
@@ -896,6 +888,7 @@ impl TryFrom<u8,> for FileClass {
 	}
 }
 
+#[derive(Debug,)]
 pub struct ElfVersion(pub u8,);
 
 impl ElfVersion {
@@ -903,6 +896,7 @@ impl ElfVersion {
 }
 
 #[non_exhaustive]
+#[derive(Debug,)]
 pub enum TargetOsAbi {
 	SysV,
 	Arm,
@@ -925,6 +919,7 @@ impl TryFrom<u8,> for TargetOsAbi {
 	}
 }
 
+#[derive(Debug,)]
 pub struct AbiVersion(pub u8,);
 impl AbiVersion {
 	pub const ONE: Self = Self(0,);
@@ -1092,7 +1087,7 @@ impl Default for Container {
 	}
 }
 
-#[derive(PartialEq, Eq, Clone,)]
+#[derive(Debug, PartialEq, Eq, Clone,)]
 pub enum Endian {
 	Little,
 	Big,
@@ -1381,8 +1376,8 @@ impl Dyn {
 	}
 
 	fn parse(bytes: &[u8], offset: &mut usize,) -> Self {
-		let tag = read_le_bytes(offset, bytes,);
-		let val = read_le_bytes(offset, bytes,);
+		let tag = read_le_bytes(offset, bytes,).unwrap();
+		let val = read_le_bytes(offset, bytes,).unwrap();
 		Self { tag, val, }
 	}
 }
@@ -1623,9 +1618,9 @@ pub struct RelocAddend {
 
 impl RelocAddend {
 	fn parse(binary: &Vec<u8,>, offset: &mut usize,) -> Self {
-		let reloc_offset: u64 = read_le_bytes(offset, binary,);
-		let info: u64 = read_le_bytes(offset, binary,);
-		let addend: i64 = read_le_bytes(offset, binary,);
+		let reloc_offset: u64 = read_le_bytes(offset, binary,).unwrap();
+		let info: u64 = read_le_bytes(offset, binary,).unwrap();
+		let addend: i64 = read_le_bytes(offset, binary,).unwrap();
 		Self { offset: reloc_offset, info, addend, }
 	}
 }
@@ -1660,8 +1655,8 @@ pub struct Reloc {
 
 impl Reloc {
 	fn parse(binary: &Vec<u8,>, offset: &mut usize,) -> Self {
-		let reloc_offset: u64 = read_le_bytes(offset, binary,);
-		let info: u64 = read_le_bytes(offset, binary,);
+		let reloc_offset: u64 = read_le_bytes(offset, binary,).unwrap();
+		let info: u64 = read_le_bytes(offset, binary,).unwrap();
 		Self { offset: reloc_offset, info, }
 	}
 }
