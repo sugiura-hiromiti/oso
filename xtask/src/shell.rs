@@ -148,7 +148,7 @@ impl Opts {
 			},
 			"--features" => feature_zone = true,
 			flag if feature_zone => {
-				let features = Feature::from_str(flag,);
+				features.replace(Feature::from_str(flag,),);
 				todo!()
 			},
 			_ => (),

@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 use crate::Rslt;
 use crate::elf::hash::gnu_hash_len;
 use crate::elf::hash::hash_len;
@@ -1639,9 +1637,9 @@ fn relocation_type(info: u64,) -> u32 {
 	(info & 0xffff_ffff) as u32
 }
 
-fn relocation_info(symbol: u64, ty: u64,) -> u64 {
-	(symbol << 32) + ty
-}
+// fn relocation_info(symbol: u64, ty: u64,) -> u64 {
+// 	(symbol << 32) + ty
+// }
 
 pub struct Reloc {
 	pub offset: u64,

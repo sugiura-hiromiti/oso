@@ -4,21 +4,17 @@ use super::table::boot_services;
 use crate::Rslt;
 use crate::error::OsoLoaderError;
 use crate::guid;
-use crate::print;
-use crate::println;
 use crate::raw::protocol::device_path::DevicePathProtocol;
 use crate::raw::protocol::file::SimpleFileSystemProtocol;
 use crate::raw::protocol::graphic::GraphicsOutputProtocol;
 use crate::raw::protocol::text::TextOutputProtocol;
 use crate::raw::service::BootServices;
 use crate::raw::types::Guid;
-use crate::raw::types::Status;
 use crate::raw::types::UnsafeHandle;
 use crate::raw::types::file::FileInfo;
 use crate::raw::types::file::FileSystemInfo;
 use crate::raw::types::file::FileSystemVolumeLabel;
 use alloc::string::ToString;
-use core::assert_matches::assert_matches;
 use core::ffi::c_void;
 use core::ptr;
 use core::ptr::NonNull;
@@ -223,7 +219,7 @@ impl<P: Protocol,> ProtocolInterface<P,> {
 impl<P: Protocol,> Drop for ProtocolInterface<P,> {
 	fn drop(&mut self,) {
 		let bt = boot_services();
-		let rslt = unsafe {
+		let _rslt = unsafe {
 			(bt.close_protocol)(
 				self.handles.handle_ptr(),
 				&P::GUID,

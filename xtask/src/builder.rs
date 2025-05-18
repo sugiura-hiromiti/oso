@@ -11,7 +11,6 @@ use std::env::set_current_dir;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
-use std::str::FromStr;
 
 const BOOT_DIR: &str = "efi/boot";
 const KERNEL_FILE: &str = "oso_kernel.elf";

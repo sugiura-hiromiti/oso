@@ -1,7 +1,5 @@
 use crate::Rslt;
 use crate::error::OsoLoaderError;
-use crate::print;
-use crate::println;
 use crate::raw::types::Guid;
 use alloc::format;
 

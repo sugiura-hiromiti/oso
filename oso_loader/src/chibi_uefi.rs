@@ -73,14 +73,14 @@ impl BootServices {
 
 		let mut buf = MemoryMapBackingMemory::new(mem_ty,).expect("failed to allocate memory",);
 
-		let mut status = Status::EFI_ABORTED.ok_or().unwrap_err();
+		let mut _status = Status::EFI_ABORTED.ok_or().unwrap_err();
 		for _ in 0..2 {
 			match unsafe { self.try_exit_boot_services(buf.as_mut_slice(),) } {
 				Ok(mem_map_info,) => {
 					let rslt = MemoryMapOwned::from_initialized_memory(buf.clone(), mem_map_info,);
 					core::mem::forget(rslt,);
 				},
-				Err(e,) => status = e,
+				Err(e,) => _status = e,
 			}
 		}
 
@@ -100,7 +100,7 @@ impl BootServices {
 }
 
 impl RuntimeServices {
-	pub fn reset(&self, reset_type: ResetType, status: Status, data: Option<&[u8],>,) -> ! {
+	pub fn reset(&self, _reset_type: ResetType, _status: Status, _data: Option<&[u8],>,) -> ! {
 		todo!()
 	}
 }

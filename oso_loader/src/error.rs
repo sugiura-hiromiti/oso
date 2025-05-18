@@ -1,5 +1,3 @@
-//! oso_loader/kernel用のエラー型
-//! TODO: アロケータを実装したら`oso_util`に移管
 use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
@@ -27,7 +25,7 @@ impl Display for OsoLoaderError {
 }
 
 impl From<OsoLoaderError,> for core::fmt::Error {
-	fn from(value: OsoLoaderError,) -> Self {
+	fn from(_value: OsoLoaderError,) -> Self {
 		core::fmt::Error
 	}
 }

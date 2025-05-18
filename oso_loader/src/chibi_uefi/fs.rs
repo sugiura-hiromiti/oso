@@ -1,11 +1,8 @@
 use crate::Rslt;
 use crate::error::OsoLoaderError;
 use crate::into_null_terminated_utf16;
-use crate::print;
-use crate::println;
 use crate::raw::protocol::file::FileProtocolV1;
 use crate::raw::protocol::file::SimpleFileSystemProtocol;
-use crate::raw::types::Char16;
 use crate::raw::types::Status;
 use crate::raw::types::file::FileAttributes;
 use crate::raw::types::file::FileInfo;

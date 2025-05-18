@@ -1,6 +1,5 @@
 use core::ptr;
 
-use crate::Rslt;
 use crate::raw::protocol::device_path::DevicePathProtocol;
 use crate::raw::service::BootServices;
 use crate::raw::types::Boolean;

@@ -51,27 +51,6 @@ pub struct Firmware {
 impl Firmware {
 	pub fn new(arch: &Architecture,) -> Rslt<Self,> {
 		let path = PathBuf::from_str("/tmp/",)?;
-		// NOTE: consider uncomment & implement if aarch64 boot failed
-		//
-		// let (code, vars,) = match arch {
-		// 	Architecture::Aarch64 => {
-		// 		let code = PathBuf::from_str(
-		// 			"/opt/homebrew/Cellar/qemu/9.2.3/share/qemu/edk2-aarch64-code.fd",
-		// 		)?;
-		// 		let vars = PathBuf::from_str(
-		// 			"/opt/homebrew/Cellar/qemu/9.2.3/share/qemu/edk2-arm-vars.fd",
-		// 		)?;
-		// 		(code, vars,)
-		// 	},
-		// 	Architecture::Riscv64 => todo!(),
-		// 	Architecture::X86_64 => {
-		// 		let ovmf_files = Prebuilt::fetch(Source::LATEST, path,)?;
-		// 		let code = ovmf_files.get_file(arch.into(), FileType::Code,);
-		// 		let vars = ovmf_files.get_file(arch.into(), FileType::Vars,);
-		// 		(code, vars,)
-		// 	},
-		// };
-
 		let ovmf_files = Prebuilt::fetch(Source::LATEST, path,)?;
 		let code = ovmf_files.get_file(arch.into(), FileType::Code,);
 		let vars = ovmf_files.get_file(arch.into(), FileType::Vars,);
@@ -95,9 +74,9 @@ impl Firmware {
 /// # Return
 ///
 /// returns path to (code.fd, vars.fd)
-fn fetch_aa64_firmware(path: PathBuf,) -> (PathBuf, PathBuf,) {
-	todo!()
-}
+// fn fetch_aa64_firmware(path: PathBuf,) -> (PathBuf, PathBuf,) {
+// 	todo!()
+// }
 
 impl From<&Architecture,> for Arch {
 	fn from(value: &Architecture,) -> Self {
