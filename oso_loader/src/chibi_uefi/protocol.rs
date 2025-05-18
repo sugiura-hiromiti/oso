@@ -8,6 +8,7 @@ use crate::print;
 use crate::println;
 use crate::raw::protocol::device_path::DevicePathProtocol;
 use crate::raw::protocol::file::SimpleFileSystemProtocol;
+use crate::raw::protocol::graphic::GraphicsOutputProtocol;
 use crate::raw::protocol::text::TextOutputProtocol;
 use crate::raw::service::BootServices;
 use crate::raw::types::Guid;
@@ -48,6 +49,10 @@ impl Protocol for FileSystemInfo {
 
 impl Protocol for FileSystemVolumeLabel {
 	const GUID: Guid = guid!("db47d7d3-fe81-11d3-9a35-0090273fC14d");
+}
+
+impl Protocol for GraphicsOutputProtocol {
+	const GUID: Guid = guid!("9042a9de-23dc-4a38-96fb-7aded080516a");
 }
 
 impl BootServices {
@@ -140,6 +145,15 @@ impl BootServices {
 	) -> Rslt<ProtocolInterface<P,>,> {
 		let necessity = OpenProtoNecessity::for_app(handle,);
 		unsafe { self.open_protocol(necessity, OpenProtoAttr::EXCULSIVE,) }
+	}
+
+	pub fn open_protocol_with<P: Protocol,>(&self,) -> Rslt<ProtocolInterface<P,>,> {
+		let bs = boot_services();
+		let handle = unsafe { bs.handle_for_protocol::<P>() }?;
+		let necessity = OpenProtoNecessity::for_app(handle,);
+		let attr = OpenProtoAttr::GET_PROTOCOL;
+
+		unsafe { bs.open_protocol(necessity, attr,) }
 	}
 
 	pub fn handle_protocol<P: Protocol,>(

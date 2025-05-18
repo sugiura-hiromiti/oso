@@ -1,8 +1,11 @@
 use super::table::boot_services;
-use super::table::system_table;
 use crate::Rslt;
 use crate::raw::service::BootServices;
+use crate::raw::types::PhysicalAddress;
 use crate::raw::types::Status;
+use crate::raw::types::memory::AllocateType;
+use crate::raw::types::memory::MemoryDescriptor;
+use crate::raw::types::memory::MemoryMapInfo;
 use crate::raw::types::memory::MemoryType;
 use core::alloc::GlobalAlloc;
 use core::alloc::Layout;
@@ -46,5 +49,70 @@ impl BootServices {
 
 	pub fn free_pool(&self, ptr: &mut u8,) -> Rslt<Status,> {
 		unsafe { (self.free_pool)(ptr,).ok_or() }
+	}
+
+	pub fn allocate_pages(
+		&self,
+		allocation_type: AllocateType,
+		mem_ty: MemoryType,
+		page_count: usize,
+		mut alloc_head: PhysicalAddress,
+	) -> Rslt<PhysicalAddress,> {
+		unsafe { (self.allocate_pages)(allocation_type, mem_ty, page_count, &mut alloc_head,) }
+			.ok_or_with(|_| alloc_head,)
+	}
+
+	pub fn memory_map_size(&self,) -> MemoryMapInfo {
+		let mut map_size = 0;
+		let mut map_key = 0;
+		let mut descriptor_size = 0;
+		let mut desc_version = 0;
+
+		let status = unsafe {
+			(self.get_memory_map)(
+				&mut map_size,
+				core::ptr::null_mut(),
+				&mut map_key,
+				&mut descriptor_size,
+				&mut desc_version,
+			)
+		};
+		assert_eq!(status, Status::EFI_BUFFER_TOO_SMALL);
+
+		assert_eq!(map_size % descriptor_size, 0, "memory map size is multiple of descriptor size");
+
+		let memory_map_info =
+			MemoryMapInfo {
+				map_size, desc_size: descriptor_size, map_key, desc_ver: desc_version,
+			};
+
+		memory_map_info.assert_sanity_check();
+
+		memory_map_info
+	}
+
+	pub fn get_memory_map(&self, buf: &mut [u8],) -> Rslt<MemoryMapInfo,> {
+		let mut map_size = buf.len();
+		let map_buffer = buf.as_mut_ptr().cast::<MemoryDescriptor>();
+		let mut map_key = 0;
+		let mut desc_size = 0;
+		let mut desc_ver = 0;
+
+		assert_eq!(
+			(map_buffer as usize) % align_of::<MemoryDescriptor,>(),
+			0,
+			"memory map buffer must be aligned like a memory descriptor"
+		);
+
+		unsafe {
+			(self.get_memory_map)(
+				&mut map_size,
+				map_buffer,
+				&mut map_key,
+				&mut desc_size,
+				&mut desc_ver,
+			)
+		}
+		.ok_or_with(|_| MemoryMapInfo { map_size, desc_size, map_key, desc_ver, },)
 	}
 }

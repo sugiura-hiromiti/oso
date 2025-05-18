@@ -2,6 +2,7 @@ use super::types::UnsafeHandle;
 
 pub mod device_path;
 pub mod file;
+pub mod graphic;
 pub mod text;
 
 #[derive(Debug,)]

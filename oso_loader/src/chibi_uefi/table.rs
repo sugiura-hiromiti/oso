@@ -1,4 +1,5 @@
 use crate::raw::service::BootServices;
+use crate::raw::service::RuntimeServices;
 use crate::raw::table::SystemTable;
 use core::ptr::NonNull;
 use core::sync::atomic::AtomicPtr;
@@ -30,4 +31,9 @@ pub fn system_table() -> NonNull<SystemTable,> {
 pub fn boot_services<'a,>() -> &'a BootServices {
 	let syst = system_table();
 	unsafe { syst.as_ref().boot_services.as_ref() }.unwrap()
+}
+
+pub fn runtime_services<'a,>() -> &'a RuntimeServices {
+	let syst = system_table();
+	unsafe { syst.as_ref().runtime_services.as_ref() }.unwrap()
 }

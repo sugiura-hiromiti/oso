@@ -35,9 +35,9 @@ use section_header::SHT_RELA;
 use section_header::SHT_SYMTAB;
 use section_header::get_string_table;
 
-mod hash;
-mod program_header;
-mod section_header;
+pub mod hash;
+pub mod program_header;
+pub mod section_header;
 
 /// used to check magic number
 const ELF_MAGIC_NUMBER: &[u8; ELF_MAGIC_NUMBER_SIZE] = b"\x7fELF";
@@ -91,8 +91,6 @@ impl Elf {
 		let mut offset = header.program_header_offset as usize;
 		let program_headers =
 			ProgramHeader::parse(binary, &mut offset, header.program_header_count as usize,)?;
-
-		println!("program header: {}", program_headers.len());
 
 		let mut interpreter = None;
 		for program_header in &program_headers {
@@ -673,7 +671,6 @@ impl ElfHeader {
 		let ident = &binary[..ELF_IDENT_SIZE];
 		let ident = ElfHeaderIdent::new(ident,)?;
 		let remain = &binary[ELF_IDENT_SIZE..];
-		println!("{ident:#?}");
 		header_flag_fields(ident, remain,)
 	}
 
@@ -703,9 +700,7 @@ fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> Rslt<ElfHe
 		let c: u64 =
 			read_le_bytes(&mut 0, &[0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x23, 0x01,],).unwrap();
 		assert_eq!(0x0123456789abcdef, c);
-
-		println!("-------------------------------");
-		println!("\n");
+		println!("----------");
 	}
 
 	macro_rules! fields {

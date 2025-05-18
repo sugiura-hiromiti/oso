@@ -1,5 +1,3 @@
-use core::error::Error;
-
 use super::StringTable;
 use crate::Rslt;
 use crate::elf::read_le_bytes;
@@ -8,6 +6,7 @@ use crate::print;
 use crate::println;
 use alloc::format;
 use alloc::vec::Vec;
+use core::error::Error;
 
 /// Undefined section.
 pub const SHN_UNDEF: u32 = 0;
@@ -108,14 +107,14 @@ pub const SHT_LOUSER: u32 = 0x8000_0000;
 pub const SHT_HIUSER: u32 = 0x8fff_ffff;
 
 pub struct SectionHeader {
-	pub name:          usize,
+	pub name:          u32,
 	pub ty:            u32,
 	pub flags:         u64,
 	pub address:       u64,
 	pub offset:        u64,
 	pub size:          u64,
-	pub link:          u64,
-	pub info:          u64,
+	pub link:          u32,
+	pub info:          u32,
 	pub section_align: u64,
 	pub entry_size:    u64,
 }
@@ -125,9 +124,9 @@ impl SectionHeader {
 
 	pub fn parse(binary: &[u8], offset: &mut usize, count: usize,) -> Rslt<Vec<Self,>,> {
 		assert!(count <= binary.len() / Self::SIZE_64, "binary is too small");
-		println!("count: {count}");
 
 		let mut section_headers = Vec::with_capacity(count,);
+		// section_headers.push(Self::empty_section(offset,),);
 
 		for _i in 0..count {
 			let section_header = Self::parse_fields(binary, offset,)?;
@@ -183,6 +182,10 @@ impl SectionHeader {
 		Ok(section_header,)
 	}
 
+	pub fn empty_section(offset: &mut usize,) -> Self {
+		todo!()
+	}
+
 	pub fn check_size(&self, size: usize,) -> Rslt<(),> {
 		if self.ty == SHT_NOBITS || self.size == 0 {
 			return Ok((),);
@@ -205,6 +208,23 @@ impl SectionHeader {
 		}
 
 		Ok((),)
+	}
+}
+
+impl core::fmt::Debug for SectionHeader {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_,>,) -> core::fmt::Result {
+		f.debug_struct("SectionHeader",)
+			.field("name", &format!("{:#x}", self.name),)
+			.field("ty", &format!("{:#x}", self.ty),)
+			.field("flags", &format!("{:#x}", self.flags),)
+			.field("address", &format!("{:#x}", self.address),)
+			.field("offset", &format!("{:#x}", self.offset),)
+			.field("size", &format!("{:#x}", self.size),)
+			.field("link", &format!("{:#x}", self.link),)
+			.field("info", &format!("{:#x}", self.info),)
+			.field("section_align", &format!("{:#x}", self.section_align),)
+			.field("entry_size", &format!("{:#x}", self.entry_size),)
+			.finish()
 	}
 }
 

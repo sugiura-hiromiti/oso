@@ -1,6 +1,8 @@
 use crate::Rslt;
 use crate::elf::read_le_bytes;
 use crate::error::OsoLoaderError;
+use crate::print;
+use crate::println;
 use alloc::format;
 use alloc::vec::Vec;
 
@@ -54,8 +56,23 @@ impl ProgramHeader {
 	}
 }
 
+impl core::fmt::Debug for ProgramHeader {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_,>,) -> core::fmt::Result {
+		f.debug_struct("ProgramHeader",)
+			.field("ty", &self.ty,)
+			.field("flags", &format!("{:#x}", self.flags),)
+			.field("offset", &format!("{:#x}", self.offset),)
+			.field("virtual_address", &format!("{:#x}", self.virtual_address),)
+			.field("physical_address", &format!("{:#x}", self.physical_address),)
+			.field("file_size", &format!("{:#x}", self.file_size),)
+			.field("memory_size", &format!("{:#x}", self.memory_size),)
+			.field("align", &format!("{:#x}", self.align),)
+			.finish()
+	}
+}
+
 #[repr(u32)]
-#[derive(PartialEq, Eq,)]
+#[derive(PartialEq, Eq, Debug,)]
 pub enum ProgramHeaderType {
 	/// ARM unwind segment
 	ArmExidx    = 0x7000_0001,

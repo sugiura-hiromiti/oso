@@ -1,10 +1,21 @@
 use super::raw::types::Status;
 use crate::Rslt;
+use crate::print;
+use crate::println;
+use crate::raw::service::BootServices;
+use crate::raw::service::RuntimeServices;
 use crate::raw::types::UnsafeHandle;
+use crate::raw::types::memory::MemoryMapBackingMemory;
+use crate::raw::types::memory::MemoryMapInfo;
+use crate::raw::types::memory::MemoryMapOwned;
+use crate::raw::types::memory::MemoryType;
+use crate::raw::types::memory::PAGE_SIZE;
+use crate::raw::types::misc::ResetType;
 use core::ffi::c_void;
 use core::ptr::NonNull;
 use core::sync::atomic::AtomicPtr;
 use core::sync::atomic::Ordering;
+use table::boot_services;
 
 pub mod console;
 pub mod controller;
@@ -12,6 +23,7 @@ pub mod fs;
 pub mod guid;
 pub mod memory;
 pub mod protocol;
+pub mod service;
 pub mod table;
 
 static IMAGE_HANDLE: AtomicPtr<c_void,> = AtomicPtr::new(core::ptr::null_mut(),);
@@ -55,6 +67,44 @@ impl Status {
 	}
 }
 
+impl BootServices {
+	pub fn exit_boot_services(&self,) {
+		let mem_ty = MemoryType::LOADER_DATA;
+
+		let mut buf = MemoryMapBackingMemory::new(mem_ty,).expect("failed to allocate memory",);
+
+		let mut status = Status::EFI_ABORTED.ok_or().unwrap_err();
+		for _ in 0..2 {
+			match unsafe { self.try_exit_boot_services(buf.as_mut_slice(),) } {
+				Ok(mem_map_info,) => {
+					let rslt = MemoryMapOwned::from_initialized_memory(buf.clone(), mem_map_info,);
+					core::mem::forget(rslt,);
+				},
+				Err(e,) => status = e,
+			}
+		}
+
+		// failed to exit boot service
+		println!("failed to exit boot service. resetting the machine");
+		todo!()
+	}
+
+	unsafe fn try_exit_boot_services(&self, buf: &mut [u8],) -> Rslt<MemoryMapInfo,> {
+		let bs = boot_services();
+
+		let mem_map = self.get_memory_map(buf,)?;
+
+		unsafe { (bs.exit_boot_services)(image_handle().as_ptr(), mem_map.map_key,) }
+			.ok_or_with(|_| mem_map,)
+	}
+}
+
+impl RuntimeServices {
+	pub fn reset(&self, reset_type: ResetType, status: Status, data: Option<&[u8],>,) -> ! {
+		todo!()
+	}
+}
+
 pub fn image_handle() -> Handle {
 	let p = IMAGE_HANDLE.load(Ordering::Acquire,);
 	unsafe { Handle::from_ptr(p,).expect("set_image_handle has not been called",) }
@@ -70,4 +120,8 @@ pub(crate) fn set_image_handle_panicking(image_handle: UnsafeHandle,) {
 	unsafe { set_image_handle(image_handle,) };
 
 	assert!(!IMAGE_HANDLE.load(Ordering::Acquire,).is_null());
+}
+
+pub fn required_pages(size: usize,) -> usize {
+	size / PAGE_SIZE + 1
 }

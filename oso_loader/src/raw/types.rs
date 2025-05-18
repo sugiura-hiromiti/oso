@@ -1,14 +1,14 @@
 //! uefi implementation
 
-use core::ffi::c_void;
-
 use crate::Rslt;
 use crate::c_style_enum;
 use crate::error::OsoLoaderError;
+use core::ffi::c_void;
 
 pub mod capsule;
 pub mod event;
 pub mod file;
+pub mod graphic;
 pub mod memory;
 pub mod misc;
 pub mod protocol;

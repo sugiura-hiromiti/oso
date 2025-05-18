@@ -1,5 +1,10 @@
+use crate::Rslt;
 use crate::c_style_enum;
+use crate::chibi_uefi::table::boot_services;
 use core::ops::RangeInclusive;
+use core::ptr::NonNull;
+
+pub const PAGE_SIZE: usize = 4096;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash,)]
@@ -74,4 +79,80 @@ impl MemoryAttribute {
 	pub const EFI_MEMORY_WP: u64 = 0x0000000000001000;
 	pub const EFI_MEMORY_WT: u64 = 0x0000000000000004;
 	pub const EFI_MEMORY_XP: u64 = 0x0000000000004000;
+}
+
+#[derive(Clone,)]
+pub struct MemoryMapInfo {
+	pub map_size:  usize,
+	pub desc_size: usize,
+	pub map_key:   usize,
+	pub desc_ver:  u32,
+}
+
+impl MemoryMapInfo {
+	pub fn assert_sanity_check(&self,) {
+		assert!(self.desc_size > 0);
+		assert!(self.desc_size >= size_of::<MemoryDescriptor,>());
+
+		const ONE_GB: usize = 1024 * 1024 * 1024;
+		assert!(self.map_size > 0);
+		assert!(self.map_size <= ONE_GB);
+	}
+
+	pub fn entry_count(&self,) -> usize {
+		self.map_size / self.desc_size
+	}
+}
+
+#[derive(Clone,)]
+pub struct MemoryMapBackingMemory(NonNull<[u8],>,);
+
+impl MemoryMapBackingMemory {
+	pub fn new(mem_ty: MemoryType,) -> Rslt<Self,> {
+		let bs = boot_services();
+		let memory_map_info = bs.memory_map_size();
+		let len = Self::safe_allocation_size_hint(memory_map_info.clone(),);
+		let alloc_pos = bs.allocate_pool(mem_ty, len,)?.as_ptr();
+
+		assert_eq!(alloc_pos.align_offset(align_of::<MemoryDescriptor,>()), 0);
+
+		assert_eq!(memory_map_info.map_size % memory_map_info.desc_size, 0);
+
+		unsafe { Ok(Self::from_raw(alloc_pos, len,),) }
+	}
+
+	unsafe fn from_raw(alloc_pos: *mut u8, len: usize,) -> Self {
+		assert_eq!(alloc_pos.align_offset(align_of::<MemoryDescriptor,>()), 0);
+
+		let ptr = NonNull::new(alloc_pos,).expect("uefi should never return null ptr",);
+		let slice = NonNull::slice_from_raw_parts(ptr, len,);
+
+		Self(slice,)
+	}
+
+	fn safe_allocation_size_hint(memory_map_info: MemoryMapInfo,) -> usize {
+		const EXTRA_ENTRIES: usize = 8;
+
+		let extra_size = memory_map_info.desc_size * EXTRA_ENTRIES;
+		memory_map_info.map_size + extra_size
+	}
+
+	pub fn as_mut_slice(&mut self,) -> &mut [u8] {
+		unsafe { self.0.as_mut() }
+	}
+}
+
+pub struct MemoryMapOwned {
+	pub buf:  MemoryMapBackingMemory,
+	pub info: MemoryMapInfo,
+	pub len:  usize,
+}
+
+impl MemoryMapOwned {
+	pub fn from_initialized_memory(buf: MemoryMapBackingMemory, info: MemoryMapInfo,) -> Self {
+		assert!(info.desc_size >= size_of::<MemoryDescriptor,>());
+
+		let len = info.entry_count();
+		Self { buf, info, len, }
+	}
 }

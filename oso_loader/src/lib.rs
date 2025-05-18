@@ -11,13 +11,11 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use chibi_uefi::Handle;
 use chibi_uefi::protocol::HandleSearchType;
-use chibi_uefi::protocol::Protocol;
 use chibi_uefi::table::boot_services;
 use core::arch::asm;
 use error::OsoLoaderError;
-use raw::protocol::device_path::DevicePathProtocol;
+use oso_bridge::graphic::FrameBufConf;
 use raw::table::SystemTable;
 use raw::types::Status;
 use raw::types::UnsafeHandle;
@@ -92,4 +90,18 @@ fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,> {
 	let mut utf16_repr: Vec<u16,> = s.as_ref().encode_utf16().collect();
 	utf16_repr.push(0,);
 	utf16_repr
+}
+
+pub fn exec_kernel(kernel_entry: u64, graphic_config: FrameBufConf,) {
+	#[cfg(target_arch = "aarch64")]
+	let entry_point: extern "C" fn(FrameBufConf,) =
+		unsafe { core::mem::transmute(kernel_entry as usize,) };
+	#[cfg(target_arch = "riscv64")]
+	let entry_point: extern "C" fn(FrameBufConf,) =
+		unsafe { core::mem::transmute(kernel_entry as usize,) };
+	#[cfg(target_arch = "x86_64")]
+	let entry_point: extern "sysv64" fn(FrameBufConf,) =
+		unsafe { core::mem::transmute(kernel_entry as usize,) };
+
+	entry_point(graphic_config,)
 }

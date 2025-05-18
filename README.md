@@ -687,3 +687,43 @@ SYMBOL TABLE:
 00000000000663cb l       .debug_line    0000000000000000 $d
 0000000040010120 g     F .text  0000000000000010 kernel_main
 ```
+
+---
+
+e: "0x1500000000", link: "0x1", info: "0x0", section_align: "0x6c8a00000000", entry_size: "Oxcac4200 000000 3 3 SectionHeader & name: "0x0", ty: "0x0", flags: "0x1" , address: "0x0", offset: "0x1000000
+21", size:
+"0x0", link: "Ox0", info: "Oxd18cc", section_align:
+"Ox16370", entry_size: "0x0" }
+
+4 SectionHeader & name: "Ox1", ty: "0x0", flags: "0x3000000000", address: "0x3000000001", offset: "0x0", size: "0xe7c3c00000000", link: "0xbb59800000000", info: "0x0", section_align: "0x100000000", entry_size "Ox100000000" 3
+
+5 SectionHeader & name: "0x3b00000000", ty: "0x1", flags: "0x30", address: , offset: 00000044" 3
+
+6 SectionHeader & name: 000000", offset: "0x0", size: "0x800000000", link: "0x0", info: "0x5100000000", section align: "0x1" , entry_size: "0x0" 3
+
+7 SectionHeader & name: "0x1ce59800000000", ty: "0x0", flags: "0x68531", addre ss: "0x0", offset: "0x1", size: "0x0" , link: "0x10000005d", info: "0x0", section_align: "0x0", entry-size: "0x236ac9" }
+
+8 SectionHeader & name: "0x3139", ty: "0x0", flags: "Ox100000000", address: "0x0 ", offset: "0x6800000000", size: "0x1", link: "0x0", info: "0x239c0200000000", section_align: "0x418 b000000000", entry_size: "0x0" 3
+
+9 SectionHeader € name: "Ox100000000", ty: "Ox0", flags: "Ox0", add "0x200000076", offset: "0x0", size: "0x0", link: "0x27b4b8", info: x1fc0000000d", entry_size: "Ox2fb8", ', section_align: "0 "0x8" 3
+
+10 SectionHeader & name: "0x18", ty: "Ox?e", flags: "0x3", addres s: "0x0", offset: "0x27e47000000000", size: "0x9000000000", link: "0x0", info: "0x100000000", sectio n_align: "0x0", entry_size: "0x8800000000"
+
+Sections:
+
+| Idx | Name           | Size     | VMA              | Type  |
+| :-- | :------------- | :------- | :--------------- | :---- |
+| 0   | none           | 00000000 | 0000000000000000 | none  |
+| 1   | .text          | 00000010 | 0000000040010120 | TEXT  |
+| 2   | .debug_abbrev  | 00006b5a | 0000000000000000 | DEBUG |
+| 3   | .debug_info    | 000cac42 | 0000000000000000 | DEBUG |
+| 4   | .debug_aranges | 00016370 | 0000000000000000 | DEBUG |
+| 5   | .debug_str     | 000bb598 | 0000000000000000 | DEBUG |
+| 6   | .comment       | 000000a1 | 0000000000000000 |       |
+| 7   | .debug_frame   | 0002b320 | 0000000000000000 | DEBUG |
+| 8   | .debug_line    | 00068531 | 0000000000000000 | DEBUG |
+| 9   | .debug_loc     | 00003139 | 0000000000000000 | DEBUG |
+| 10  | .debug_ranges  | 000418b0 | 0000000000000000 | DEBUG |
+| 11  | .symtab        | 00002fb8 | 0000000000000000 |       |
+| 12  | .shstrtab      | 00000090 | 0000000000000000 |       |
+| 13  | .strtab        | 00000c0f | 0000000000000000 |       |
