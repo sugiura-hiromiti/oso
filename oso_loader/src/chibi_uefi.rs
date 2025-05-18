@@ -90,12 +90,12 @@ impl BootServices {
 	}
 
 	unsafe fn try_exit_boot_services(&self, buf: &mut [u8],) -> Rslt<MemoryMapInfo,> {
-		let bs = boot_services();
-
 		let mem_map = self.get_memory_map(buf,)?;
 
-		unsafe { (bs.exit_boot_services)(image_handle().as_ptr(), mem_map.map_key,) }
-			.ok_or_with(|_| mem_map,)
+		let img_hndl = image_handle().as_ptr();
+		let status = unsafe { (self.exit_boot_services)(img_hndl, mem_map.map_key,) };
+		todo!("|||||||||||||||||--------------------||||||||||||||||||||||||");
+		status.ok_or_with(|_| mem_map,)
 	}
 }
 

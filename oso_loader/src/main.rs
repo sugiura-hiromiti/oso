@@ -24,6 +24,7 @@ pub extern "efiapi" fn efi_image_entry_point(
 	init(image_handle, system_table,);
 
 	let (kernel_entry, graphic_config,) = app().expect("error arise while executing application",);
+
 	exit_boot_services();
 
 	exec_kernel(kernel_entry, graphic_config,);
