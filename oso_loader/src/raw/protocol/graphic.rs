@@ -29,6 +29,10 @@ pub struct GraphicsOutputProtocol {
 }
 
 impl GraphicsOutputProtocol {
+	pub fn query_mode(&self,) {
+		todo!()
+	}
+
 	pub fn mode(&self,) -> &GraphicsOutputProtocolMode {
 		unsafe { &*self.mode }
 	}

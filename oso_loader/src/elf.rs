@@ -688,19 +688,6 @@ impl ElfHeader {
 fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> Rslt<ElfHeader,> {
 	let offset = &mut 0;
 
-	{
-		let a: u16 = read_le_bytes(&mut 0, &[0x34, 0x12,],).unwrap();
-		assert_eq!(0x1234, a);
-
-		let b: u32 = read_le_bytes(&mut 0, &[0x78, 0x56, 0x34, 0x12,],).unwrap();
-		assert_eq!(0x12345678, b);
-
-		let c: u64 =
-			read_le_bytes(&mut 0, &[0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x23, 0x01,],).unwrap();
-		assert_eq!(0x0123456789abcdef, c);
-		println!("----------");
-	}
-
 	macro_rules! fields {
 		($field:ident) => {
 			let $field =

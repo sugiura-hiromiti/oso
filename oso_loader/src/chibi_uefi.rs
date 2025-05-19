@@ -69,33 +69,32 @@ impl Status {
 
 impl BootServices {
 	pub fn exit_boot_services(&self,) {
-		let mem_ty = MemoryType::LOADER_DATA;
+		let mem_ty = MemoryType::BOOT_SERVICES_DATA;
 
-		let mut buf = MemoryMapBackingMemory::new(mem_ty,).expect("failed to allocate memory",);
-
-		let mut _status = Status::EFI_ABORTED.ok_or().unwrap_err();
 		for _ in 0..2 {
-			match unsafe { self.try_exit_boot_services(buf.as_mut_slice(),) } {
-				Ok(mem_map_info,) => {
-					let rslt = MemoryMapOwned::from_initialized_memory(buf.clone(), mem_map_info,);
-					core::mem::forget(rslt,);
+			let mut buf = MemoryMapBackingMemory::new(mem_ty,).expect("failed to allocate memory",);
+			let (mem_map, status,) = unsafe { self.try_exit_boot_services(buf.as_mut_slice(),) };
+
+			match status.is_success() {
+				true => {
+					core::mem::forget(mem_map,);
+					return;
 				},
-				Err(e,) => _status = e,
+				false => {
+					println!("exit failed: {}   retry", status.ok_or().unwrap_err());
+				},
 			}
 		}
 
 		// failed to exit boot service
-		println!("failed to exit boot service. resetting the machine");
-		todo!()
+		todo!("failed to exit boot service. reset the machine");
 	}
 
-	unsafe fn try_exit_boot_services(&self, buf: &mut [u8],) -> Rslt<MemoryMapInfo,> {
-		let mem_map = self.get_memory_map(buf,)?;
-
-		let img_hndl = image_handle().as_ptr();
-		let status = unsafe { (self.exit_boot_services)(img_hndl, mem_map.map_key,) };
-		todo!("|||||||||||||||||--------------------||||||||||||||||||||||||");
-		status.ok_or_with(|_| mem_map,)
+	unsafe fn try_exit_boot_services(&self, buf: &mut [u8],) -> (MemoryMapInfo, Status,) {
+		let mem_map = self.get_memory_map(buf,).expect("failed to get memmap",);
+		let status =
+			unsafe { (self.exit_boot_services)(image_handle().as_ptr(), mem_map.map_key,) };
+		(mem_map, status,)
 	}
 }
 

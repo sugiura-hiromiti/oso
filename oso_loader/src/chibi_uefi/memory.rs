@@ -1,5 +1,7 @@
 use super::table::boot_services;
 use crate::Rslt;
+use crate::print;
+use crate::println;
 use crate::raw::service::BootServices;
 use crate::raw::types::PhysicalAddress;
 use crate::raw::types::Status;
@@ -62,7 +64,7 @@ impl BootServices {
 			.ok_or_with(|_| alloc_head,)
 	}
 
-	pub fn memory_map_size(&self,) -> MemoryMapInfo {
+	pub fn memory_map_size(&self,) -> (usize, usize,) {
 		let mut map_size = 0;
 		let mut map_key = 0;
 		let mut descriptor_size = 0;
@@ -88,18 +90,18 @@ impl BootServices {
 
 		memory_map_info.assert_sanity_check();
 
-		memory_map_info
+		(map_size, descriptor_size,)
 	}
 
 	pub fn get_memory_map(&self, buf: &mut [u8],) -> Rslt<MemoryMapInfo,> {
 		let mut map_size = buf.len();
-		let map_buffer = buf.as_mut_ptr().cast::<MemoryDescriptor>();
+		let map_buf = buf.as_mut_ptr().cast::<MemoryDescriptor>();
 		let mut map_key = 0;
 		let mut desc_size = 0;
 		let mut desc_ver = 0;
 
 		assert_eq!(
-			(map_buffer as usize) % align_of::<MemoryDescriptor,>(),
+			(map_buf as usize) % align_of::<MemoryDescriptor,>(),
 			0,
 			"memory map buffer must be aligned like a memory descriptor"
 		);
@@ -107,7 +109,7 @@ impl BootServices {
 		unsafe {
 			(self.get_memory_map)(
 				&mut map_size,
-				map_buffer,
+				map_buf,
 				&mut map_key,
 				&mut desc_size,
 				&mut desc_ver,

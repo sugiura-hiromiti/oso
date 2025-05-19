@@ -34,10 +34,7 @@ pub extern "efiapi" fn efi_image_entry_point(
 
 fn app() -> Rslt<(u64, FrameBufConf,),> {
 	let kernel_addr = kernel()?;
-	println!("kernel_addr: {kernel_addr:#x}");
-
 	let graphic_config = graphic_config()?;
-	println!("graphic_config: {graphic_config:?}");
 
 	Ok((kernel_addr, graphic_config,),)
 }

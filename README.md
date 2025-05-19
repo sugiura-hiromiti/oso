@@ -727,3 +727,67 @@ Sections:
 | 11  | .symtab        | 00002fb8 | 0000000000000000 |       |
 | 12  | .shstrtab      | 00000090 | 0000000000000000 |       |
 | 13  | .strtab        | 00000c0f | 0000000000000000 |       |
+
+# exit boot services
+
+```rust
+unsafe fn get_memory_map_and_exit_boot_services(buf: &mut [u8]) -> Result<MemoryMapMeta> {
+    let bt = boot_services_raw_panicking();
+    let bt = unsafe { bt.as_ref() };
+    let memory_map = get_memory_map(buf)?;
+    unsafe { (bt.exit_boot_services)(image_handle().as_ptr(), memory_map.map_key.0) }
+        .to_result_with_val(|| memory_map)
+}
+
+pub unsafe fn exit_boot_services(custom_memory_type: Option<MemoryType>) -> MemoryMapOwned {
+    let memory_type = custom_memory_type.unwrap_or(MemoryType::LOADER_DATA);
+    crate::helpers::exit();
+    let mut buf = MemoryMapBackingMemory::new(memory_type).expect("Failed to allocate memory");
+    let mut status = Status::ABORTED;
+    for _ in 0..2 {
+        match unsafe { get_memory_map_and_exit_boot_services(buf.as_mut_slice()) } {
+            Ok(memory_map) => {
+                return MemoryMapOwned::from_initialized_mem(buf, memory_map);
+            }
+            Err(err) => {
+                status = err.status()
+            }
+        }
+    }
+    runtime::reset(ResetType::COLD, status, None);
+}
+
+#[derive(Debug)]
+#[allow(clippy::len_without_is_empty)] // this type is never empty
+pub(crate) struct MemoryMapBackingMemory(NonNull<[u8]>);
+
+impl MemoryMapBackingMemory {
+    /// Constructs a new [`MemoryMapBackingMemory`].
+    ///
+    /// # Parameters
+    /// - `memory_type`: The memory type for the memory map allocation.
+    ///   Typically, [`MemoryType::LOADER_DATA`] for regular UEFI applications.
+    pub(crate) fn new(memory_type: MemoryType) -> crate::Result<Self> {
+        let memory_map_meta = boot::memory_map_size();
+        let len = Self::safe_allocation_size_hint(memory_map_meta);
+        let ptr = boot::allocate_pool(memory_type, len)?.as_ptr();
+
+        // Should be fine as UEFI always has  allocations with a guaranteed
+        // alignment of 8 bytes.
+        assert_eq!(ptr.align_offset(align_of::<MemoryDescriptor>()), 0);
+
+        // If this panics, the UEFI implementation is broken.
+        assert_eq!(memory_map_meta.map_size % memory_map_meta.desc_size, 0);
+
+        unsafe { Ok(Self::from_raw(ptr, len)) }
+    }
+
+    unsafe fn from_raw(ptr: *mut u8, len: usize) -> Self {
+        assert_eq!(ptr.align_offset(align_of::<MemoryDescriptor>()), 0);
+
+        let ptr = NonNull::new(ptr).expect("UEFI should never return a null ptr. An error should have been reflected via an Err earlier.");
+        let slice = NonNull::slice_from_raw_parts(ptr, len);
+
+        Self(slice)
+    }
+```

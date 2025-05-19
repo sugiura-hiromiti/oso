@@ -1,6 +1,7 @@
 use crate::Rslt;
 use crate::c_style_enum;
 use crate::chibi_uefi::table::boot_services;
+use alloc::format;
 use core::ops::RangeInclusive;
 use core::ptr::NonNull;
 
@@ -104,19 +105,30 @@ impl MemoryMapInfo {
 	}
 }
 
+impl core::fmt::Debug for MemoryMapInfo {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_,>,) -> core::fmt::Result {
+		f.debug_struct("MemoryMapInfo",)
+			.field("map_size", &format!("{:#x}", self.map_size),)
+			.field("desc_size", &format!("{:#x}", self.desc_size),)
+			.field("map_key", &format!("{:#x}", self.map_key),)
+			.field("desc_ver", &format!("{:#x}", self.desc_ver),)
+			.finish()
+	}
+}
+
 #[derive(Clone,)]
 pub struct MemoryMapBackingMemory(NonNull<[u8],>,);
 
 impl MemoryMapBackingMemory {
 	pub fn new(mem_ty: MemoryType,) -> Rslt<Self,> {
 		let bs = boot_services();
-		let memory_map_info = bs.memory_map_size();
-		let len = Self::safe_allocation_size_hint(memory_map_info.clone(),);
+		let (map_size, desc_size,) = bs.memory_map_size();
+		let len = Self::safe_allocation_size_hint(map_size, desc_size,);
 		let alloc_pos = bs.allocate_pool(mem_ty, len,)?.as_ptr();
 
 		assert_eq!(alloc_pos.align_offset(align_of::<MemoryDescriptor,>()), 0);
 
-		assert_eq!(memory_map_info.map_size % memory_map_info.desc_size, 0);
+		assert_eq!(map_size % desc_size, 0);
 
 		unsafe { Ok(Self::from_raw(alloc_pos, len,),) }
 	}
@@ -130,11 +142,11 @@ impl MemoryMapBackingMemory {
 		Self(slice,)
 	}
 
-	fn safe_allocation_size_hint(memory_map_info: MemoryMapInfo,) -> usize {
+	fn safe_allocation_size_hint(map_size: usize, desc_size: usize,) -> usize {
 		const EXTRA_ENTRIES: usize = 8;
 
-		let extra_size = memory_map_info.desc_size * EXTRA_ENTRIES;
-		memory_map_info.map_size + extra_size
+		let extra_size = desc_size * EXTRA_ENTRIES;
+		map_size + extra_size
 	}
 
 	pub fn as_mut_slice(&mut self,) -> &mut [u8] {

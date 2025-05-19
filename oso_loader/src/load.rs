@@ -22,7 +22,6 @@ pub fn kernel() -> Rslt<PhysicalAddress,> {
 	let elf = Elf::parse(&contents,)?;
 
 	let (head, tail,) = elf_address_range(&elf,);
-	println!("head: {head:#x} tail: {tail:#x}");
 	let kernel_size = tail - head;
 
 	let page_count = required_pages(kernel_size,);
