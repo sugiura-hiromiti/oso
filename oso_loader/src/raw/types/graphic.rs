@@ -5,6 +5,7 @@ use crate::c_style_enum;
 use super::PhysicalAddress;
 
 #[repr(C)]
+#[derive(Clone, Copy,)]
 pub struct GraphicsOutputModeInfo {
 	pub version:               u32,
 	pub horizontal_resolution: u32,
@@ -101,4 +102,9 @@ pub struct PixelBitMask {
 	pub green:    u32,
 	pub blue:     u32,
 	pub reserved: u32,
+}
+
+pub struct GraphicsOutputProtocolModes {
+	index:     u32,
+	info_size: usize,
 }
