@@ -4,6 +4,7 @@
 extern crate alloc;
 
 use oso_bridge::graphic::FrameBufConf;
+use oso_bridge::wfi;
 use oso_loader::Rslt;
 use oso_loader::chibi_uefi::service::exit_boot_services;
 use oso_loader::exec_kernel;
@@ -24,6 +25,12 @@ pub extern "efiapi" fn efi_image_entry_point(
 	init(image_handle, system_table,);
 
 	let (kernel_entry, graphic_config,) = app().expect("error arise while executing application",);
+
+	#[cfg(target_arch = "aarch64")]
+	{
+		assert_eq!(kernel_entry, 0x40010120, "path: {}", module_path!());
+		println!("{kernel_entry:#x}");
+	}
 
 	exit_boot_services();
 

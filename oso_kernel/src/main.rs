@@ -1,11 +1,11 @@
 #![no_std]
 #![no_main]
-#![reexport_test_harness_main = "test_main"]
-#![feature(custom_test_frameworks)]
-#![test_runner(crate::test::test_runner)]
+// #![feature(stdarch_arm_hints)]
 
 use core::arch::asm;
 use oso_bridge::graphic::FrameBufConf;
+use oso_bridge::wfe;
+use oso_bridge::wfi;
 use oso_kernel::app::cursor::CursorBuf;
 use oso_kernel::app::cursor::MouseCursorDraw;
 use oso_kernel::base::graphic::FRAME_BUFFER;
@@ -23,42 +23,44 @@ use oso_kernel::base::graphic::outline_rectangle;
 use oso_kernel::error::KernelError;
 use oso_kernel::println;
 
+// ($pixel_format:expr, $frame_buf_conf:ident) => {
+// let fb = FrameBuffer::new($frame_buf_conf, $pixel_format,);
 macro_rules! enter_app {
-	($pixel_format:expr, $frame_buf_conf:ident) => {
-		let fb = FrameBuffer::new($frame_buf_conf, $pixel_format,);
-		unsafe {
-			FrameBuffer::init(
-				&FRAME_BUFFER as *const FrameBuffer<_,>,
-				fb.buf,
-				fb.size,
-				fb.width,
-				fb.height,
-				fb.stride,
-			);
-			//FRAME_BUFFER = FrameBuffer::new(frame_buf_conf, $pixel_format,);
-		}
-		if let Err(_ke,) = app() {
-			todo!()
-		}
-	};
+	($pixel_format:expr) => {};
 }
 
 #[unsafe(no_mangle)]
 #[cfg(target_arch = "aarch64")]
-pub extern "C" fn kernel_main(frame_buf_conf: FrameBufConf,) {
-	loop {
-		unsafe {
-			asm!("wfe");
-		}
-	}
+pub extern "C" fn kernel_main(/*frame_buf_conf: FrameBufConf,*/) {
+	// unsafe {
+	// 	core::arch::aarch64::__wfi();
+	// }
+	// wfi();
+	wfe();
 	#[cfg(feature = "rgb")]
 	enter_app!(Rgb, frame_buf_conf);
 	#[cfg(feature = "bgr")]
 	enter_app!(Bgr, frame_buf_conf);
 	#[cfg(feature = "bitmask")]
 	enter_app!(Bitmask, frame_buf_conf);
-	#[cfg(feature = "bltonly")]
-	enter_app!(BltOnly, frame_buf_conf);
+	// #[cfg(feature = "bltonly")]
+	// {
+	// 	let fb = FrameBuffer::new(BltOnly,);
+	// 	unsafe {
+	// 		FrameBuffer::init(
+	// 			&FRAME_BUFFER as *const FrameBuffer<_,>,
+	// 			fb.buf,
+	// 			fb.size,
+	// 			fb.width,
+	// 			fb.height,
+	// 			fb.stride,
+	// 		);
+	// 		//FRAME_BUFFER = FrameBuffer::new(frame_buf_conf, $pixel_format,);
+	// 	}
+	// 	if let Err(_ke,) = app() {
+	// 		todo!()
+	// 	}
+	// }
 }
 
 #[unsafe(no_mangle)]
@@ -69,7 +71,8 @@ pub extern "C" fn kernel_main(frame_buf_conf: FrameBufConf,) {
 /// に則った関数として扱わないと引数の受け渡しがうまくいかない
 /// elf形式でコンパイルするので、恐らくその時に (x86環境では)sysv64 abi
 /// が強制されているのではないか？
-pub extern "sysv64" fn kernel_main(frame_buf_conf: FrameBufConf,) {
+// pub extern "sysv64" fn kernel_main(frame_buf_conf: FrameBufConf,) {
+pub extern "sysv64" fn kernel_main() {
 	loop {
 		unsafe {
 			asm!("hlt");
@@ -82,8 +85,7 @@ pub extern "sysv64" fn kernel_main(frame_buf_conf: FrameBufConf,) {
 	#[cfg(feature = "bitmask")]
 	enter_app!(Bitmask, frame_buf_conf);
 	#[cfg(feature = "bltonly")]
-	enter_app!(BltOnly, frame_buf_conf);
-
+	// enter_app!(BltOnly, frame_buf_conf);
 	loop {
 		unsafe {
 			asm!("hlt");
@@ -111,19 +113,4 @@ fn app() -> Result<(), KernelError,> {
 	cursor_buf.draw_mouse_cursor()?;
 
 	Ok((),)
-}
-
-#[cfg(test)]
-mod test {
-	use oso_kernel::println;
-	use oso_kernel::test::Testable;
-
-	#[cfg(test)]
-	pub fn test_runner(tests: &[&dyn Testable],) {
-		println!("running {} tests", tests.len());
-		for test in tests {
-			test.run_test()
-		}
-		loop {}
-	}
 }

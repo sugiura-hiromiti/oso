@@ -272,6 +272,7 @@ impl Elf {
 	}
 }
 
+#[derive(Debug,)]
 pub struct ElfHeader {
 	pub ident: ElfHeaderIdent,
 	pub ty: ElfType,
@@ -761,7 +762,7 @@ where for<'a> &'a [u8]: AsInt<I,> {
 	Some(val,)
 }
 
-#[derive(PartialEq, Eq,)]
+#[derive(PartialEq, Eq, Debug,)]
 pub enum ElfType {
 	None,
 	Relocatable,

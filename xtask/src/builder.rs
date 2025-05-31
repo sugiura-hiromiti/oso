@@ -57,6 +57,10 @@ impl Builder {
 		&self.opts.arch
 	}
 
+	pub fn opts(&self,) -> &Opts {
+		&self.opts
+	}
+
 	pub fn firmware_code(&self,) -> Rslt<PathBuf,> {
 		let tmp_path = self.firmware_tmp_code()?;
 		if !tmp_path.exists() {
@@ -94,7 +98,42 @@ impl Builder {
 		let qemu_system = self.qemu();
 		let qemu_args = self.qemu_args()?;
 
-		Command::new(qemu_system,).args(qemu_args,).run()?;
+		if self.opts().debug {
+			let mut qemu_args = qemu_args;
+			let dbg_args = ["-gdb", "tcp::12345", "-S",];
+			dbg_args.iter().for_each(|s| {
+				qemu_args.push(s.to_string(),);
+			},);
+
+			Command::new(qemu_system,).args(qemu_args,).run()?;
+			/*
+						//add args for debugging
+			if self.opts().debug {
+				let dbg_args = [
+					"-gdb",
+					"tcp::12345",
+					"-S",
+					"'",
+					"&",
+					"&&",
+					"lldb",
+					"-s",
+					"./lldb_startup_command.txt",
+				];
+				dbg_args.into_iter().for_each(|arg| {
+					args.push_back(arg.to_string(),);
+				},);
+
+				let launch_qemu_in_child_process = ["zsh", "-c", "'",];
+				launch_qemu_in_child_process.iter().rev().for_each(|s| {
+					args.push_front(s.to_string(),);
+				},);
+			}
+
+				*/
+		} else {
+			Command::new(qemu_system,).args(qemu_args,).run()?;
+		}
 		Ok((),)
 	}
 

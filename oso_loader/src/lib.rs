@@ -7,6 +7,7 @@
 #![feature(associated_type_defaults)]
 #![feature(assert_matches)]
 #![feature(nonzero_internals)]
+//#![feature(stdarch_arm_hints)]
 
 extern crate alloc;
 
@@ -16,6 +17,8 @@ use chibi_uefi::table::boot_services;
 use core::arch::asm;
 use error::OsoLoaderError;
 use oso_bridge::graphic::FrameBufConf;
+use oso_bridge::wfe;
+use oso_bridge::wfi;
 use raw::table::SystemTable;
 use raw::types::Status;
 use raw::types::UnsafeHandle;
@@ -74,34 +77,23 @@ pub fn init(image_handle: UnsafeHandle, syst: *const SystemTable,) {
 	},);
 }
 
-#[inline(always)]
-pub fn wfi() -> ! {
-	loop {
-		unsafe {
-			#[cfg(target_arch = "aarch64")]
-			asm!("wfi");
-			#[cfg(target_arch = "x86_64")]
-			asm!("hlt");
-		}
-	}
-}
-
 fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,> {
 	let mut utf16_repr: Vec<u16,> = s.as_ref().encode_utf16().collect();
 	utf16_repr.push(0,);
 	utf16_repr
 }
 
-pub fn exec_kernel(kernel_entry: u64, graphic_config: FrameBufConf,) {
+pub fn exec_kernel(kernel_entry: u64, _graphic_config: FrameBufConf,) {
+	let kernel_entry = kernel_entry as *const ();
 	#[cfg(target_arch = "aarch64")]
-	let entry_point: extern "C" fn(FrameBufConf,) =
-		unsafe { core::mem::transmute(kernel_entry as usize,) };
+	let entry_point = unsafe { core::mem::transmute::<_, extern "C" fn(),>(kernel_entry,) };
 	#[cfg(target_arch = "riscv64")]
 	let entry_point: extern "C" fn(FrameBufConf,) =
 		unsafe { core::mem::transmute(kernel_entry as usize,) };
 	#[cfg(target_arch = "x86_64")]
-	let entry_point: extern "sysv64" fn(FrameBufConf,) =
-		unsafe { core::mem::transmute(kernel_entry as usize,) };
+	let entry_point: extern "sysv64" fn() =
+		unsafe { core::mem::transmute::<*const (), extern "sysv64" fn(),>(kernel_entry,) };
 
-	entry_point(graphic_config,)
+	// wfi();
+	entry_point();
 }

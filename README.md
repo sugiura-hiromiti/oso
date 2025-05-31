@@ -1,5 +1,7 @@
 # memo
 
+abc *abc* **abc** ***abc***
+
 ## bootloader
 
 - システムパーティションはアーキテクチャによって名前が異なる
@@ -790,4 +792,117 @@ impl MemoryMapBackingMemory {
 
         Self(slice)
     }
+```
+
+# result of `readelf -h target/oso_kernel.elf`
+
+```sh
+ELF Header:
+  Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00
+  Class:                             ELF64
+  Data:                              2's complement, little endian
+  Version:                           1 (current)
+  OS/ABI:                            UNIX - System V
+  ABI Version:                       0
+  Type:                              EXEC (Executable file)
+  Machine:                           AArch64
+  Version:                           0x1
+  Entry point address:               0x40010120
+  Start of program headers:          64 (bytes into file)
+  Start of section headers:          2656688 (bytes into file)
+  Flags:                             0x0
+  Size of this header:               64 (bytes)
+  Size of program headers:           56 (bytes)
+  Number of program headers:         4
+  Size of section headers:           64 (bytes)
+  Number of section headers:         14
+  Section header string table index: 12
+```
+
+> [!note]
+> elf header
+> class: bit64
+> endian: little
+> elf version: 1
+> abi: sysv
+> abi version: 0
+> ty: executable
+> machine: 183
+> version: 1
+> entry: 0x40010120
+> program_header_offset: 64,
+> section_header_offset: 0x2889B0
+> flags: 0
+> elf header size: 64
+> program header entry size: 56
+> program header count: 4
+> section header entry size: 64
+> section header count: 14
+> section header index of section name string table: 12
+
+# result of `readelf -l target/oso_kernel.elf`
+
+```sh
+Elf file type is EXEC (Executable file)
+Entry point 0x40010120
+There are 4 program headers, starting at offset 64
+
+Program Headers:
+  Type           Offset             VirtAddr           PhysAddr
+                 FileSiz            MemSiz              Flags  Align
+  PHDR           0x0000000000000040 0x00000000_4000_0040 0x0000000040000040
+                 0x00000000000000e0 0x00000000000000e0  R      0x8
+  LOAD           0x0000000000000000 0x00000000_4000_0000 0x00000000_4000_0000
+                 0x0000000000000120 0x000000000000_0120  R      0x1_0000
+  LOAD           0x0000000000000120 0x00000000_4001_0120 0x00000000_4001_0120
+                 0x0000000000000010 0x0000000000000010  R E    0x10000
+  GNU_STACK      0x0000000000000000 0x0000000000000000 0x0000000000000000
+                 0x0000000000000000 0x0000000000000000  RW     0x0
+
+ Section to Segment mapping:
+  Segment Sections...
+   00
+   01
+   02     .text
+   03
+```
+
+# result of `❯ readelf --hex-dump=.text target/oso_kernel.elf`
+
+```sh
+❯ readelf --hex-dump=.text target/oso_kernel.elf
+
+Hex dump of section '.text':
+  0x40010120 ff4300d1 01000014 5f2003d5 ffffff17 .C......_ ......
+```
+
+```sh
+0x40010120:  d10043ff  sub      sp, sp, #0x10
+0x40010124:  14000001  b        #0x40010128
+0x40010128:  d503205f  wfe
+0x4001012c:  17ffffff  b        #0x40010128
+```
+
+# searching debugging options
+
+of lldb
+
+- set debugged file by cli argument
+
+```sh
+--file <filename>     Tells the debugger to use the file <filename> as the program to be debugged.
+-f <value>            Alias for --file
+```
+
+- auto execute lldb command on startup
+
+```sh
+--source-before-file <file>
+                     Tells the debugger to read in and execute the lldb commands in the given file, before any file has been loaded.
+--source-on-crash <file>
+                     When in batch mode, tells the debugger to source this file of lldb commands if the target crashes.
+--source-quietly     Tells the debugger not to echo commands while sourcing files or one-line commands provided on the command line.
+--source <file>      Tells the debugger to read in and execute the lldb commands in the given file, after any file has been loaded.
+-S <value>           Alias for --source-before-file
+-s <value>           Alias for --source
 ```

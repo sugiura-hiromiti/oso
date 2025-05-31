@@ -80,7 +80,17 @@ pub struct FrameBuffer<P: PixelFormat,> {
 }
 
 impl<P: PixelFormat,> FrameBuffer<P,> {
-	pub fn new(conf: FrameBufConf, pxl_fmt: P,) -> Self {
+	pub fn new(/* conf: FrameBufConf, */ pxl_fmt: P,) -> Self {
+		struct A {
+			base:   usize,
+			width:  usize,
+			height: usize,
+			stride: usize,
+			size:   usize,
+		}
+
+		let conf = A { base: 0, width: 0, height: 0, stride: 0, size: 0, };
+
 		let buf = conf.base as usize;
 		let width = conf.width;
 		let height = conf.height;

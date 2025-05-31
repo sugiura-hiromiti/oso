@@ -96,7 +96,7 @@ impl GraphicsOutputProtocolMode {
 }
 
 #[repr(C)]
-#[derive(Clone, Default, Eq, PartialEq, Ord, PartialOrd, Hash,)]
+#[derive(Clone, Copy, Default, Eq, PartialEq, Ord, PartialOrd, Hash,)]
 pub struct PixelBitMask {
 	pub red:      u32,
 	pub green:    u32,

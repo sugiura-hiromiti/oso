@@ -6,6 +6,7 @@ use crate::println;
 use alloc::format;
 use alloc::vec::Vec;
 
+#[derive(PartialEq, Eq,)]
 pub struct ProgramHeader {
 	pub ty:               ProgramHeaderType,
 	pub flags:            u32,

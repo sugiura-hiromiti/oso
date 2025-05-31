@@ -129,6 +129,7 @@ pub struct Opts {
 	pub build_mode: BuildMode,
 	pub arch:       Architecture,
 	pub features:   Vec<Feature,>,
+	pub debug:      bool,
 }
 
 impl Opts {
@@ -139,6 +140,7 @@ impl Opts {
 		let mut arch = Some(Architecture::Aarch64,);
 		let mut features = Some(vec![],);
 		let mut feature_zone = false;
+		let mut debug = false;
 		args.for_each(|s| match s.as_str() {
 			"-r" | "--release" => {
 				build_mode = Some(BuildMode::Release,);
@@ -151,13 +153,17 @@ impl Opts {
 				features.replace(Feature::from_str(flag,),);
 				todo!()
 			},
+			"--debug" => {
+				debug = true;
+			},
 			_ => (),
 		},);
 
 		Self {
 			build_mode: build_mode.unwrap(),
-			arch:       arch.unwrap(),
-			features:   features.unwrap(),
+			arch: arch.unwrap(),
+			features: features.unwrap(),
+			debug,
 		}
 	}
 }

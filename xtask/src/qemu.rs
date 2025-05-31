@@ -5,6 +5,7 @@ use ovmf_prebuilt::Arch;
 use ovmf_prebuilt::FileType;
 use ovmf_prebuilt::Prebuilt;
 use ovmf_prebuilt::Source;
+use std::collections::VecDeque;
 use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -37,6 +38,7 @@ impl Builder {
 		// setting the boot menu timeout to zero particularly speeds up the boot
 		args.push("-boot".to_string(),);
 		args.push("menu=on,splash-time=0".to_string(),);
+
 		Ok(args,)
 	}
 }
@@ -162,7 +164,8 @@ fn block_device(disk_img: &Path, arch: &Architecture,) -> Vec<String,> {
 		"-device".to_string(),
 		match arch {
 			Architecture::X86_64 => "virtio-blk-pci,drive=hd0",
-			_ => "virtio-blk-device,drive=hd0",
+			// _ => "virtio-blk-device,drive=hd0",
+			_ => "virtio-blk-pci,drive=hd0",
 		}
 		.to_string(),
 	]
