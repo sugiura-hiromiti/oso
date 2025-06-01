@@ -8,6 +8,7 @@ use oso_bridge::wfi;
 
 pub mod app;
 pub mod base;
+pub mod driver;
 pub mod gui;
 
 pub mod error {

@@ -32,7 +32,7 @@ macro_rules! enter_app {
 
 #[unsafe(no_mangle)]
 #[cfg(target_arch = "aarch64")]
-pub extern "C" fn kernel_main() {
+pub extern "C" fn kernel_main(fbc: FrameBufConf,) {
 	// NOTE: Disable IRQ(interrupt request)
 	unsafe {
 		asm!("msr daifset, #2");
@@ -57,6 +57,7 @@ pub extern "sysv64" fn kernel_main() {
 			asm!("hlt");
 		}
 	}
+
 	#[cfg(feature = "rgb")]
 	enter_app!(Rgb, frame_buf_conf);
 	#[cfg(feature = "bgr")]
