@@ -88,13 +88,39 @@ pub fn exec_kernel(kernel_entry: u64, _graphic_config: FrameBufConf,) {
 	let kernel_entry = kernel_entry as *const ();
 	#[cfg(target_arch = "aarch64")]
 	let entry_point = unsafe { core::mem::transmute::<_, extern "C" fn(),>(kernel_entry,) };
-	#[cfg(target_arch = "riscv64")]
-	let entry_point = unsafe { core::mem::transmute::<_, extern "C" fn(),>(kernel_entry,) };
-	#[cfg(target_arch = "x86_64")]
-	let entry_point = unsafe { core::mem::transmute::<_, extern "sysv64" fn(),>(kernel_entry,) };
 
-	// unsafe {
-	// 	asm!("wfi");
-	// };
+	// #[cfg(target_arch = "riscv64")]
+	// let entry_point = unsafe { core::mem::transmute::<_, extern "C" fn(),>(kernel_entry,) };
+	// #[cfg(target_arch = "x86_64")]
+	// let entry_point = unsafe { core::mem::transmute::<_, extern "sysv64" fn(),>(kernel_entry,) };
+
+	#[cfg(target_arch = "aarch64")]
+	unsafe {
+		// Ensure data is written to memory
+		asm!("dsb sy");
+
+		// Flush caches
+		asm!("ic iallu"); // Invalidate all instruction caches to PoU
+		asm!("dsb ish"); // Ensure completion of cache operations
+		asm!("isb"); // Synchronize context
+
+		// Disable MMU by modifying SCTLR_EL1
+		asm!(
+			"mrs x0, sctlr_el1",          // Read current SCTLR_EL1
+			"bic x0, x0, #1",             // Clear bit 0 (M) to disable MMU
+			"msr sctlr_el1, x0",          // Write back to SCTLR_EL1
+			"isb",                         // Instruction synchronization barrier
+			out("x0") _
+		);
+	}
+
+	// Jump to kernel with MMU disabled
 	entry_point();
+
+	unsafe {
+		// Fallback loop if jump fails
+		loop {
+			asm!("wfi");
+		}
+	}
 }
