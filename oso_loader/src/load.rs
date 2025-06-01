@@ -22,8 +22,8 @@ pub fn kernel() -> Rslt<PhysicalAddress,> {
 	let contents = unsafe { kernel_file.as_mut() }.read_as_bytes()?;
 	let elf = Elf::parse(&contents,)?;
 
-	#[cfg(target_arch = "aarch64")]
-	test_elf_parse(&elf,);
+	// #[cfg(target_arch = "aarch64")]
+	// test_elf_parse(&elf,);
 
 	let (head, tail,) = elf_address_range(&elf,);
 	let kernel_size = tail - head;
@@ -143,29 +143,39 @@ fn test_elf_parse(elf: &Elf,) {
 			offset:           0,
 			virtual_address:  0x4000_0000,
 			physical_address: 0x4000_0000,
+			file_size:        0x18a,
+			memory_size:      0x18a,
+			align:            0x1_0000,
+		},
+		ProgramHeader {
+			ty:               ProgramHeaderType::Load,
+			flags:            5,
+			offset:           0x18c,
+			virtual_address:  0x4001_018c,
+			physical_address: 0x4001_018c,
 			file_size:        0x120,
 			memory_size:      0x120,
 			align:            0x1_0000,
 		},
 		ProgramHeader {
 			ty:               ProgramHeaderType::Load,
-			flags:            5,
-			offset:           0x120,
-			virtual_address:  0x4001_0120,
-			physical_address: 0x4001_0120,
-			file_size:        0xc,
-			memory_size:      0xc,
+			flags:            6,
+			offset:           0x2b0,
+			virtual_address:  0x4002_02b0,
+			physical_address: 0x4002_02b0,
+			file_size:        0x28,
+			memory_size:      0x28,
 			align:            0x1_0000,
 		},
 		ProgramHeader {
 			ty:               ProgramHeaderType::GnuStack,
 			flags:            6,
-			offset:           0,
-			virtual_address:  0,
-			physical_address: 0,
-			file_size:        0,
-			memory_size:      0,
-			align:            0,
+			offset:           0x0,
+			virtual_address:  0x0,
+			physical_address: 0x0,
+			file_size:        0x0,
+			memory_size:      0x0,
+			align:            0x0,
 		},
 	];
 

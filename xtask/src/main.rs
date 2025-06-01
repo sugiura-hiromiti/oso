@@ -11,7 +11,6 @@ pub mod workspace;
 
 fn main() -> Rslt<(),> {
 	let builder = Builder::new()?;
-	println!("{builder:#?}");
 	builder.build()?;
 	builder.run()?;
 	Ok((),)

@@ -4,6 +4,7 @@
 
 use core::arch::asm;
 use oso_bridge::graphic::FrameBufConf;
+use oso_bridge::nop;
 use oso_bridge::wfe;
 use oso_bridge::wfi;
 use oso_kernel::app::cursor::CursorBuf;
@@ -31,36 +32,14 @@ macro_rules! enter_app {
 
 #[unsafe(no_mangle)]
 #[cfg(target_arch = "aarch64")]
-pub extern "C" fn kernel_main(/*frame_buf_conf: FrameBufConf,*/) {
-	// unsafe {
-	// 	core::arch::aarch64::__wfi();
-	// }
-	// wfi();
-	wfe();
-	#[cfg(feature = "rgb")]
-	enter_app!(Rgb, frame_buf_conf);
-	#[cfg(feature = "bgr")]
-	enter_app!(Bgr, frame_buf_conf);
-	#[cfg(feature = "bitmask")]
-	enter_app!(Bitmask, frame_buf_conf);
-	// #[cfg(feature = "bltonly")]
-	// {
-	// 	let fb = FrameBuffer::new(BltOnly,);
-	// 	unsafe {
-	// 		FrameBuffer::init(
-	// 			&FRAME_BUFFER as *const FrameBuffer<_,>,
-	// 			fb.buf,
-	// 			fb.size,
-	// 			fb.width,
-	// 			fb.height,
-	// 			fb.stride,
-	// 		);
-	// 		//FRAME_BUFFER = FrameBuffer::new(frame_buf_conf, $pixel_format,);
-	// 	}
-	// 	if let Err(_ke,) = app() {
-	// 		todo!()
-	// 	}
-	// }
+pub extern "C" fn kernel_main() {
+	// NOTE: Disable IRQ(interrupt request)
+	unsafe {
+		asm!("msr daifset, #2");
+	}
+
+	// NOTE: stops program for debugging purpose
+	wfi();
 }
 
 #[unsafe(no_mangle)]

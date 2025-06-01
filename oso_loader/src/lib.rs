@@ -17,6 +17,7 @@ use chibi_uefi::table::boot_services;
 use core::arch::asm;
 use error::OsoLoaderError;
 use oso_bridge::graphic::FrameBufConf;
+use oso_bridge::nop;
 use oso_bridge::wfe;
 use oso_bridge::wfi;
 use raw::table::SystemTable;
@@ -88,12 +89,12 @@ pub fn exec_kernel(kernel_entry: u64, _graphic_config: FrameBufConf,) {
 	#[cfg(target_arch = "aarch64")]
 	let entry_point = unsafe { core::mem::transmute::<_, extern "C" fn(),>(kernel_entry,) };
 	#[cfg(target_arch = "riscv64")]
-	let entry_point: extern "C" fn(FrameBufConf,) =
-		unsafe { core::mem::transmute(kernel_entry as usize,) };
+	let entry_point = unsafe { core::mem::transmute::<_, extern "C" fn(),>(kernel_entry,) };
 	#[cfg(target_arch = "x86_64")]
-	let entry_point: extern "sysv64" fn() =
-		unsafe { core::mem::transmute::<*const (), extern "sysv64" fn(),>(kernel_entry,) };
+	let entry_point = unsafe { core::mem::transmute::<_, extern "sysv64" fn(),>(kernel_entry,) };
 
-	// wfi();
+	// unsafe {
+	// 	asm!("wfi");
+	// };
 	entry_point();
 }

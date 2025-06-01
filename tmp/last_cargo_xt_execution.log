@@ -1,0 +1,106 @@
+---
+last execution
+---
+
+oso on  main [✘!?] via 🦀 v1.89.0-nightly took 1m8s
+❯ cargo xt 2>/dev/null
+
+cargo b --target aarch64-unknown-uefi
+
+cargo b --target aarch64-unknown-none-elf.json
+
+qemu-img create -f raw /Users/a/Downloads/QwQ/oso/target/xtask/disk.img 200m
+Formatting '/Users/a/Downloads/QwQ/oso/target/xtask/disk.img', fmt=raw size=209715200
+
+mkfs.fat -n 'OSO' -s 2 -f 2 -R 32 -F 32 /Users/a/Downloads/QwQ/oso/target/xtask/disk.img
+mkfs.fat 4.2 (2021-01-31)
+mounting img:
+        stdout: /dev/disk4
+        stderr:
+
+mount -t msdos /dev/disk4 /Users/a/Downloads/QwQ/oso/target/xtask/mnt
+loader build artifact is /Users/a/Downloads/QwQ/oso/target/aarch64-unknown-uefi/debug/oso_loader.efi
+
+eza -ahlF --icons --group-directories-first --sort=extension --time-style=iso --git --no-user --no-time -T target/xtask
+Permissions Size Git Name
+drwxr-xr-x     -  -I  target/xtask/
+drwxrwxrwx@    -  -I ├──  mnt/
+drwxrwxrwx     -  -I │   ├──  efi/
+drwxrwxrwx     -  -I │   │   └──  boot/
+.rwxrwxrwx  256k  -I │   │       └──  bootaa64.efi*
+.rwxrwxrwx  5.5k  -I │   └──  oso_kernel.elf*
+.rw-r--r--  210M  -I └──  disk.img
+
+hdiutil detach /dev/disk4
+"disk4" ejected.
+
+qemu-system-aarch64 -machine virt -cpu cortex-a72 -device virtio-gpu-pci -drive if=pflash,format=raw,readonly=on,file=/Users/a/Downloads/QwQ/oso/target/xtask/mv_firm
+ware_code -drive if=pflash,format=raw,readonly=off,file=/Users/a/Downloads/QwQ/oso/target/xtask/mv_firmware_vars -monitor stdio -drive file=/Users/a/Downloads/QwQ/os
+o/target/xtask/disk.img,format=raw,if=none,id=hd0 -device virtio-blk-pci,drive=hd0 -boot menu=on,splash-time=0
+QEMU 9.2.3 monitor - type 'help' for more information
+(qemu) x /10i 0x46140a10
+0x46140a10:  f9000fe0  str      x0, [sp, #0x18]
+0x46140a14:  d63f0000  blr      x0
+0x46140a18:  f94013fe  ldr      x30, [sp, #0x20]
+0x46140a1c:  9100c3ff  add      sp, sp, #0x30
+0x46140a20:  d65f03c0  ret
+0x46140a24:  d10283ff  sub      sp, sp, #0xa0
+0x46140a28:  f9004bfe  str      x30, [sp, #0x90]
+0x46140a2c:  f9000fe0  str      x0, [sp, #0x18]
+0x46140a30:  94003199  bl       #0x4614d094
+0x46140a34:  910083e8  add      x8, sp, #0x20
+(qemu) x /10i 0x40010120
+0x40010120:  d50342df  msr      daifset, #2
+0x40010124:  14000001  b        #0x40010128
+0x40010128:  d503207f  wfi
+0x4001012c:  17ffffff  b        #0x40010128
+0x40010130:  00000000  udf      #0
+0x40010134:  00000000  udf      #0
+0x40010138:  00000000  udf      #0
+0x4001013c:  00000000  udf      #0
+0x40010140:  00000000  udf      #0
+0x40010144:  00000000  udf      #0
+(qemu) info registers
+
+CPU#0
+ PC=00000000470f5174 X00=0000000000000000 X01=0000000000000000
+X02=0000000000000001 X03=0000000000000000 X04=0000000000000002
+X05=0000000000000001 X06=0000000000000000 X07=00000000470f7b08
+X08=0000000000000000 X09=0000000000000002 X10=0000000000000000
+X11=0000000000000000 X12=0000000000000002 X13=0000000000000002
+X14=0000000000000001 X15=00000000000000ff X16=00000000470f4f0c
+X17=0000000000000003 X18=0000000000000000 X19=00000000470fb000
+X20=00000000470fadd0 X21=00000000470fb000 X22=0000000046d21730
+X23=0000000046d1fb6a X24=0000000046bc8518 X25=0000000046181018
+X26=0000000046d21000 X27=0000000003051007 X28=00000000470faed0
+X29=00000000470fac40 X30=00000000470f5174  SP=00000000470fac40
+PSTATE=600003c4 -ZC- EL1t     FPCR=00000000 FPSR=00000000
+Q00=0000000000000001:0000000000000324 Q01=ffffff80ffffffc8:000000004793e8e0
+Q02=0000000000000000:0000000000000000 Q03=0000000000000000:0000000000000000
+Q04=0000000000000000:0000000000000000 Q05=0000000000000000:0000000000000000
+Q06=0000000000000000:0000000000000000 Q07=0000000000000000:0000000000000000
+Q08=0000000000000000:0000000000000000 Q09=0000000000000000:0000000000000000
+Q10=0000000000000000:0000000000000000 Q11=0000000000000000:0000000000000000
+Q12=0000000000000000:0000000000000000 Q13=0000000000000000:0000000000000000
+Q14=0000000000000000:0000000000000000 Q15=0000000000000000:0000000000000000
+Q16=0000000000000000:0000000000000000 Q17=0000000000000000:0000000000000000
+Q18=0000000000000000:0000000000000000 Q19=0000000000000000:0000000000000000
+Q20=0000000000000000:0000000000000000 Q21=0000000000000000:0000000000000000
+Q22=0000000000000000:0000000000000000 Q23=0000000000000000:0000000000000000
+Q24=0000000000000000:0000000000000000 Q25=0000000000000000:0000000000000000
+Q26=0000000000000000:0000000000000000 Q27=0000000000000000:0000000000000000
+Q28=0000000000000000:0000000000000000 Q29=0000000000000000:0000000000000000
+Q30=0000000000000000:0000000000000000 Q31=0000000000000000:0000000000000000
+(qemu) x /10i 0x470f5170
+0x470f5170:  940009b2  bl       #0x470f7838
+0x470f5174:  17fffff8  b        #0x470f5154
+0x470f5178:  14000a3a  b        #0x470f7a60
+0x470f517c:  a9bd7bfd  stp      x29, x30, [sp, #-0x30]!
+0x470f5180:  910003fd  mov      x29, sp
+0x470f5184:  a90153f3  stp      x19, x20, [sp, #0x10]
+0x470f5188:  d0000033  adrp     x19, #0x470fb000
+0x470f518c:  aa0003f4  mov      x20, x0
+0x470f5190:  f940a660  ldr      x0, [x19, #0x148]
+0x470f5194:  f90013f5  str      x21, [sp, #0x20]
+(qemu) q
+

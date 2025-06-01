@@ -28,3 +28,15 @@ pub fn wfe() -> ! {
 		}
 	}
 }
+
+#[inline(always)]
+pub fn nop() -> ! {
+	loop {
+		unsafe {
+			#[cfg(target_arch = "aarch64")]
+			asm!("nop");
+			#[cfg(target_arch = "x86_64")]
+			asm!("hlt");
+		}
+	}
+}
