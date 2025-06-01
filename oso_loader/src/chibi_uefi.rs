@@ -15,6 +15,7 @@ use core::ffi::c_void;
 use core::ptr::NonNull;
 use core::sync::atomic::AtomicPtr;
 use core::sync::atomic::Ordering;
+use oso_bridge::wfi;
 use table::boot_services;
 
 pub mod console;
@@ -73,11 +74,10 @@ impl BootServices {
 
 		for _ in 0..2 {
 			let mut buf = MemoryMapBackingMemory::new(mem_ty,).expect("failed to allocate memory",);
-			let (mem_map, status,) = unsafe { self.try_exit_boot_services(buf.as_mut_slice(),) };
+			let status = unsafe { self.try_exit_boot_services(buf.as_mut_slice(),) };
 
 			match status.is_success() {
 				true => {
-					core::mem::forget(mem_map,);
 					return;
 				},
 				false => {
@@ -90,11 +90,12 @@ impl BootServices {
 		todo!("failed to exit boot service. reset the machine");
 	}
 
-	unsafe fn try_exit_boot_services(&self, buf: &mut [u8],) -> (MemoryMapInfo, Status,) {
+	unsafe fn try_exit_boot_services(&self, buf: &mut [u8],) -> Status {
 		let mem_map = self.get_memory_map(buf,).expect("failed to get memmap",);
 		let status =
 			unsafe { (self.exit_boot_services)(image_handle().as_ptr(), mem_map.map_key,) };
-		(mem_map, status,)
+		core::mem::forget(mem_map,);
+		status
 	}
 }
 
