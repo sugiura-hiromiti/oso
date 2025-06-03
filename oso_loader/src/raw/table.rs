@@ -62,5 +62,7 @@ impl ConfigTable {
 pub const DEVICE_TREE_TABLE_GUID: Guid = guid!("b1b621d5-f19c-41a5-830b-d9152c69aae0");
 
 impl SystemTable {
-	pub fn get_config_tables(&self,) -> Rslt<ConfigTableStream,> {}
+	pub fn get_config_tables(&self,) -> Rslt<ConfigTableStream,> {
+       todo!()
+   }
 }

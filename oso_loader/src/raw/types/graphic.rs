@@ -5,7 +5,7 @@ use crate::c_style_enum;
 use super::PhysicalAddress;
 
 #[repr(C)]
-#[derive(Clone, Copy,)]
+#[derive(Clone, Copy, Default,)]
 pub struct GraphicsOutputModeInfo {
 	pub version:               u32,
 	pub horizontal_resolution: u32,
