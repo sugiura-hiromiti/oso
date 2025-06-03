@@ -1,10 +1,10 @@
-//! oso_loader/kernel用のエラー型
-//! TODO: アロケータを実装したら`oso_util`に移管
 use alloc::format;
 use alloc::string::String;
+use alloc::string::ToString;
 use core::error::Error;
 use core::fmt::Debug;
 use core::fmt::Display;
+use core::num::ParseIntError;
 
 #[derive(Debug,)]
 pub enum OsoLoaderError {
@@ -24,14 +24,14 @@ impl Display for OsoLoaderError {
 	}
 }
 
-impl<E: Debug,> From<uefi::Error<E,>,> for OsoLoaderError {
-	fn from(value: uefi::Error<E,>,) -> Self {
-		Self::Uefi(format!("{value:?}"),)
+impl From<OsoLoaderError,> for core::fmt::Error {
+	fn from(_value: OsoLoaderError,) -> Self {
+		core::fmt::Error
 	}
 }
 
-impl From<goblin::error::Error,> for OsoLoaderError {
-	fn from(value: goblin::error::Error,) -> Self {
-		Self::EfiParse(format!("{value:?}"),)
+impl From<ParseIntError,> for OsoLoaderError {
+	fn from(value: ParseIntError,) -> Self {
+		Self::Uefi(value.to_string(),)
 	}
 }

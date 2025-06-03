@@ -1,24 +1,49 @@
 #![no_std]
-#![no_main]
-
-pub mod elf;
-pub mod error;
-pub mod fs;
-pub mod graphic;
-pub mod memory;
+#![feature(alloc_error_handler)]
+#![feature(ptr_as_ref_unchecked)]
+#![feature(iter_next_chunk)]
+#![feature(const_trait_impl)]
+#![feature(generic_const_exprs)]
+#![feature(associated_type_defaults)]
+#![feature(assert_matches)]
+#![feature(nonzero_internals)]
+//#![feature(stdarch_arm_hints)]
 
 extern crate alloc;
 
-use core::fmt::Debug;
-
+use alloc::vec::Vec;
+use chibi_uefi::protocol::HandleSearchType;
+use chibi_uefi::table::boot_services;
+use core::arch::asm;
 use error::OsoLoaderError;
-use log::debug;
-use log::info;
-use uefi::Identify;
-use uefi::boot;
-use uefi::boot::OpenProtocolParams;
-use uefi::proto;
-use uefi::proto::loaded_image;
+use oso_bridge::graphic::FrameBufConf;
+use oso_bridge::nop;
+use oso_bridge::wfe;
+use oso_bridge::wfi;
+use raw::table::SystemTable;
+use raw::types::Status;
+use raw::types::UnsafeHandle;
+
+pub mod chibi_uefi;
+pub mod elf;
+pub mod error;
+pub mod load;
+pub mod raw;
+
+pub type Rslt<T = Status,> = Result<T, OsoLoaderError,>;
+
+#[panic_handler]
+fn panic(panic: &core::panic::PanicInfo,) -> ! {
+	println!("{panic:#?}");
+	loop {
+		unsafe {
+			#[cfg(target_arch = "aarch64")]
+			asm!("wfe");
+			#[cfg(target_arch = "x86_64")]
+			asm!("hlt");
+		}
+	}
+}
 
 #[macro_export]
 /// ?演算子で処理できないエラーがあった場合に使う
@@ -30,82 +55,73 @@ macro_rules! on_error {
 	}};
 }
 
-#[macro_export]
-/// `AsRef<str>`を実装する型の変数をuefi::CStr16型へ変換する
-/// 所有権の問題で関数ではなくマクロになっている
-macro_rules! string_to_cstr16 {
-	($str:expr, $rslt:ident) => {
-		//let $rslt = alloc::string::ToString::to_string($string,);
-		let $rslt = $str.as_ref();
-		let $rslt: alloc::vec::Vec<u16,> = $rslt.chars().map(|c| c as u16,).collect();
-		let $rslt = match uefi::CStr16::from_u16_with_nul(&$rslt[..],) {
-			Ok(cstr16,) => cstr16,
-			Err(e,) => {
-				log::error!("{:?}", e);
-				panic!(
-					"failed to convert &[u16] to CStr16\ninvalid code may included or not null \
-					 terminated",
-				);
-			},
-		};
-	};
-}
+/// # Panics
+///
+/// panics  when initialization failed
+pub fn init(image_handle: UnsafeHandle, syst: *const SystemTable,) {
+	unsafe { syst.as_ref().unwrap().stdout.as_mut().unwrap().clear().unwrap() };
+	chibi_uefi::table::set_system_table_panicking(syst,);
+	chibi_uefi::set_image_handle_panicking(image_handle,);
 
-/// 画面をクリア
-pub fn clear_stdout() {
-	uefi::system::with_stdout(|o| {
-		if let Err(e,) = o.clear() {
-			info!("display clearing failed\nError is: {e}");
-		}
+	// connect devices
+	let bs = boot_services();
+
+	// uefi only installs DevicePathProtocol on devices that are fully connected
+	// `AllHandles` is the only way to find unconnected devices
+	let handles = unsafe {
+		bs.locate_handle_buffer(HandleSearchType::AllHandles,)
+			.expect("failed to locate all handles ",)
+	};
+	handles.iter().for_each(|handle| {
+		// ignore errors from connect_controller intendly
+		unsafe { bs.connect_controller(*handle, None, None, raw::types::Boolean::TRUE,) };
 	},);
 }
 
-/// uefiで読み込まれているイメージを探りイメージファイルへのパスを表示する
-pub fn print_image_path() -> Result<(), OsoLoaderError,> {
-	// イメージがどこにあるかを探るアプリケーション
-	let loaded_image =
-		boot::open_protocol_exclusive::<loaded_image::LoadedImage,>(boot::image_handle(),)?;
-
-	// device_path型をテキストに変換するアプリケーションのハンドラ
-	let device_path_to_text_handle = *boot::locate_handle_buffer(boot::SearchType::ByProtocol(
-		&proto::device_path::text::DevicePathToText::GUID,
-	),)?
-	.first()
-	.expect("DevicePathToText is missing",);
-
-	// device_pathをテキストに変換するアプリケーション
-	let device_path_to_text = boot::open_protocol_exclusive::<
-		proto::device_path::text::DevicePathToText,
-	>(device_path_to_text_handle,)?;
-
-	let image_device_path = loaded_image.file_path().expect("file path is not set",);
-	let image_device_path_text = device_path_to_text
-		.convert_device_path_to_text(
-			image_device_path,
-			proto::device_path::text::DisplayOnly(true,),
-			proto::device_path::text::AllowShortcuts(false,),
-		)
-		.expect("convert_device_path_to_text failed",);
-
-	debug!("Image path: {}", &*image_device_path_text);
-
-	uefi::boot::stall(2_000_000,);
-	Ok((),)
+fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,> {
+	let mut utf16_repr: Vec<u16,> = s.as_ref().encode_utf16().collect();
+	utf16_repr.push(0,);
+	utf16_repr
 }
 
-pub fn open_protocol_with<P: uefi::proto::ProtocolPointer + ?Sized + Debug,>()
--> Result<boot::ScopedProtocol<P,>, OsoLoaderError,> {
-	debug!("open handler");
-	let handle = boot::get_handle_for_protocol::<P,>()?;
-	let img_hndl = boot::image_handle();
-	let params = OpenProtocolParams { handle, agent: img_hndl, controller: None, };
-	let attributes = boot::OpenProtocolAttributes::GetProtocol;
+pub fn exec_kernel(kernel_entry: u64, graphic_config: FrameBufConf,) {
+	let kernel_entry = kernel_entry as *const ();
+	#[cfg(target_arch = "aarch64")]
+	let entry_point =
+		unsafe { core::mem::transmute::<_, extern "C" fn(FrameBufConf,),>(kernel_entry,) };
 
-	debug!("opened handler");
-	let proto = unsafe { boot::open_protocol::<P,>(params, attributes,) }?;
-	debug!("opened proto");
+	// #[cfg(target_arch = "riscv64")]
+	// let entry_point = unsafe { core::mem::transmute::<_, extern "C" fn(),>(kernel_entry,) };
+	// #[cfg(target_arch = "x86_64")]
+	// let entry_point = unsafe { core::mem::transmute::<_, extern "sysv64" fn(),>(kernel_entry,) };
 
-	// let proto = boot::open_protocol_exclusive::<P,>(handle,);
-	// debug!("opened proto");
-	Ok(proto,)
+	#[cfg(target_arch = "aarch64")]
+	unsafe {
+		// Ensure data is written to memory
+		asm!("dsb sy");
+
+		// Flush caches
+		asm!("ic iallu"); // Invalidate all instruction caches to PoU
+		asm!("dsb ish"); // Ensure completion of cache operations
+		asm!("isb"); // Synchronize context
+
+		// Disable MMU by modifying SCTLR_EL1
+		asm!(
+			"mrs x0, sctlr_el1",          // Read current SCTLR_EL1
+			"bic x0, x0, #1",             // Clear bit 0 (M) to disable MMU
+			"msr sctlr_el1, x0",          // Write back to SCTLR_EL1
+			"isb",                         // Instruction synchronization barrier
+			out("x0") _
+		);
+	}
+
+	// Jump to kernel with MMU disabled
+	entry_point(graphic_config,);
+
+	unsafe {
+		// Fallback loop if jump fails
+		loop {
+			asm!("wfi");
+		}
+	}
 }

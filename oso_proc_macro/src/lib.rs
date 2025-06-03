@@ -1,208 +1,114 @@
+#![feature(proc_macro_diagnostic)]
+
 extern crate proc_macro;
 
 use colored::Colorize;
+use oso_proc_macro_logic as macro_logic;
+use proc_macro::Diagnostic;
+use proc_macro::Level;
 use proc_macro::TokenStream;
-use proc_macro2::TokenTree;
-use syn::TypePath;
-use syn::parse::Parse;
+use proc_macro2::Span;
+use syn::LitFloat;
 use syn::parse_macro_input;
-use syn::spanned::Spanned;
 
-//const FONT_DATA_SIZE: u16 = 256;
-const CHARACTER_COUNT: usize = 256;
+mod helper;
 
 #[proc_macro]
+/// # Params
+///
+/// this macro takes relative path to project root as an argument
+/// specify path to font data
 pub fn fonts_data(path: TokenStream,) -> TokenStream {
-	let path = &syn::parse_macro_input!(path as syn::LitStr);
-	let path = format!("/Users/a/Downloads/QwQ/oso/oso_proc_macro/{}", path.value());
-	let font_data = std::fs::read_to_string(&path,).expect(&format!(
-		"{}: {}\n",
-		"failed to open font file".bold().red(),
-		path
-	),);
+	use macro_logic::fonts_data::convert_bitfield;
+	use macro_logic::fonts_data::fonts;
 
-	let fonts_data_lines: Vec<&str,> = font_data
-		.split("\n",)
-		.collect::<Vec<&str,>>()
-		.into_iter()
-		.filter(|s| !(*s == "" || s.contains("0x",)),)
-		.collect();
-
-	let mut fonts = vec!["".to_string(); CHARACTER_COUNT];
-	for idx in 0..CHARACTER_COUNT {
-		fonts[idx] = fonts_data_lines[idx * 16..(idx + 1) * 16].join("",);
-	}
-
-	fonts.iter().for_each(|s| assert_eq!(s.len(), 128),);
-
-	let fonts: Vec<u128,> = fonts
-		.into_iter()
-		.map(|s| {
-			let lines = s.split("\n",).collect::<Vec<&str,>>();
-			let a: u128 = lines
-				.into_iter()
-				.enumerate()
-				.map(|(i, s,)| {
-					let s = s.replace(".", "0",).replace("@", "1",);
-					let s: String = s.chars().rev().collect();
-					let line = u128::from_str_radix(&s, 2,).unwrap();
-					line << i
-				},)
-				.sum();
-			a
-		},)
-		.collect();
-
-	let a = fonts[b'a' as usize];
-	let mut s = String::new();
-	for j in 0..16 {
-		for i in 0..8 {
-			let flag = i + j * 8;
-			let bit = a & (0b1 << flag);
-			if bit != 0 {
-				s.push('W',);
-			} else {
-				s.push(' ',);
-			}
-		}
-		s.push('\n',);
-	}
+	let specified_path = &syn::parse_macro_input!(path as syn::LitStr);
+	let fonts = fonts(specified_path,);
+	let fonts = convert_bitfield(&fonts,);
 
 	TokenStream::from(quote::quote! {
 		&[#(#fonts),*]
 	},)
 }
 
-struct Types {
-	type_list: Vec<syn::Type,>,
-}
-
-impl Parse for Types {
-	fn parse(input: syn::parse::ParseStream,) -> syn::Result<Self,> {
-		let parsed = input.step(|c| {
-			let mut rest = *c;
-			let mut type_list = vec![];
-
-			while let Some((tt, next,),) = rest.token_tree() {
-				match tt {
-					TokenTree::Ident(idnt,) => {
-						let ty: syn::Type = syn::parse_quote! { #idnt };
-						type_list.push(ty,);
-						rest = next;
-					},
-					TokenTree::Punct(_,) => rest = next,
-					_ => {
-						return Err(syn::Error::new(
-							tt.span(),
-							format!("parse failed\ntoken tree is: {tt:#?}"),
-						),);
-					},
-				};
-			}
-			Ok((Types { type_list, }, rest,),)
-		},)?;
-		Ok(parsed,)
-	}
-}
-
-fn implement(ty: &syn::Type,) -> proc_macro2::TokenStream {
-	let idnt = unwrap_primitive(ty,).unwrap();
-	let digit_count = digit_count_impl();
-	let nth_digit = nth_digit_impl();
-	let shift_right = shift_right_impl(&idnt,);
-	quote::quote! {
-		impl Integer for #idnt {
-			#digit_count
-			#nth_digit
-			#shift_right
-		}
-	}
-}
-
-fn unwrap_primitive(ty: &syn::Type,) -> syn::Result<syn::Ident,> {
-	// extract segment as `seg` from `ty`
-	let syn::Type::Path(TypePath {
-		qself: None,
-		path: syn::Path { leading_colon: None, segments: seg, },
-	},) = ty
-	else {
-		return Err(syn::Error::new(ty.span(), format!("unable to unwrap type: {ty:#?}"),),);
-	};
-
-	// extract ident of type from `seg`
-	let syn::PathSegment { ident: idnt, arguments: syn::PathArguments::None, } =
-		seg.first().unwrap()
-	else {
-		return Err(syn::Error::new(
-			seg.span(),
-			format!("unable to unwrap path segment: {seg:#?}"),
-		),);
-	};
-
-	Ok(idnt.clone(),)
-}
-
-fn digit_count_impl() -> proc_macro2::TokenStream {
-	quote::quote! {
-		fn digit_count(&self) -> usize {
-			let mut n = self.clone();
-			let mut digits = 0;
-			while n != 0 {
-				n = n / 10;
-				digits += 1;
-			}
-
-			digits
-		}
-	}
-}
-
-fn nth_digit_impl() -> proc_macro2::TokenStream {
-	quote::quote! {
-		/// # Panic
-		///
-		/// when argument `n` is 0, this function will panic
-		fn nth_digit(&self, n: usize) -> u8 {
-			assert_ne!(n, 0);
-			let mut origin = self.clone();
-			for _i in 1..n {
-				origin.shift_right();
-			}
-			(origin % 10) as u8
-		}
-	}
-}
-
-fn shift_right_impl(idnt: &syn::Ident,) -> proc_macro2::TokenStream {
-	let return_value = if idnt.to_string().contains("u",) {
-		quote::quote! {
-			first_digit as u8
-		}
-	} else {
-		quote::quote! {
-			if first_digit < 0 {
-				-first_digit as u8
-			} else {
-				first_digit as u8
-			}
-		}
-	};
-
-	quote::quote! {
-		fn shift_right(&mut self) -> u8 {
-			let first_digit = *self % 10;
-			*self = *self / 10;
-			#return_value
-		}
-	}
-}
-
 #[proc_macro]
 pub fn impl_int(types: TokenStream,) -> TokenStream {
+	use macro_logic::impl_init::Types;
+	use macro_logic::impl_init::implement;
+
 	let types = parse_macro_input!(types as Types);
-	let integers = types.type_list.iter().map(implement,);
+	let integers = types.iter().map(implement,);
 	quote::quote! {
 		#(#integers)*
 	}
 	.into()
+}
+
+#[proc_macro_attribute]
+pub fn gen_wrapper_fn(attr: TokenStream, item: TokenStream,) -> TokenStream {
+	let trait_def = parse_macro_input!(item as syn::ItemTrait);
+	let static_frame_buffer = parse_macro_input!(attr as syn::Ident);
+
+	let wrapper_fns = trait_def.items.clone().into_iter().filter_map(|i| {
+		if let syn::TraitItem::Fn(method,) = i {
+			let sig = method.sig;
+
+			// extract fn signature
+			let constness = sig.constness;
+			let asyncness = sig.asyncness;
+			let unsafety = sig.unsafety;
+			let abi = &sig.abi;
+			let fn_name = &sig.ident;
+			// syn::Ident::new(format!("global_{}", sig.ident).as_str(), Span::call_site(),);
+			let generics = &sig.generics;
+			let fn_params = sig.inputs.iter().filter(|a| matches!(a, &&syn::FnArg::Typed(_)),);
+			let method_args = macro_logic::gen_wrapper_fn::method_args(&sig);
+			let variadic = &sig.variadic;
+			let output = &sig.output;
+
+			let decl = quote::quote! {
+				pub #unsafety #asyncness #constness #abi fn #fn_name #generics(#(#fn_params),* #variadic) #output {
+					#static_frame_buffer.#fn_name(#(#method_args),*)
+				}
+			};
+			Some(decl,)
+		} else {
+			None
+		}
+	},);
+
+	let wrapper_fns = quote::quote! {
+		#(#wrapper_fns)*
+		#trait_def
+	};
+
+	wrapper_fns.into()
+}
+
+/// attr specifies version of uefi
+#[proc_macro]
+pub fn status_from_spec(version: TokenStream,) -> TokenStream {
+	let syn::Lit::Float(f,) = parse_macro_input!(version as syn::Lit) else {
+		panic!("version have to be floating point literal")
+	};
+	let status_spec_url = format!("https://uefi.org/specs/UEFI/{f}/Apx_D_Status_Codes.html");
+
+	let spec_page = match macro_logic::status_from_spec::status_spec_page(&status_spec_url,) {
+		Ok(sc,) => sc,
+		Err(e,) => {
+			panic!("{}\n{e}", "failed to get statuscode info from specification web page".red())
+		},
+	};
+
+	let c_enum_impl = helper::impl_status(&spec_page,);
+
+	let enum_def = quote::quote! {
+			#[repr(transparent)]
+			#[derive(Eq, PartialEq, Clone, Debug,)]
+			pub struct Status(pub usize);
+
+			#c_enum_impl
+	};
+
+	enum_def.into()
 }

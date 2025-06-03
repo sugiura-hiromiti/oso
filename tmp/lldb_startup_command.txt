@@ -1,0 +1,4 @@
+file ./target/aarch64-unknown-uefi/debug/oso_loader.efi
+gdb-remote localhost:12345
+breakpoint set -a 0x4613ba14
+r

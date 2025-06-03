@@ -5,22 +5,17 @@ edition = "2024"
 
 [dependencies]
 byteorder = { version = "*", default-features = false }
-goblin = { version = "*", features = [
-	"elf32",
-	"elf64",
-	"endian_fd",
-], default-features = false }
-log = "*"
+# goblin = { version = "*", features = [
+# 	"elf32",
+# 	"elf64",
+# 	"endian_fd",
+# ], default-features = false }
 oso_bridge = { path = "../oso_bridge" }
-uefi = { version = "*", features = [
-	"panic_handler",
-	"logger",
-	"alloc",
-	"global_allocator",
-] }
+oso_proc_macro = { path = "../oso_proc_macro" }
 
-# [features]
-# x86_64 = []
-# aarch64 = []
-# risc_v = []
-# default = ["x86_64"]
+[features]
+rgb = []
+bgr = []
+bitmask = []
+bltonly = []
+default = ["bltonly"]

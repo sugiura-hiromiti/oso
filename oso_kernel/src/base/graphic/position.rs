@@ -5,8 +5,12 @@ pub trait Coordinal {
 	fn y(&self,) -> usize;
 	fn x_mut(&mut self,) -> &mut usize;
 	fn y_mut(&mut self,) -> &mut usize;
+	fn to_coord(&self,) -> Coord {
+		Coord { x: self.x(), y: self.y(), }
+	}
 }
 
+#[derive(Clone,)]
 pub struct Coord {
 	pub x: usize,
 	pub y: usize,
@@ -45,11 +49,5 @@ impl Coordinal for (usize, usize,) {
 
 	fn y_mut(&mut self,) -> &mut usize {
 		&mut self.1
-	}
-}
-
-impl From<(usize, usize,),> for Coord {
-	fn from(value: (usize, usize,),) -> Self {
-		Coord { x: value.0, y: value.1, }
 	}
 }

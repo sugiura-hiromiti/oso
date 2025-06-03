@@ -1,0 +1,17 @@
+[package]
+name = "oso_proc_macro_logic"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "*"
+colored = "*"
+html5ever = "0.27"
+markup5ever = "*"
+markup5ever_rcdom = "*"
+proc-macro2 = "*"
+quote = "*"
+string_cache = "*"
+syn = { version = "*", features = ["full", "extra-traits"] }
+tendril = "*"
+ureq = "*"

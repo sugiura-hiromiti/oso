@@ -4,40 +4,39 @@ use crate::base::graphic::position::Coord;
 use crate::base::graphic::position::Coordinal;
 use crate::error::GraphicError;
 use crate::error::KernelError;
-#[allow(unused_imports)] use color::Bgr;
-#[allow(unused_imports)] use color::Bitmask;
-#[allow(unused_imports)] use color::BltOnly;
-use color::Rgb;
+#[cfg(feature = "bgr")] use color::Bgr;
+#[cfg(feature = "bitmask")] use color::Bitmask;
+#[cfg(feature = "bltonly")] use color::BltOnly;
+#[cfg(feature = "rgb")] use color::Rgb;
 use oso_bridge::graphic::FrameBufConf;
+use oso_proc_macro::gen_wrapper_fn;
 
 pub mod color;
 pub mod position;
 
+//  TODO: use `MaybeUninit`
+//  - support multi thread like using atomic
 #[cfg(feature = "rgb")]
-pub static mut FRAME_BUFFER: FrameBuffer<Rgb,> =
+pub static FRAME_BUFFER: FrameBuffer<Rgb,> =
 	FrameBuffer { drawer: Rgb, buf: 0, size: 0, width: 0, height: 0, stride: 0, };
 
 #[cfg(feature = "bgr")]
-pub static mut FRAME_BUFFER: FrameBuffer<Bgr,> =
+pub static FRAME_BUFFER: FrameBuffer<Bgr,> =
 	FrameBuffer { drawer: Bgr, buf: 0, size: 0, width: 0, height: 0, stride: 0, };
 
 #[cfg(feature = "bitmask")]
-pub static mut FRAME_BUFFER: FrameBuffer<Bitmask,> =
+pub static FRAME_BUFFER: FrameBuffer<Bitmask,> =
 	FrameBuffer { drawer: Bitmask, buf: 0, size: 0, width: 0, height: 0, stride: 0, };
 
 #[cfg(feature = "bltonly")]
-pub static mut FRAME_BUFFER: FrameBuffer<BltOnly,> =
+pub static FRAME_BUFFER: FrameBuffer<BltOnly,> =
 	FrameBuffer { drawer: BltOnly, buf: 0, size: 0, width: 0, height: 0, stride: 0, };
 
-pub trait Draw: DisplayDraw {}
-
 /// draw to display
+#[gen_wrapper_fn(FRAME_BUFFER)]
 pub trait DisplayDraw {
-	fn put_pixel(
-		&mut self,
-		coord: &impl Coordinal,
-		color: &impl ColorRpr,
-	) -> Result<(), KernelError,>;
+	fn put_pixel(&self, coord: &impl Coordinal, color: &impl ColorRpr,)
+	-> Result<(), KernelError,>;
 
 	/// # Params
 	///
@@ -55,14 +54,14 @@ pub trait DisplayDraw {
 	///
 	/// である必要があります
 	fn fill_rectangle(
-		&mut self,
+		&self,
 		left_top: &impl Coordinal,
 		right_bottom: &impl Coordinal,
 		color: &impl ColorRpr,
 	) -> Result<(), KernelError,>;
 
 	fn outline_rectangle(
-		&mut self,
+		&self,
 		left_top: &impl Coordinal,
 		right_bottom: &impl Coordinal,
 		color: &impl ColorRpr,
@@ -81,7 +80,17 @@ pub struct FrameBuffer<P: PixelFormat,> {
 }
 
 impl<P: PixelFormat,> FrameBuffer<P,> {
-	pub fn new(conf: FrameBufConf, pxl_fmt: P,) -> Self {
+	pub fn new(/* conf: FrameBufConf, */ pxl_fmt: P,) -> Self {
+		struct A {
+			base:   usize,
+			width:  usize,
+			height: usize,
+			stride: usize,
+			size:   usize,
+		}
+
+		let conf = A { base: 0, width: 0, height: 0, stride: 0, size: 0, };
+
 		let buf = conf.base as usize;
 		let width = conf.width;
 		let height = conf.height;
@@ -89,6 +98,26 @@ impl<P: PixelFormat,> FrameBuffer<P,> {
 		let size = conf.size;
 
 		Self { drawer: pxl_fmt, buf, width, height, stride, size, }
+	}
+
+	/// this method is required for inner mutability
+	/// thus, unsafe
+	pub unsafe fn init(
+		this: *const Self,
+		buf: usize,
+		size: usize,
+		width: usize,
+		height: usize,
+		stride: usize,
+	) {
+		unsafe {
+			let this = this as *mut Self;
+			(*this).buf = buf;
+			(*this).size = size;
+			(*this).width = width;
+			(*this).height = height;
+			(*this).stride = stride;
+		}
 	}
 
 	/// 指定された座標のポイントに該当するFramebuffer上でのindexの先頭を返します
@@ -122,9 +151,7 @@ impl<P: PixelFormat,> FrameBuffer<P,> {
 
 impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 	fn put_pixel(
-		&mut self,
-		coord: &impl Coordinal,
-		color: &impl ColorRpr,
+		&self, coord: &impl Coordinal, color: &impl ColorRpr,
 	) -> Result<(), KernelError,> {
 		let pos = self.pos(coord,);
 		let pxl = self.slice_mut(pos, 3,);
@@ -137,7 +164,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 	}
 
 	fn fill_rectangle(
-		&mut self,
+		&self,
 		left_top: &impl Coordinal,
 		right_bottom: &impl Coordinal,
 		color: &impl ColorRpr,
@@ -173,7 +200,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 	}
 
 	fn outline_rectangle(
-		&mut self,
+		&self,
 		left_top: &impl Coordinal,
 		right_bottom: &impl Coordinal,
 		color: &impl ColorRpr,

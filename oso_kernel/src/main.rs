@@ -1,61 +1,71 @@
 #![no_std]
 #![no_main]
+// #![feature(stdarch_arm_hints)]
 
 use core::arch::asm;
 use oso_bridge::graphic::FrameBufConf;
+use oso_bridge::nop;
+use oso_bridge::wfe;
+use oso_bridge::wfi;
 use oso_kernel::app::cursor::CursorBuf;
 use oso_kernel::app::cursor::MouseCursorDraw;
-use oso_kernel::base::graphic::DisplayDraw;
 use oso_kernel::base::graphic::FRAME_BUFFER;
 use oso_kernel::base::graphic::FrameBuffer;
-#[allow(unused_imports)]
+#[cfg(feature = "bgr")]
 use oso_kernel::base::graphic::color::Bgr;
-#[allow(unused_imports)]
+#[cfg(feature = "bitmask")]
 use oso_kernel::base::graphic::color::Bitmask;
-#[allow(unused_imports)]
+#[cfg(feature = "bltonly")]
 use oso_kernel::base::graphic::color::BltOnly;
-#[allow(unused_imports)]
-use oso_kernel::base::graphic::color::PixelFormat;
+#[cfg(feature = "rgb")]
 use oso_kernel::base::graphic::color::Rgb;
-use oso_kernel::base::text::Integer;
-use oso_kernel::base::text::Text;
-use oso_kernel::base::text::TextBuf;
+use oso_kernel::base::graphic::fill_rectangle;
+use oso_kernel::base::graphic::outline_rectangle;
 use oso_kernel::error::KernelError;
-use oso_kernel::to_txt;
+use oso_kernel::println;
+
+// ($pixel_format:expr, $frame_buf_conf:ident) => {
+// let fb = FrameBuffer::new($frame_buf_conf, $pixel_format,);
+macro_rules! enter_app {
+	($pixel_format:expr) => {};
+}
 
 #[unsafe(no_mangle)]
+#[cfg(target_arch = "aarch64")]
+pub extern "C" fn kernel_main(fbc: FrameBufConf,) {
+	// NOTE: Disable IRQ(interrupt request)
+	unsafe {
+		asm!("msr daifset, #2");
+	}
+
+	// NOTE: stops program for debugging purpose
+	wfi();
+}
+
+#[unsafe(no_mangle)]
+#[cfg(target_arch = "x86_64")]
 /// TODO:
 /// `extern "sysv64"` を除く事はできるのか?
 /// カーネルを呼び出すのはうまく行っているようだが、bootloaderとkernel側で sysv64 abi
 /// に則った関数として扱わないと引数の受け渡しがうまくいかない
 /// elf形式でコンパイルするので、恐らくその時に (x86環境では)sysv64 abi
 /// が強制されているのではないか？
-pub extern "sysv64" fn kernel_main(frame_buf_conf: FrameBufConf,) {
-	macro_rules! enter_app {
-		($pixel_format:expr) => {
-			unsafe {
-				FRAME_BUFFER = FrameBuffer::new(frame_buf_conf, $pixel_format,);
-				if let Err(_ke,) = app() {
-					todo!()
-				}
-			}
-		};
+// pub extern "sysv64" fn kernel_main(frame_buf_conf: FrameBufConf,) {
+pub extern "sysv64" fn kernel_main() {
+	loop {
+		unsafe {
+			asm!("hlt");
+		}
 	}
 
 	#[cfg(feature = "rgb")]
-	enter_app!(Rgb);
+	enter_app!(Rgb, frame_buf_conf);
 	#[cfg(feature = "bgr")]
-	enter_app!(Bgr);
+	enter_app!(Bgr, frame_buf_conf);
 	#[cfg(feature = "bitmask")]
-	enter_app!(Bitmask);
+	enter_app!(Bitmask, frame_buf_conf);
 	#[cfg(feature = "bltonly")]
-	enter_app!(BltOnly);
-
-	// let mut fb = FrameBuffer::new(frame_buf_conf,);
-	// if let Err(_ke,) = app(&mut fb,) {
-	// 	todo!()
-	// }
-
+	// enter_app!(BltOnly, frame_buf_conf);
 	loop {
 		unsafe {
 			asm!("hlt");
@@ -63,60 +73,24 @@ pub extern "sysv64" fn kernel_main(frame_buf_conf: FrameBufConf,) {
 	}
 }
 
-// #[unsafe(no_mangle)]
-// #[cfg(target_arch = "aarch64")]
-// pub extern "C" fn kernel_main(frame_buf_conf: FrameBufConf,) {
-// 	todo!()
-// }
+fn app() -> Result<(), KernelError,> {
+	fill_rectangle(&(100, 100,), &(700, 500,), &"#abcdef",)?;
+	fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#012345",)?;
 
-unsafe fn app() -> Result<(), KernelError,> {
-	unsafe {
-		FRAME_BUFFER.fill_rectangle(&(100, 100,), &(700, 500,), &"#abcdef",)?;
-		FRAME_BUFFER.fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#012345",)?;
+	fill_rectangle(&(100, 100,), &(200, 200,), &"#fedcba",)?;
 
-		FRAME_BUFFER.fill_rectangle(&(100, 100,), &(200, 200,), &"#fedcba",)?;
+	fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#ffffff",)?;
+	fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#abcdef",)?;
+	outline_rectangle(&(100, 100,), &(300, 300,), &"#fedcba",)?;
+	outline_rectangle(&(101, 101,), &(299, 299,), &"#fedcba",)?;
+	outline_rectangle(&(102, 102,), &(298, 298,), &"#fedcba",)?;
 
-		let text_buf = &mut TextBuf::new((0, 0,), 8, 16,);
-		to_txt!(let width = 3u8);
-		FRAME_BUFFER.write_str("\nwidth: ", text_buf,);
-		FRAME_BUFFER.write_str(width, text_buf,)?;
-		FRAME_BUFFER.write_char(b'\n', text_buf,)?;
+	println!("width: {} height: {}", FRAME_BUFFER.width, FRAME_BUFFER.height);
+	println!("size: {} stride: {}", FRAME_BUFFER.size, FRAME_BUFFER.stride);
+	println!("buf address: {}", FRAME_BUFFER.buf);
 
-		for y in 0..16 {
-			for x in 0..16 {
-				let idx = x + y * 16;
-				FRAME_BUFFER.write_char(idx, text_buf,)?;
-			}
-			FRAME_BUFFER.write_char(b'\n', text_buf,)?;
-		}
+	let mut cursor_buf = CursorBuf::new();
+	cursor_buf.draw_mouse_cursor()?;
 
-		text_buf.clear();
-		FRAME_BUFFER.fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#ffffff",)?;
-
-		to_txt!(let width = FRAME_BUFFER.width);
-		to_txt!(let height = FRAME_BUFFER.height);
-		FRAME_BUFFER.write_str("\nwidth: ", text_buf,);
-		FRAME_BUFFER.write_str(width, text_buf,);
-		FRAME_BUFFER.write_str("\nheight: ", text_buf,);
-		FRAME_BUFFER.write_str(height, text_buf,);
-		to_txt!(let minus = -100);
-		FRAME_BUFFER.write_str("\nminus: ", text_buf,);
-		FRAME_BUFFER.write_str(minus, text_buf,);
-
-		FRAME_BUFFER.fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#fedcba",)?;
-
-		let cursor_buf = CursorBuf::new((123, 456,), 15, 24,);
-		FRAME_BUFFER.draw_mouse_cursor(&cursor_buf,)?;
-
-		Ok((),)
-	}
-}
-
-#[panic_handler]
-fn panic(_info: &core::panic::PanicInfo,) -> ! {
-	loop {
-		// unsafe {
-		// 	asm!("hlt");
-		// }
-	}
+	Ok((),)
 }
