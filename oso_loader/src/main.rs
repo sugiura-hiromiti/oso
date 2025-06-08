@@ -4,7 +4,6 @@
 extern crate alloc;
 
 use oso_bridge::graphic::FrameBufConf;
-use oso_bridge::wfi;
 use oso_loader::Rslt;
 use oso_loader::chibi_uefi::service::exit_boot_services;
 use oso_loader::exec_kernel;

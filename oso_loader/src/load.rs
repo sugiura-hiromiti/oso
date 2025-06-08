@@ -15,7 +15,6 @@ use crate::raw::types::memory::AllocateType;
 use alloc::vec::Vec;
 use core::ptr::NonNull;
 use oso_bridge::graphic::FrameBufConf;
-use oso_bridge::wfi;
 
 pub fn kernel() -> Rslt<PhysicalAddress,> {
 	let mut kernel_file = open_kernel_file()?;
@@ -44,7 +43,6 @@ pub fn kernel() -> Rslt<PhysicalAddress,> {
 
 	println!("head: {head:#x}, tail: {tail:#x}");
 
-	//  WARN: entry address may wrong
 	Ok(elf.entry_point_address() as u64,)
 }
 
@@ -122,65 +120,4 @@ pub fn graphic_config() -> Rslt<FrameBufConf,> {
 	let fbc = FrameBufConf::new(pixel_format, base, size, width, height, stride,);
 
 	Ok(fbc,)
-}
-
-fn test_elf_parse(elf: &Elf,) {
-	use crate::elf::program_header::ProgramHeader;
-	let answer = [
-		ProgramHeader {
-			ty:               ProgramHeaderType::Phdr,
-			flags:            4,
-			offset:           0x40,
-			virtual_address:  0x4000_0040,
-			physical_address: 0x4000_0040,
-			file_size:        0xe0,
-			memory_size:      0xe0,
-			align:            0x8,
-		},
-		ProgramHeader {
-			ty:               ProgramHeaderType::Load,
-			flags:            4,
-			offset:           0,
-			virtual_address:  0x4000_0000,
-			physical_address: 0x4000_0000,
-			file_size:        0x18a,
-			memory_size:      0x18a,
-			align:            0x1_0000,
-		},
-		ProgramHeader {
-			ty:               ProgramHeaderType::Load,
-			flags:            5,
-			offset:           0x18c,
-			virtual_address:  0x4001_018c,
-			physical_address: 0x4001_018c,
-			file_size:        0x120,
-			memory_size:      0x120,
-			align:            0x1_0000,
-		},
-		ProgramHeader {
-			ty:               ProgramHeaderType::Load,
-			flags:            6,
-			offset:           0x2b0,
-			virtual_address:  0x4002_02b0,
-			physical_address: 0x4002_02b0,
-			file_size:        0x28,
-			memory_size:      0x28,
-			align:            0x1_0000,
-		},
-		ProgramHeader {
-			ty:               ProgramHeaderType::GnuStack,
-			flags:            6,
-			offset:           0x0,
-			virtual_address:  0x0,
-			physical_address: 0x0,
-			file_size:        0x0,
-			memory_size:      0x0,
-			align:            0x0,
-		},
-	];
-
-	elf.program_headers.iter().zip(answer,).enumerate().for_each(|(i, (ph, ph_ans,),)| {
-		// assert_eq!(*ph, ph_ans, "idx: {i}");
-		assert_eq!(*ph, ph_ans);
-	},);
 }

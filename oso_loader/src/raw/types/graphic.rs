@@ -105,6 +105,6 @@ pub struct PixelBitMask {
 }
 
 pub struct GraphicsOutputProtocolModes {
-	index:     u32,
-	info_size: usize,
+	pub index:     u32,
+	pub info_size: usize,
 }

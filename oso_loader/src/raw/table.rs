@@ -52,8 +52,8 @@ impl ConfigTableStream {
 			return Ok(None,);
 		}
 
-		self.config_tables.iter().map(|config_table| {
-			let mut vendor_table = None;
+		let _ = self.config_tables.iter().map(|config_table| {
+			// let mut vendor_table = None;
 			for i in 0..self.max_index {
 				let target_ct = unsafe { config_table.as_ptr().add(i,) };
 				if unsafe { config_table.as_ref().vendor_guid } == guid {}

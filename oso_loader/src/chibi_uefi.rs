@@ -1,13 +1,10 @@
 use super::raw::types::Status;
-use crate::Rslt;
 use crate::print;
 use crate::println;
 use crate::raw::service::BootServices;
 use crate::raw::service::RuntimeServices;
 use crate::raw::types::UnsafeHandle;
 use crate::raw::types::memory::MemoryMapBackingMemory;
-use crate::raw::types::memory::MemoryMapInfo;
-use crate::raw::types::memory::MemoryMapOwned;
 use crate::raw::types::memory::MemoryType;
 use crate::raw::types::memory::PAGE_SIZE;
 use crate::raw::types::misc::ResetType;
@@ -15,8 +12,6 @@ use core::ffi::c_void;
 use core::ptr::NonNull;
 use core::sync::atomic::AtomicPtr;
 use core::sync::atomic::Ordering;
-use oso_bridge::wfi;
-use table::boot_services;
 
 pub mod console;
 pub mod controller;
