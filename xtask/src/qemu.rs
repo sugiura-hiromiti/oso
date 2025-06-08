@@ -5,7 +5,6 @@ use ovmf_prebuilt::Arch;
 use ovmf_prebuilt::FileType;
 use ovmf_prebuilt::Prebuilt;
 use ovmf_prebuilt::Source;
-use std::collections::VecDeque;
 use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;

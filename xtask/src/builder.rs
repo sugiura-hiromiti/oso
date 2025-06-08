@@ -1,7 +1,6 @@
 use crate::qemu::Firmware;
 use crate::shell::Architecture;
 use crate::shell::Opts;
-use crate::shell::Run;
 use crate::workspace;
 use crate::workspace::LOADER;
 use crate::workspace::OsoWorkSpace;
@@ -11,6 +10,7 @@ use std::env::set_current_dir;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
+use util_common_code::Run;
 
 const BOOT_DIR: &str = "efi/boot";
 const KERNEL_FILE: &str = "oso_kernel.elf";

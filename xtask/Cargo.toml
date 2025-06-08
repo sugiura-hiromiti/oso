@@ -9,5 +9,5 @@ colored = "*"
 fs-err = "*"
 ovmf-prebuilt = "*"
 serde_json = "*"
-# tempfile = "*"
 toml = "*"
+util_common_code = { path = "../util_common_code" }
