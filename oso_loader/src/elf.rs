@@ -4,8 +4,6 @@ use crate::elf::hash::hash_len;
 use crate::elf::program_header::ProgramHeader;
 use crate::elf::section_header::SectionHeader;
 use crate::error::OsoLoaderError;
-use crate::print;
-use crate::println;
 use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
@@ -85,6 +83,7 @@ pub struct Elf {
 impl Elf {
 	pub fn parse(binary: &Vec<u8,>,) -> Rslt<Self,> {
 		let header = ElfHeader::parse(binary,)?;
+		oso_proc_macro::test_elf_header_parse!(header);
 
 		let mut offset = header.program_header_offset as usize;
 		let program_headers =
@@ -272,7 +271,7 @@ impl Elf {
 	}
 }
 
-#[derive(Debug,)]
+#[derive(Debug, Default, PartialEq, Eq,)]
 pub struct ElfHeader {
 	pub ident: ElfHeaderIdent,
 	pub ty: ElfType,
@@ -762,10 +761,11 @@ where for<'a> &'a [u8]: AsInt<I,> {
 	Some(val,)
 }
 
-#[derive(PartialEq, Eq, Debug,)]
+#[derive(PartialEq, Eq, Debug, Default,)]
 pub enum ElfType {
 	None,
 	Relocatable,
+	#[default]
 	Executable,
 	SharedObject,
 	Core,
@@ -803,7 +803,7 @@ impl TryFrom<u16,> for ElfType {
 	}
 }
 
-#[derive(Debug,)]
+#[derive(Debug, Default, PartialEq, Eq,)]
 pub struct ElfHeaderIdent {
 	pub file_class:    FileClass,
 	pub endianness:    Endian,
@@ -845,9 +845,10 @@ impl ElfHeaderIdent {
 	}
 }
 
-#[derive(PartialEq, Eq, Debug,)]
+#[derive(PartialEq, Eq, Debug, Default,)]
 pub enum FileClass {
 	Bit32,
+	#[default]
 	Bit64,
 }
 
@@ -869,7 +870,7 @@ impl TryFrom<u8,> for FileClass {
 	}
 }
 
-#[derive(Debug,)]
+#[derive(Debug, Default, PartialEq, Eq,)]
 pub struct ElfVersion(pub u8,);
 
 impl ElfVersion {
@@ -877,9 +878,10 @@ impl ElfVersion {
 }
 
 #[non_exhaustive]
-#[derive(Debug,)]
+#[derive(Debug, Default, PartialEq, Eq,)]
 pub enum TargetOsAbi {
 	SysV,
+	#[default]
 	Arm,
 	Standalone,
 }
@@ -900,7 +902,7 @@ impl TryFrom<u8,> for TargetOsAbi {
 	}
 }
 
-#[derive(Debug,)]
+#[derive(Debug, Default, PartialEq, Eq,)]
 pub struct AbiVersion(pub u8,);
 impl AbiVersion {
 	pub const ONE: Self = Self(0,);

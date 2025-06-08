@@ -6,7 +6,7 @@
 #![feature(generic_const_exprs)]
 #![feature(associated_type_defaults)]
 #![feature(assert_matches)]
-#![feature(nonzero_internals)]
+// #![feature(nonzero_internals)]
 //#![feature(stdarch_arm_hints)]
 
 extern crate alloc;
@@ -17,9 +17,6 @@ use chibi_uefi::table::boot_services;
 use core::arch::asm;
 use error::OsoLoaderError;
 use oso_bridge::graphic::FrameBufConf;
-use oso_bridge::nop;
-use oso_bridge::wfe;
-use oso_bridge::wfi;
 use raw::table::SystemTable;
 use raw::types::Status;
 use raw::types::UnsafeHandle;
@@ -38,7 +35,7 @@ fn panic(panic: &core::panic::PanicInfo,) -> ! {
 	loop {
 		unsafe {
 			#[cfg(target_arch = "aarch64")]
-			asm!("wfe");
+			asm!("wfi");
 			#[cfg(target_arch = "x86_64")]
 			asm!("hlt");
 		}
@@ -84,16 +81,14 @@ fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,> {
 	utf16_repr
 }
 
-pub fn exec_kernel(kernel_entry: u64, graphic_config: FrameBufConf,) {
+pub fn exec_kernel(kernel_entry: u64, _graphic_config: FrameBufConf,) {
 	let kernel_entry = kernel_entry as *const ();
 	#[cfg(target_arch = "aarch64")]
-	let entry_point =
-		unsafe { core::mem::transmute::<_, extern "C" fn(FrameBufConf,),>(kernel_entry,) };
-
-	// #[cfg(target_arch = "riscv64")]
-	// let entry_point = unsafe { core::mem::transmute::<_, extern "C" fn(),>(kernel_entry,) };
-	// #[cfg(target_arch = "x86_64")]
-	// let entry_point = unsafe { core::mem::transmute::<_, extern "sysv64" fn(),>(kernel_entry,) };
+	let entry_point = unsafe { core::mem::transmute::<_, extern "C" fn(),>(kernel_entry,) };
+	#[cfg(target_arch = "riscv64")]
+	let entry_point = unsafe { core::mem::transmute::<_, extern "C" fn(),>(kernel_entry,) };
+	#[cfg(target_arch = "x86_64")]
+	let entry_point = unsafe { core::mem::transmute::<_, extern "sysv64" fn(),>(kernel_entry,) };
 
 	#[cfg(target_arch = "aarch64")]
 	unsafe {
@@ -116,12 +111,12 @@ pub fn exec_kernel(kernel_entry: u64, graphic_config: FrameBufConf,) {
 	}
 
 	// Jump to kernel with MMU disabled
-	entry_point(graphic_config,);
+	entry_point();
 
 	unsafe {
 		// Fallback loop if jump fails
 		loop {
-			asm!("wfi");
+			asm!("wfe");
 		}
 	}
 }
