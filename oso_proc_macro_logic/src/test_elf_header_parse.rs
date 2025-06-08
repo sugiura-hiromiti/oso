@@ -1,9 +1,7 @@
+use crate::check_oso_kernel;
 use anyhow::Result as Rslt;
-use anyhow::anyhow;
-use std::env::current_dir;
 use std::ops::Index;
 use std::process::Command;
-use util_common_code::Run as _;
 
 #[derive(Default, Debug,)]
 pub struct ReadElfH {
@@ -72,7 +70,6 @@ impl Property for Vec<&str,> {
 }
 
 pub fn readelf_h() -> Rslt<ReadElfH,> {
-	Command::new("pwd",).run()?;
 	check_oso_kernel()?;
 	let header_info =
 		Command::new("readelf",).args(["-h", "target/oso_kernel.elf",],).output()?.stdout;
@@ -144,10 +141,4 @@ pub fn readelf_h() -> Rslt<ReadElfH,> {
 	header.fix();
 
 	Ok(header,)
-}
-
-/// checks oso_kernel.elf exists
-fn check_oso_kernel() -> Rslt<(),> {
-	let target_path = current_dir()?.join("target/oso_kernel.elf",);
-	if target_path.exists() { Ok((),) } else { Err(anyhow!("oso_kernel.elf not exist"),) }
 }
