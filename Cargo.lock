@@ -391,7 +391,6 @@ dependencies = [
 name = "oso_loader"
 version = "0.1.0"
 dependencies = [
- "byteorder",
  "oso_bridge",
  "oso_proc_macro",
 ]
@@ -423,6 +422,7 @@ dependencies = [
  "syn",
  "tendril",
  "ureq",
+ "util_common_code",
 ]
 
 [[package]]
@@ -856,6 +856,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09cc8ee72d2a9becf2f2febe0205bbed8fc6615b7cb429ad062dc7b7ddd036a9"
 
 [[package]]
+name = "util_common_code"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "colored",
+]
+
+[[package]]
 name = "version_check"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -998,6 +1006,7 @@ dependencies = [
  "ovmf-prebuilt",
  "serde_json",
  "toml",
+ "util_common_code",
 ]
 
 [[package]]
