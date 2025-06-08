@@ -419,4 +419,6 @@ fn parse_section_header_index_of_section_name_string_table(
 	}
 }
 
-pub fn program_headers_info() {}
+pub fn program_headers_info() -> proc_macro2::TokenStream {
+	todo!()
+}
