@@ -112,3 +112,20 @@ pub fn status_from_spec(version: TokenStream,) -> TokenStream {
 
 	enum_def.into()
 }
+
+/// test ElfHeader::parse()
+#[proc_macro]
+pub fn test_elf_header_parse(header: TokenStream,) -> TokenStream {
+	let answer = helper::elf_header_info();
+
+	Diagnostic::new(Level::Note, format!("{answer:#?}"),).emit();
+	let header = proc_macro2::TokenStream::from(header,);
+	let rslt = quote::quote! {#header};
+
+	quote::quote! {
+		if cfg!(debug_assertions) {
+			assert_eq!(#answer, #rslt);
+		}
+	}
+	.into()
+}

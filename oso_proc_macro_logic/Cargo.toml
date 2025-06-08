@@ -15,3 +15,4 @@ string_cache = "*"
 syn = { version = "*", features = ["full", "extra-traits"] }
 tendril = "*"
 ureq = "*"
+util_common_code = { path = "../util_common_code" }
