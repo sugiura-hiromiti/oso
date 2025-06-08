@@ -1,8 +1,6 @@
 use crate::Rslt;
 use crate::elf::read_le_bytes;
 use crate::error::OsoLoaderError;
-use crate::print;
-use crate::println;
 use alloc::format;
 use alloc::vec::Vec;
 
@@ -52,6 +50,8 @@ impl ProgramHeader {
 
 			program_headers.push(program_header,);
 		}
+
+		oso_proc_macro::test_program_headers_parse!(program_headers);
 
 		Ok(program_headers,)
 	}
