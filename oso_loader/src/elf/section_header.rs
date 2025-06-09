@@ -2,11 +2,8 @@ use super::StringTable;
 use crate::Rslt;
 use crate::elf::read_le_bytes;
 use crate::error::OsoLoaderError;
-use crate::print;
-use crate::println;
 use alloc::format;
 use alloc::vec::Vec;
-use core::error::Error;
 
 /// Undefined section.
 pub const SHN_UNDEF: u32 = 0;
@@ -182,7 +179,7 @@ impl SectionHeader {
 		Ok(section_header,)
 	}
 
-	pub fn empty_section(offset: &mut usize,) -> Self {
+	pub fn empty_section(_offset: &mut usize,) -> Self {
 		todo!()
 	}
 

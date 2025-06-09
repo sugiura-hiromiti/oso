@@ -2,6 +2,7 @@ use crate::Rslt;
 use crate::elf::read_le_bytes;
 use crate::error::OsoLoaderError;
 use alloc::format;
+use alloc::vec;
 use alloc::vec::Vec;
 
 #[derive(PartialEq, Eq,)]
