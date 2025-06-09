@@ -67,22 +67,12 @@ impl BootServices {
 	pub fn exit_boot_services(&self,) {
 		let mem_ty = MemoryType::BOOT_SERVICES_DATA;
 
-		for _ in 0..2 {
-			let mut buf = MemoryMapBackingMemory::new(mem_ty,).expect("failed to allocate memory",);
-			let status = unsafe { self.try_exit_boot_services(buf.as_mut_slice(),) };
+		let mut buf = MemoryMapBackingMemory::new(mem_ty,).expect("failed to allocate memory",);
+		let status = unsafe { self.try_exit_boot_services(buf.as_mut_slice(),) };
 
-			match status.is_success() {
-				true => {
-					return;
-				},
-				false => {
-					println!("exit failed: {}   retry", status.ok_or().unwrap_err());
-				},
-			}
+		if !status.is_success() {
+			todo!("failed to exit boot service. reset the machine");
 		}
-
-		// failed to exit boot service
-		todo!("failed to exit boot service. reset the machine");
 	}
 
 	unsafe fn try_exit_boot_services(&self, buf: &mut [u8],) -> Status {
