@@ -133,5 +133,13 @@ pub fn test_elf_header_parse(header: TokenStream,) -> TokenStream {
 #[proc_macro]
 pub fn test_program_headers_parse(program_headers: TokenStream,) -> TokenStream {
 	let answer = helper::program_headers_info();
-	todo!()
+	let rslt = proc_macro2::TokenStream::from(program_headers,);
+	let rslt = quote::quote! {#rslt};
+
+	quote::quote! {
+		if cfg!(debug_assertions) {
+			assert_eq!(#answer, #rslt);
+		}
+	}
+	.into()
 }

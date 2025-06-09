@@ -2,6 +2,8 @@ use oso_proc_macro_logic::status_from_spec::StatusCode;
 use oso_proc_macro_logic::status_from_spec::StatusCodeInfo;
 use oso_proc_macro_logic::test_elf_header_parse::ReadElfH;
 use oso_proc_macro_logic::test_elf_header_parse::readelf_h;
+use oso_proc_macro_logic::test_program_headers_parse::ReadElfL;
+use oso_proc_macro_logic::test_program_headers_parse::readelf_l;
 use proc_macro::Diagnostic;
 use proc_macro::Level;
 use proc_macro2::Span;
@@ -420,5 +422,59 @@ fn parse_section_header_index_of_section_name_string_table(
 }
 
 pub fn program_headers_info() -> proc_macro2::TokenStream {
-	todo!()
+	let program_headers = match readelf_l() {
+		Ok(r,) => r,
+		Err(e,) => {
+			Diagnostic::new(Level::Error, format!("failed to get `readelf -l` result: {e}"),)
+				.emit();
+			panic!("{}", module_path!())
+		},
+	};
+
+	let program_headers = program_headers.iter().map(|rel| {
+		let ty = parse_program_header_type(rel,);
+		let flags = rel.flags;
+		let offset = rel.offset;
+		let virtual_address = rel.virtual_address;
+		let physical_address = rel.physical_address;
+		let file_size = rel.file_size;
+		let memory_size = rel.memory_size;
+		let align = rel.align;
+
+		quote::quote! {
+			ProgramHeader {
+				ty: #ty,
+				flags: #flags,
+				offset: #offset,
+				virtual_address: #virtual_address,
+				physical_address: #physical_address,
+				file_size: #file_size,
+				memory_size: #memory_size,
+				align: #align,
+			}
+		}
+	},);
+
+	quote::quote! {
+		vec![
+			#(#program_headers, )*
+		]
+	}
+}
+
+fn parse_program_header_type(program_header: &ReadElfL,) -> proc_macro2::TokenStream {
+	let camel_cased: String = program_header
+		.ty
+		.split("_",)
+		.flat_map(|word| {
+			word.char_indices()
+				.map(|(i, c,)| if i == 0 { c } else { (c as u8 - b'A' + b'a') as char },)
+		},)
+		.collect();
+
+	let ident = syn::Ident::new(&camel_cased, Span::call_site(),);
+
+	quote::quote! {
+		ProgramHeaderType::#ident
+	}
 }
