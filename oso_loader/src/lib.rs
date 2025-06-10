@@ -91,20 +91,22 @@ pub fn exec_kernel(kernel_entry: u64, _graphic_config: FrameBufConf,) {
 
 	#[cfg(target_arch = "aarch64")]
 	unsafe {
-		// Ensure data is written to memory
+		// 全てのデータアクセスが完了するまで待機
 		asm!("dsb sy");
 
-		// Flush caches
-		asm!("ic iallu"); // Invalidate all instruction caches to PoU
-		asm!("dsb ish"); // Ensure completion of cache operations
-		asm!("isb"); // Synchronize context
+		// 念の為キャッシュを全削除
+		asm!("ic iallu"); // 命令キャッシュを全て無効にする
+		asm!("dsb ish"); // ↑が完了するまで待機
+		asm!("isb"); // キャッシュクリア後に再度命令を読み込む
+		// ↑既にキャッシュを読み込んでいるかもしれないため、リロードする必要がある
 
 		// Disable MMU by modifying SCTLR_EL1
 		asm!(
-			"mrs x0, sctlr_el1",          // Read current SCTLR_EL1
-			"bic x0, x0, #1",             // Clear bit 0 (M) to disable MMU
-			"msr sctlr_el1, x0",          // Write back to SCTLR_EL1
-			"isb",                         // Instruction synchronization barrier
+			"mrs x0, sctlr_el1", // 現在のMMUの状態をx0レジスタに読み込む。有効になっているはず
+			"bic x0, x0, #1", // x0レジスタにx0レジスタの持つ値の最下位ビットをクリアした値をセット
+			// この値は、MMUが無効である状態を表す
+			"msr sctlr_el1, x0", // x0の値を反映。MMUを実際に無効化している行
+			"isb", // システムの状態を変更したので命令をリロードする
 			out("x0") _
 		);
 	}
