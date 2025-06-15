@@ -3,16 +3,14 @@
 
 extern crate alloc;
 
-use oso_bridge::graphic::FrameBufConf;
+use oso_bridge::device_tree::DeviceTreeAddress;
 use oso_bridge::wfi;
 use oso_loader::Rslt;
 use oso_loader::chibi_uefi::service::exit_boot_services;
 use oso_loader::exec_kernel;
+use oso_loader::get_device_tree;
 use oso_loader::init;
-use oso_loader::load::graphic_config;
 use oso_loader::load::kernel;
-use oso_loader::print;
-use oso_loader::println;
 use oso_loader::raw::table::SystemTable;
 use oso_loader::raw::types::Status;
 use oso_loader::raw::types::UnsafeHandle;
@@ -24,19 +22,20 @@ pub extern "efiapi" fn efi_image_entry_point(
 ) -> Status {
 	init(image_handle, system_table,);
 
-	let (kernel_entry, graphic_config,) = app().expect("error arise while executing application",);
+	let (kernel_entry, device_tree_ptr,) = app().expect("error arise while executing application",);
 
 	exit_boot_services();
-	wfi();
 
-	exec_kernel(kernel_entry, graphic_config,);
+	exec_kernel(kernel_entry, device_tree_ptr,);
 
 	Status::EFI_SUCCESS
 }
 
-fn app() -> Rslt<(u64, FrameBufConf,),> {
+fn app() -> Rslt<(u64, DeviceTreeAddress,),> {
 	let kernel_addr = kernel()?;
-	let graphic_config = graphic_config()?;
+	let device_tree = get_device_tree()?;
 
-	Ok((kernel_addr, graphic_config,),)
+	let device_tree_ptr = device_tree.as_ptr().cast_const().cast();
+
+	Ok((kernel_addr, device_tree_ptr,),)
 }

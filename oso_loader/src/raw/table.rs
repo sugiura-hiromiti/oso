@@ -34,7 +34,7 @@ pub struct SystemTable {
 	pub config_tables:      *mut ConfigTable,
 }
 
-#[derive(Debug, Eq, PartialEq,)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy,)]
 #[repr(C)]
 pub struct ConfigTable {
 	vendor_guid:  Guid,
@@ -47,31 +47,28 @@ pub struct ConfigTableStream {
 }
 
 impl ConfigTableStream {
-	fn config_table_with(&self, guid: Guid,) -> Rslt<Option<&mut ConfigTable,>,> {
+	fn config_table_with(&self, guid: Guid,) -> Rslt<Option<NonNull<ConfigTable,>,>,> {
 		if self.config_tables.is_none() {
 			return Ok(None,);
 		}
 
-		let _ = self.config_tables.iter().map(|config_table| {
-			// let mut vendor_table = None;
-			for i in 0..self.max_index {
-				let target_ct = unsafe { config_table.as_ptr().add(i,) };
-				if unsafe { config_table.as_ref().vendor_guid } == guid {}
-			}
-			todo!()
-		},);
+		let ct = self
+			.config_tables
+			.iter()
+			.find_map(|config_table| {
+				let mut ct = None;
+				for i in 0..self.max_index {
+					let target_ct = unsafe { config_table.as_ptr().add(i,) };
+					if unsafe { target_ct.as_ref().unwrap().vendor_guid } == guid {
+						ct = Some(target_ct,);
+					}
+				}
+				ct
+			},)
+			.map(|ct| NonNull::new(ct,),)
+			.unwrap();
 
-		todo!()
-	}
-}
-
-impl ConfigTable {
-	pub fn config_table_with(&self, guid: Guid,) -> Rslt<Option<&mut ConfigTable,>,> {
-		todo!()
-	}
-
-	pub fn get_device_tree(&self,) -> Rslt<Option<&mut ConfigTable,>,> {
-		self.config_table_with(DEVICE_TREE_TABLE_GUID,)
+		Ok(ct,)
 	}
 }
 
@@ -81,5 +78,13 @@ impl SystemTable {
 	pub fn get_config_tables(&self,) -> Rslt<ConfigTableStream,> {
 		let config_tables = NonNull::new(self.config_tables,);
 		Ok(ConfigTableStream { max_index: self.config_table_count, config_tables, },)
+	}
+
+	pub fn config_table_with(&self, guid: Guid,) -> Rslt<Option<NonNull<ConfigTable,>,>,> {
+		self.get_config_tables()?.config_table_with(guid,)
+	}
+
+	pub fn device_tree(&self,) -> Rslt<Option<NonNull<ConfigTable,>,>,> {
+		self.config_table_with(DEVICE_TREE_TABLE_GUID,)
 	}
 }

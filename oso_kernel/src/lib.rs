@@ -4,7 +4,7 @@
 #![feature(slice_index_methods)]
 #![feature(new_range_api)]
 
-use oso_bridge::wfi;
+use oso_bridge::wfe;
 
 pub mod app;
 pub mod base;
@@ -31,7 +31,7 @@ pub mod error {
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo,) -> ! {
 	// println!("{}", info);
-	wfi()
+	wfe()
 }
 
 // pub mod test {

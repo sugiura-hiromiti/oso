@@ -3,9 +3,8 @@
 // #![feature(stdarch_arm_hints)]
 
 use core::arch::asm;
-use oso_bridge::graphic::FrameBufConf;
-use oso_bridge::nop;
-use oso_bridge::wfe;
+#[cfg(target_arch = "aarch64")]
+use oso_bridge::device_tree::DeviceTreeAddress;
 use oso_bridge::wfi;
 use oso_kernel::app::cursor::CursorBuf;
 use oso_kernel::app::cursor::MouseCursorDraw;
@@ -32,7 +31,7 @@ macro_rules! enter_app {
 
 #[unsafe(no_mangle)]
 #[cfg(target_arch = "aarch64")]
-pub extern "C" fn kernel_main(fbc: FrameBufConf,) {
+pub extern "C" fn kernel_main(device_tree_ptr: DeviceTreeAddress,) {
 	// NOTE: Disable IRQ(interrupt request)
 	unsafe {
 		asm!("msr daifset, #2");

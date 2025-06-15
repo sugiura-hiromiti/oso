@@ -11,17 +11,22 @@
 
 extern crate alloc;
 
+use alloc::format;
 use alloc::vec::Vec;
 use chibi_uefi::protocol::HandleSearchType;
 use chibi_uefi::table::boot_services;
 use core::arch::asm;
+use core::ptr::NonNull;
 use error::OsoLoaderError;
-use oso_bridge::graphic::FrameBufConf;
+use oso_bridge::device_tree::DeviceTreeAddress;
 use oso_bridge::wfe;
 use oso_bridge::wfi;
 use raw::table::SystemTable;
 use raw::types::Status;
 use raw::types::UnsafeHandle;
+
+use crate::chibi_uefi::table::system_table;
+use crate::raw::table::ConfigTable;
 
 pub mod chibi_uefi;
 pub mod elf;
@@ -76,16 +81,23 @@ fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,> {
 	utf16_repr
 }
 
-pub fn exec_kernel(kernel_entry: u64, _graphic_config: FrameBufConf,) {
+pub fn get_device_tree() -> Rslt<NonNull<ConfigTable,>,> {
+	unsafe { system_table().as_ref() }
+		.device_tree()?
+		.ok_or(OsoLoaderError::Uefi(format!("failed to get device tree"),),)
+	// .map(|ct| unsafe { ct.as_ref() },)?;
+}
+
+pub fn exec_kernel(kernel_entry: u64, device_tree_ptr: DeviceTreeAddress,) {
 	// これ要る?
 	let kernel_entry = kernel_entry as *const ();
 
 	#[cfg(target_arch = "riscv64")]
-	type KernelEntry = extern "C" fn();
+	type KernelEntry = extern "C" fn(DeviceTreeAddress,);
 	#[cfg(target_arch = "aarch64")]
-	type KernelEntry = extern "C" fn();
+	type KernelEntry = extern "C" fn(DeviceTreeAddress,);
 	#[cfg(target_arch = "x86_64")]
-	type KernelEntry = extern "sysv64" fn();
+	type KernelEntry = extern "sysv64" fn(DeviceTreeAddress,);
 
 	let entry_point = unsafe { core::mem::transmute::<_, KernelEntry,>(kernel_entry,) };
 
@@ -112,7 +124,7 @@ pub fn exec_kernel(kernel_entry: u64, _graphic_config: FrameBufConf,) {
 	}
 
 	// Jump to kernel with MMU disabled
-	entry_point();
+	entry_point(device_tree_ptr,);
 
 	// 失敗したら到達する
 	wfi();

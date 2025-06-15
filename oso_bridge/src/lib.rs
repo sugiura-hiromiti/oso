@@ -3,6 +3,7 @@
 
 use core::arch::asm;
 
+pub mod device_tree;
 pub mod graphic;
 
 #[inline(always)]
