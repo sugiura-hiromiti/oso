@@ -21,6 +21,7 @@ use oso_kernel::base::graphic::color::Rgb;
 use oso_kernel::base::graphic::fill_rectangle;
 use oso_kernel::base::graphic::outline_rectangle;
 use oso_kernel::error::KernelError;
+use oso_kernel::init;
 use oso_kernel::println;
 
 // ($pixel_format:expr, $frame_buf_conf:ident) => {
@@ -33,9 +34,12 @@ macro_rules! enter_app {
 #[cfg(target_arch = "aarch64")]
 pub extern "C" fn kernel_main(device_tree_ptr: DeviceTreeAddress,) {
 	// NOTE: Disable IRQ(interrupt request)
+
 	unsafe {
 		asm!("msr daifset, #2");
 	}
+
+	init();
 
 	// NOTE: stops program for debugging purpose
 	wfi();

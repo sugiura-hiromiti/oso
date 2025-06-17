@@ -5,9 +5,8 @@ use crate::elf::Container;
 use crate::elf::ElfHeader;
 use crate::error::OsoLoaderError;
 use alloc::format;
-use alloc::vec::Vec;
 
-pub fn gnu_hash_len(binary: &Vec<u8,>, mut offset: usize, context: &Context,) -> Rslt<usize,> {
+pub fn gnu_hash_len(binary: &[u8], mut offset: usize, context: &Context,) -> Rslt<usize,> {
 	let buckets_count = read_le_bytes::<u32,>(&mut offset, binary,).unwrap() as usize;
 	let min_chain = read_le_bytes::<u32,>(&mut offset, binary,).unwrap() as usize;
 	let bloom_size = read_le_bytes::<u32,>(&mut offset, binary,).unwrap() as usize;
@@ -46,10 +45,7 @@ pub fn gnu_hash_len(binary: &Vec<u8,>, mut offset: usize, context: &Context,) ->
 }
 
 pub fn hash_len(
-	binary: &Vec<u8,>,
-	mut offset: usize,
-	machine: u16,
-	context: &Context,
+	binary: &[u8], mut offset: usize, machine: u16, context: &Context,
 ) -> Rslt<usize,> {
 	offset = offset.saturating_add(4,);
 	let nchain = if (machine == ElfHeader::EM_FAKE_ALPHA || machine == ElfHeader::EM_S390)

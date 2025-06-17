@@ -3,6 +3,7 @@
 #![feature(impl_trait_in_assoc_type)]
 #![feature(slice_index_methods)]
 #![feature(new_range_api)]
+#![feature(generic_const_exprs)]
 
 use oso_bridge::wfe;
 
@@ -28,11 +29,17 @@ pub mod error {
 	}
 }
 
+pub type Rslt<T,> = Result<T, error::KernelError,>;
+
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo,) -> ! {
 	// println!("{}", info);
 	wfe()
 }
+
+/// this function takes responsibility of hardware initialization, kernel setup and utility setup
+/// TODO:
+pub fn init() {}
 
 // pub mod test {
 // 	use crate::print;

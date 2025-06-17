@@ -81,7 +81,7 @@ pub struct Elf {
 }
 
 impl Elf {
-	pub fn parse(binary: &Vec<u8,>,) -> Rslt<Self,> {
+	pub fn parse(binary: &[u8],) -> Rslt<Self,> {
 		let header = ElfHeader::parse(binary,)?;
 		oso_proc_macro::test_elf_header_parse!(header);
 
@@ -105,7 +105,7 @@ impl Elf {
 
 		let string_table_index = header.section_header_index_of_section_name_string_table as usize;
 		let section_header_string_table =
-			get_string_table(&section_headers, string_table_index, &binary,)?;
+			get_string_table(&section_headers, string_table_index, binary,)?;
 
 		let ctx = &Context::default();
 		let mut symbol_table = SymbolTable::default();
@@ -665,7 +665,7 @@ impl ElfHeader {
 	/// LSI Logic 16-bit DSP Processor
 	pub const EM_ZSP: u16 = 79;
 
-	pub fn parse(binary: &Vec<u8,>,) -> Rslt<Self,> {
+	pub fn parse(binary: &[u8],) -> Rslt<Self,> {
 		let ident = &binary[..ELF_IDENT_SIZE];
 		let ident = ElfHeaderIdent::new(ident,)?;
 		let remain = &binary[ELF_IDENT_SIZE..];
@@ -926,7 +926,7 @@ impl StringTable {
 	/// - bytes
 	///
 	/// bytes expected to be entire elf file
-	pub fn parse(binary: &Vec<u8,>, offset: usize, len: usize, delimiter: u8,) -> Rslt<Self,> {
+	pub fn parse(binary: &[u8], offset: usize, len: usize, delimiter: u8,) -> Rslt<Self,> {
 		let (end, overflow,) = offset.overflowing_add(len,);
 		if overflow || end > binary.len() {
 			return Err(OsoLoaderError::EfiParse(format!(
@@ -1027,7 +1027,7 @@ impl SymbolTable {
 	/// size of symbol structure in 64bit.
 	const SIZE_OF_SYMBOL_64: usize = 4 + 1 + 1 + 2 + 8 + 8;
 
-	fn parse(binary: &Vec<u8,>, offset: usize, count: usize, context: &Context,) -> Rslt<Self,> {
+	fn parse(binary: &[u8], offset: usize, count: usize, context: &Context,) -> Rslt<Self,> {
 		let size = count
 			.checked_mul(match context.container {
 				Container::Little => todo!(),
@@ -1296,7 +1296,7 @@ impl Dynamic {
 	/// The versioning entry types. The next are defined as part of the GNU extension
 	pub const DT_VERSYM: u64 = 0x6fff_fff0;
 
-	fn parse(binary: &Vec<u8,>, program_headers: &Vec<ProgramHeader,>,) -> Rslt<Option<Self,>,> {
+	fn parse(binary: &[u8], program_headers: &Vec<ProgramHeader,>,) -> Rslt<Option<Self,>,> {
 		for program_header in program_headers {
 			if program_header.ty == ProgramHeaderType::Dynamic {
 				let offset = program_header.offset as usize;
@@ -1503,7 +1503,7 @@ impl RelocationSection {
 	const SIZE_OF_RELOCATION_ADDEND_64: usize = 24;
 
 	fn parse(
-		binary: &Vec<u8,>,
+		binary: &[u8],
 		offset: usize,
 		size: usize,
 		is_addend: bool,
@@ -1662,7 +1662,7 @@ pub struct SymbolVersionSection {
 
 impl SymbolVersionSection {
 	fn parse(
-		binary: &Vec<u8,>,
+		binary: &[u8],
 		section_headers: &Vec<SectionHeader,>,
 		ctx: &Context,
 	) -> Rslt<Option<Self,>,> {
@@ -1686,7 +1686,7 @@ pub struct VersionDefinitionSection {
 
 impl VersionDefinitionSection {
 	fn parse(
-		binary: &Vec<u8,>,
+		binary: &[u8],
 		section_headers: &Vec<SectionHeader,>,
 		ctx: &Context,
 	) -> Rslt<Option<Self,>,> {
@@ -1714,7 +1714,7 @@ pub struct VersionNeededSection {
 
 impl VersionNeededSection {
 	fn parse(
-		binary: &Vec<u8,>,
+		binary: &[u8],
 		section_headers: &Vec<SectionHeader,>,
 		ctx: &Context,
 	) -> Rslt<Option<Self,>,> {

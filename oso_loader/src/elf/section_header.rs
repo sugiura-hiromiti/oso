@@ -228,7 +228,7 @@ impl core::fmt::Debug for SectionHeader {
 pub fn get_string_table(
 	section_headers: &[SectionHeader],
 	mut idx: usize,
-	binary: &Vec<u8,>,
+	binary: &[u8],
 ) -> Rslt<StringTable,> {
 	if idx == SHN_XINDEX as usize {
 		if section_headers.is_empty() {
