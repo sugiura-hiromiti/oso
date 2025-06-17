@@ -47,28 +47,23 @@ pub struct ConfigTableStream {
 }
 
 impl ConfigTableStream {
-	fn config_table_with(&self, guid: Guid,) -> Rslt<Option<NonNull<ConfigTable,>,>,> {
-		if self.config_tables.is_none() {
-			return Ok(None,);
+	fn config_table_with(&self, guid: Guid,) -> Option<NonNull<ConfigTable,>,> {
+		let config_tables = self.config_tables?;
+
+		for i in 0..self.max_index {
+			let target_config_table = unsafe { config_tables.as_ptr().add(i,) };
+
+			let config_table = unsafe {
+				// `config_tables.as_ptr().add(i)`は本来nullではないはずなのでunsafeしても良さげ
+				NonNull::new_unchecked(target_config_table,)
+			};
+
+			if unsafe { config_table.as_ref() }.vendor_guid == guid {
+				return Some(config_table,);
+			}
 		}
 
-		let ct = self
-			.config_tables
-			.iter()
-			.find_map(|config_table| {
-				let mut ct = None;
-				for i in 0..self.max_index {
-					let target_ct = unsafe { config_table.as_ptr().add(i,) };
-					if unsafe { target_ct.as_ref().unwrap().vendor_guid } == guid {
-						ct = Some(target_ct,);
-					}
-				}
-				ct
-			},)
-			.map(|ct| NonNull::new(ct,),)
-			.unwrap();
-
-		Ok(ct,)
+		None
 	}
 }
 
@@ -81,7 +76,7 @@ impl SystemTable {
 	}
 
 	pub fn config_table_with(&self, guid: Guid,) -> Rslt<Option<NonNull<ConfigTable,>,>,> {
-		self.get_config_tables()?.config_table_with(guid,)
+		Ok(self.get_config_tables()?.config_table_with(guid,),)
 	}
 
 	pub fn device_tree(&self,) -> Rslt<Option<NonNull<ConfigTable,>,>,> {
