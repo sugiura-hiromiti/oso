@@ -27,7 +27,9 @@ pub trait MemoryReserveEntry: BinaryParser<false, usize,> {
 	fn mem_size(&self,) -> usize;
 }
 
-pub trait DeviceTreeStructure {}
+pub trait DeviceTreeStructure {
+	fn next_node(&self,) -> StructureToken;
+}
 
 pub trait DeviceTreeStrings {}
 
@@ -149,5 +151,13 @@ impl BinaryParser<false, usize,> for MemoryReserveEntryData {
 }
 
 struct StructureBlock {}
+
+pub enum StructureToken {
+	BeginNode,
+	EndNode,
+	Property,
+	Nop,
+	End,
+}
 
 struct StringsBlock {}
