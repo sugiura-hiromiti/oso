@@ -2,7 +2,7 @@
 
 use crate::Rslt;
 
-pub trait DeviceTree<T: BinaryParserTarget,>:
+pub trait DeviceTree:
 	DeviceTreeMemoryReservation + DeviceTreeStructure + DeviceTreeStrings
 {
 	fn memory_reservation_parser(&self,) -> &impl DeviceTreeMemoryReservation {
