@@ -2,9 +2,7 @@
 
 use crate::Rslt;
 
-pub trait DeviceTree:
-	DeviceTreeMemoryReservation + DeviceTreeStructure + DeviceTreeStrings
-{
+pub trait DeviceTree: DeviceTreeHeader + DeviceTreeMemoryReservation + DeviceTreeStructure {
 	fn memory_reservation_parser(&self,) -> &impl DeviceTreeMemoryReservation {
 		self
 	}
@@ -17,6 +15,8 @@ pub trait DeviceTree:
 	}
 }
 
+pub trait DeviceTreeHeader {}
+
 pub trait DeviceTreeMemoryReservation: MemoryReserveEntry {
 	fn mem_entries_count(&self,) -> usize;
 	fn nth(&self, n: usize,) -> MemoryReserveEntryData;
@@ -27,11 +27,19 @@ pub trait MemoryReserveEntry: BinaryParser<false, usize,> {
 	fn mem_size(&self,) -> usize;
 }
 
-pub trait DeviceTreeStructure {
+pub trait DeviceTreeStructure: DeviceTreeStrings {
 	fn next_node(&self,) -> StructureToken;
+	fn next_node_tree(&self,) -> StructureToken;
+	fn get_node(&self, name: &str,) {}
 }
 
-pub trait DeviceTreeStrings {}
+pub trait DeviceTreeStrings {
+	/// offset arg is offset from start of strings block
+	fn get_name(&self, offset: usize,) -> &str;
+	fn is_node_of(&self, offset: usize, name: &str,) -> bool {
+		self.get_name(offset,) == name
+	}
+}
 
 pub trait BinaryParser<const IS_LITTLE_ENDIAN: bool, T: BinaryParserTarget,>: Sized {
 	// get type info
