@@ -15,7 +15,18 @@ pub trait DeviceTree: DeviceTreeHeader + DeviceTreeMemoryReservation + DeviceTre
 	}
 }
 
-pub trait DeviceTreeHeader {}
+pub trait DeviceTreeHeader {
+	fn check_magic(&self,) -> bool;
+	fn total_size(&self,) -> usize;
+	fn structure_block_offset(&self,) -> usize;
+	fn strings_block_offset(&self,) -> usize;
+	fn memory_reservation_block_offset(&self,) -> usize;
+	fn version(&self,) -> usize;
+	fn last_compatible_version(&self,) -> usize;
+	fn system_boot_cpu_physical_id(&self,) -> usize;
+	fn strings_block_size(&self,) -> usize;
+	fn structure_block_size(&self,) -> usize;
+}
 
 pub trait DeviceTreeMemoryReservation: MemoryReserveEntry {
 	fn mem_entries_count(&self,) -> usize;
@@ -103,8 +114,8 @@ impl BinaryParserTarget for usize {
 
 pub struct DeviceTreeData {
 	ptr:                              *const u8,
-	current_offset:                   usize,
-	header:                           FlattenedDeviceTreeHeader,
+	cur_pos:                          usize,
+	// header:                           FlattenedDeviceTreeHeader,
 	memory_reservation_entries_count: usize,
 }
 
