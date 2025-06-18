@@ -1,4 +1,7 @@
 //! parse device tree (FDT) which is provided by firmware to get pci devices controll
+//! TODO:
+//! - derive macroを用いて型定義からlazyパーサーを自動生成する
+//! - マクロが生成するパーサーのための基盤を`oso_binary_parser`で提供する
 
 use crate::Rslt;
 
