@@ -1,3 +1,12 @@
+//! # QEMU Module
+//!
+//! This module handles QEMU configuration and firmware management.
+//!
+//! It provides functionality for:
+//! - Configuring QEMU command-line arguments based on the target architecture
+//! - Managing OVMF firmware files for UEFI boot
+//! - Setting up block devices and persistent flash memory
+
 use crate::builder::Builder;
 use crate::shell::Architecture;
 use anyhow::Result as Rslt;
@@ -10,10 +19,20 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 impl Builder {
+	/// Gets the QEMU executable name based on the target architecture
+	///
+	/// # Returns
+	///
+	/// The name of the QEMU executable (e.g., "qemu-system-aarch64")
 	pub fn qemu(&self,) -> String {
 		format!("qemu-system-{}", self.arch().to_string())
 	}
 
+	/// Generates QEMU command-line arguments based on the target architecture and configuration
+	///
+	/// # Returns
+	///
+	/// A vector of command-line arguments for QEMU or an error if it fails
 	pub fn qemu_args(&self,) -> Rslt<Vec<String,>,> {
 		let mut args = basic_args(self.arch(),);
 
@@ -42,14 +61,27 @@ impl Builder {
 	}
 }
 
-/// manage ovmf files
+/// Manages OVMF firmware files for UEFI boot
 #[derive(Debug,)]
 pub struct Firmware {
+	/// Path to the OVMF code file
 	code: PathBuf,
+	/// Path to the OVMF variables file
 	vars: PathBuf,
 }
 
 impl Firmware {
+	/// Creates a new Firmware instance for the specified architecture
+	///
+	/// Downloads the latest OVMF firmware files if they don't exist.
+	///
+	/// # Parameters
+	///
+	/// * `arch` - The target architecture
+	///
+	/// # Returns
+	///
+	/// A new Firmware instance or an error if initialization fails
 	pub fn new(arch: &Architecture,) -> Rslt<Self,> {
 		let path = PathBuf::from_str("/tmp/",)?;
 		let ovmf_files = Prebuilt::fetch(Source::LATEST, path,)?;
@@ -58,27 +90,26 @@ impl Firmware {
 		Ok(Self { code, vars, },)
 	}
 
+	/// Gets the path to the OVMF code file
+	///
+	/// # Returns
+	///
+	/// A reference to the path to the OVMF code file
 	pub fn code(&self,) -> &PathBuf {
 		&self.code
 	}
 
+	/// Gets the path to the OVMF variables file
+	///
+	/// # Returns
+	///
+	/// A reference to the path to the OVMF variables file
 	pub fn vars(&self,) -> &PathBuf {
 		&self.vars
 	}
 }
 
-/// # Params
-///
-/// - path
-/// root path where fetched files are places
-///
-/// # Return
-///
-/// returns path to (code.fd, vars.fd)
-// fn fetch_aa64_firmware(path: PathBuf,) -> (PathBuf, PathBuf,) {
-// 	todo!()
-// }
-
+/// Converts an Architecture enum to an ovmf_prebuilt::Arch enum
 impl From<&Architecture,> for Arch {
 	fn from(value: &Architecture,) -> Self {
 		match value {
@@ -89,21 +120,23 @@ impl From<&Architecture,> for Arch {
 	}
 }
 
+/// Defines the mode for persistent flash memory
 enum PflashMode {
+	/// Read-only mode
 	ReadOnly,
+	/// Read-write mode
 	ReadWrite,
 }
 
-// fn devices() -> Vec<String,> {
-// 	vec![
-// 		"-nodefaults".to_string(),
-// 		"-device".to_string(),
-// 		"virtio-rng-pci".to_string(),
-// 		"-device".to_string(),
-// 		"virtio-scsi-pci".to_string(),
-// 	]
-// }
-
+/// Generates basic QEMU arguments based on the target architecture
+///
+/// # Parameters
+///
+/// * `arch` - The target architecture
+///
+/// # Returns
+///
+/// A vector of basic QEMU command-line arguments
 fn basic_args(arch: &Architecture,) -> Vec<String,> {
 	match arch {
 		Architecture::Aarch64 => vec![
@@ -138,7 +171,16 @@ fn basic_args(arch: &Architecture,) -> Vec<String,> {
 	}
 }
 
-/// configure persistent flash memory aka. pflash
+/// Generates QEMU arguments for persistent flash memory
+///
+/// # Parameters
+///
+/// * `pflash_file` - The path to the flash file
+/// * `mode` - The mode for the flash file (read-only or read-write)
+///
+/// # Returns
+///
+/// A vector of QEMU command-line arguments for persistent flash memory
 fn persistent_flash_memory_args(pflash_file: &PathBuf, mode: PflashMode,) -> Vec<String,> {
 	let mut args = vec!["-drive".to_string()];
 	let mut arg = String::from("if=pflash,format=raw,readonly=",);
@@ -154,6 +196,16 @@ fn persistent_flash_memory_args(pflash_file: &PathBuf, mode: PflashMode,) -> Vec
 	args
 }
 
+/// Generates QEMU arguments for block devices
+///
+/// # Parameters
+///
+/// * `disk_img` - The path to the disk image
+/// * `arch` - The target architecture
+///
+/// # Returns
+///
+/// A vector of QEMU command-line arguments for block devices
 fn block_device(disk_img: &Path, arch: &Architecture,) -> Vec<String,> {
 	vec![
 		"-monitor".to_string(),

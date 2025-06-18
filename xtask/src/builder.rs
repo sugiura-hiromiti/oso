@@ -1,3 +1,15 @@
+//! # Builder Module
+//!
+//! Core functionality for building the OSO loader and kernel, creating disk images,
+//! and running QEMU.
+//!
+//! This module handles:
+//! - Building the OSO loader and kernel for the target architecture
+//! - Creating and formatting a disk image
+//! - Mounting the disk image and copying the built artifacts
+//! - Configuring and running QEMU with the appropriate firmware and disk image
+//! - Cleanup of temporary files and unmounting disk images
+
 use crate::qemu::Firmware;
 use crate::shell::Architecture;
 use crate::shell::Opts;
@@ -12,17 +24,30 @@ use std::path::PathBuf;
 use std::process::Command;
 use util_common_code::Run;
 
+/// Directory path for EFI boot files
 const BOOT_DIR: &str = "efi/boot";
+/// Filename for the OSO kernel
 const KERNEL_FILE: &str = "oso_kernel.elf";
 
+/// Main builder struct that orchestrates the build and run process
 #[derive(Debug,)]
 pub struct Builder {
+	/// Command-line options
 	opts:      Opts,
+	/// OSO workspace information
 	workspace: OsoWorkSpace,
+	/// OVMF firmware information
 	firmware:  Firmware,
 }
 
 impl Builder {
+	/// Creates a new Builder instance with the specified options
+	///
+	/// Initializes the workspace and firmware based on the command-line options.
+	///
+	/// # Returns
+	///
+	/// A new Builder instance or an error if initialization fails
 	pub fn new() -> Rslt<Self,> {
 		let opts = Opts::new();
 		let workspace = OsoWorkSpace::new()?;
@@ -30,12 +55,22 @@ impl Builder {
 		Ok(Self { opts, workspace, firmware: ovmf, },)
 	}
 
+	/// Builds the OSO loader and kernel
+	///
+	/// # Returns
+	///
+	/// Ok(()) if the build succeeds, or an error if it fails
 	pub fn build(&self,) -> Rslt<(),> {
 		set_current_dir(&self.workspace.root,)?;
 		self.build_loader()?;
 		self.build_kernel()
 	}
 
+	/// Builds the OSO loader (UEFI application)
+	///
+	/// # Returns
+	///
+	/// Ok(()) if the build succeeds, or an error if it fails
 	fn build_loader(&self,) -> Rslt<(),> {
 		set_current_dir(&self.workspace.loader.root,)?;
 		cargo_build(&self.opts,)?.arg("--target",).arg(self.opts.arch.loader_tuple(),).run()?;
@@ -43,6 +78,11 @@ impl Builder {
 		Ok((),)
 	}
 
+	/// Builds the OSO kernel
+	///
+	/// # Returns
+	///
+	/// Ok(()) if the build succeeds, or an error if it fails
 	fn build_kernel(&self,) -> Rslt<(),> {
 		set_current_dir(&self.workspace.kernel.root,)?;
 		cargo_build(&self.opts,)?
@@ -53,14 +93,31 @@ impl Builder {
 		Ok((),)
 	}
 
+	/// Gets the target architecture
+	///
+	/// # Returns
+	///
+	/// A reference to the Architecture enum
 	pub fn arch(&self,) -> &Architecture {
 		&self.opts.arch
 	}
 
+	/// Gets the command-line options
+	///
+	/// # Returns
+	///
+	/// A reference to the Opts struct
 	pub fn opts(&self,) -> &Opts {
 		&self.opts
 	}
 
+	/// Gets the path to the firmware code file
+	///
+	/// Copies the firmware code file to a temporary location if it doesn't exist.
+	///
+	/// # Returns
+	///
+	/// The path to the firmware code file or an error if it fails
 	pub fn firmware_code(&self,) -> Rslt<PathBuf,> {
 		let tmp_path = self.firmware_tmp_code()?;
 		if !tmp_path.exists() {
@@ -70,10 +127,22 @@ impl Builder {
 		Ok(tmp_path,)
 	}
 
+	/// Gets the path to the temporary firmware code file
+	///
+	/// # Returns
+	///
+	/// The path to the temporary firmware code file or an error if it fails
 	fn firmware_tmp_code(&self,) -> Rslt<PathBuf,> {
 		Ok(self.build_dir()?.join("mv_firmware_code",),)
 	}
 
+	/// Gets the path to the firmware variables file
+	///
+	/// Copies the firmware variables file to a temporary location if it doesn't exist.
+	///
+	/// # Returns
+	///
+	/// The path to the firmware variables file or an error if it fails
 	pub fn firmware_vars(&self,) -> Rslt<PathBuf,> {
 		let tmp_file = self.firmware_tmp_vars()?;
 		if !tmp_file.exists() {
@@ -84,10 +153,22 @@ impl Builder {
 		Ok(tmp_file,)
 	}
 
+	/// Gets the path to the temporary firmware variables file
+	///
+	/// # Returns
+	///
+	/// The path to the temporary firmware variables file or an error if it fails
 	fn firmware_tmp_vars(&self,) -> Rslt<PathBuf,> {
 		Ok(self.build_dir()?.join("mv_firmware_vars",),)
 	}
 
+	/// Runs QEMU with the built OSO loader and kernel
+	///
+	/// Mounts the disk image, copies the built artifacts, and runs QEMU.
+	///
+	/// # Returns
+	///
+	/// Ok(()) if QEMU runs successfully, or an error if it fails
 	pub fn run(self,) -> Rslt<(),> {
 		let mounted_disk = self.mount_img()?;
 		self.build_boot_dir()?;
@@ -137,9 +218,13 @@ impl Builder {
 		Ok((),)
 	}
 
-	/// # Return
+	/// Mounts the disk image
 	///
-	/// returns name of mounted_disk
+	/// Creates a disk image, formats it, and mounts it.
+	///
+	/// # Returns
+	///
+	/// The name of the mounted disk or an error if it fails
 	fn mount_img(&self,) -> Rslt<String,> {
 		self.set_disk_img()?;
 
@@ -171,6 +256,11 @@ impl Builder {
 		Ok(mounted_disk.to_string(),)
 	}
 
+	/// Creates and formats a disk image
+	///
+	/// # Returns
+	///
+	/// Ok(()) if the disk image is created and formatted successfully, or an error if it fails
 	fn set_disk_img(&self,) -> Rslt<(),> {
 		let disk_img = self.disk_img_path()?;
 		if disk_img.exists() {
@@ -191,10 +281,20 @@ impl Builder {
 			.run()
 	}
 
+	/// Gets the path to the disk image
+	///
+	/// # Returns
+	///
+	/// The path to the disk image or an error if it fails
 	pub fn disk_img_path(&self,) -> Rslt<PathBuf,> {
 		Ok(self.build_dir()?.join("disk.img",),)
 	}
 
+	/// Creates a mount point for the disk image
+	///
+	/// # Returns
+	///
+	/// Ok(()) if the mount point is created successfully, or an error if it fails
 	fn create_mount_point(&self,) -> Rslt<(),> {
 		let mount_point = self.mount_point_path()?;
 		if mount_point.exists() {
@@ -204,10 +304,22 @@ impl Builder {
 		Ok((),)
 	}
 
+	/// Gets the path to the mount point
+	///
+	/// # Returns
+	///
+	/// The path to the mount point or an error if it fails
 	fn mount_point_path(&self,) -> Rslt<PathBuf,> {
 		Ok(self.build_dir()?.join("mnt",),)
 	}
 
+	/// Gets the path to the build directory
+	///
+	/// Creates the build directory if it doesn't exist.
+	///
+	/// # Returns
+	///
+	/// The path to the build directory or an error if it fails
 	fn build_dir(&self,) -> Rslt<PathBuf,> {
 		let build_dir = self.workspace.root.join("target",).join("xtask",);
 		if !build_dir.exists() {
@@ -216,6 +328,11 @@ impl Builder {
 		Ok(build_dir,)
 	}
 
+	/// Creates the boot directory structure and copies the built artifacts
+	///
+	/// # Returns
+	///
+	/// Ok(()) if the boot directory is created and populated successfully, or an error if it fails
 	fn build_boot_dir(&self,) -> Rslt<(),> {
 		let boot_dir = self.create_boot_dir()?;
 		self.put_boot_loader(&boot_dir,)?;
@@ -223,6 +340,11 @@ impl Builder {
 		Ok((),)
 	}
 
+	/// Creates the EFI boot directory structure
+	///
+	/// # Returns
+	///
+	/// The path to the boot directory or an error if it fails
 	fn create_boot_dir(&self,) -> Rslt<PathBuf,> {
 		let boot_dir = self.mount_point_path()?.join(BOOT_DIR,);
 		fs_err::create_dir_all(&boot_dir,)?;
@@ -230,11 +352,25 @@ impl Builder {
 		Ok(boot_dir,)
 	}
 
+	/// Copies the boot loader to the boot directory
+	///
+	/// # Parameters
+	///
+	/// * `boot_dir` - The path to the boot directory
+	///
+	/// # Returns
+	///
+	/// Ok(()) if the boot loader is copied successfully, or an error if it fails
 	fn put_boot_loader(&self, boot_dir: &Path,) -> Rslt<(),> {
 		fs_err::copy(self.loader_build_artifact(), boot_dir.join(self.arch().boot_file_name(),),)?;
 		Ok((),)
 	}
 
+	/// Gets the path to the loader build artifact
+	///
+	/// # Returns
+	///
+	/// The path to the loader build artifact
 	fn loader_build_artifact(&self,) -> PathBuf {
 		let build_artifact = self
 			.workspace
@@ -250,11 +386,21 @@ impl Builder {
 		build_artifact
 	}
 
+	/// Copies the kernel to the disk image
+	///
+	/// # Returns
+	///
+	/// Ok(()) if the kernel is copied successfully, or an error if it fails
 	fn put_kernel(&self,) -> Rslt<(),> {
 		fs_err::copy(self.kernel_build_artifact()?, self.mount_point_path()?.join(KERNEL_FILE,),)?;
 		Ok((),)
 	}
 
+	/// Gets the path to the kernel build artifact
+	///
+	/// # Returns
+	///
+	/// The path to the kernel build artifact or an error if it fails
 	fn kernel_build_artifact(&self,) -> Rslt<PathBuf,> {
 		let target_json =
 			self.workspace.kernel.root.join(format!("{}.json", self.arch().kernel_tuple()),);
@@ -263,6 +409,7 @@ impl Builder {
 	}
 }
 
+/// Automatically cleans up temporary files and unmounts disk images when the Builder is dropped
 impl Drop for Builder {
 	fn drop(&mut self,) {
 		match self.build_dir() {
@@ -292,6 +439,15 @@ impl Drop for Builder {
 	}
 }
 
+/// Creates a cargo build command with the specified options
+///
+/// # Parameters
+///
+/// * `opts` - The command-line options
+///
+/// # Returns
+///
+/// A Command object configured for building with cargo or an error if it fails
 fn cargo_build(opts: &Opts,) -> Rslt<Command,> {
 	let mut cmd = Command::new("cargo",);
 	cmd.arg("b",);
@@ -306,6 +462,15 @@ fn cargo_build(opts: &Opts,) -> Rslt<Command,> {
 	Ok(cmd,)
 }
 
+/// Detaches a mounted disk image
+///
+/// # Parameters
+///
+/// * `mounted_disk` - The name of the mounted disk
+///
+/// # Returns
+///
+/// Ok(()) if the disk is detached successfully, or an error if it fails
 pub fn detatch(mounted_disk: &String,) -> Rslt<(),> {
 	Command::new("eza",)
 		.args(

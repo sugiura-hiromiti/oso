@@ -1,14 +1,33 @@
+//! # Shell Module
+//!
+//! This module handles command-line argument parsing and architecture definitions.
+//!
+//! It provides:
+//! - Architecture enum for supported target architectures
+//! - BuildMode enum for debug/release build modes
+//! - Feature enum for build features
+//! - Opts struct for command-line options
+
 use anyhow::anyhow;
 use std::ffi::OsStr;
 
+/// Supported target architectures
 #[derive(Debug, PartialEq, Eq,)]
 pub enum Architecture {
+	/// ARM 64-bit architecture
 	Aarch64,
+	/// RISC-V 64-bit architecture
 	Riscv64,
+	/// x86 64-bit architecture
 	X86_64,
 }
 
 impl Architecture {
+	/// Gets the boot file name for the architecture
+	///
+	/// # Returns
+	///
+	/// The boot file name (e.g., "bootaa64.efi" for aarch64)
 	pub fn boot_file_name(&self,) -> String {
 		match self {
 			Architecture::Aarch64 => "bootaa64.efi",
@@ -19,6 +38,7 @@ impl Architecture {
 	}
 }
 
+/// Converts a string to an Architecture enum
 impl TryFrom<&String,> for Architecture {
 	type Error = anyhow::Error;
 
@@ -37,6 +57,7 @@ impl TryFrom<&String,> for Architecture {
 	}
 }
 
+/// Converts an Architecture enum to a string
 impl ToString for Architecture {
 	fn to_string(&self,) -> String {
 		match self {
@@ -48,18 +69,27 @@ impl ToString for Architecture {
 	}
 }
 
+/// Build mode (debug or release)
 #[derive(PartialEq, Debug,)]
 pub enum BuildMode {
+	/// Release build mode (optimized)
 	Release,
+	/// Debug build mode (with debug symbols)
 	Debug,
 }
 
 impl BuildMode {
+	/// Checks if the build mode is release
+	///
+	/// # Returns
+	///
+	/// true if the build mode is release, false otherwise
 	pub fn is_release(&self,) -> bool {
 		self == &BuildMode::Release
 	}
 }
 
+/// Converts a BuildMode enum to a string
 impl ToString for BuildMode {
 	fn to_string(&self,) -> String {
 		match self {
@@ -70,14 +100,27 @@ impl ToString for BuildMode {
 	}
 }
 
+/// Build features
 #[derive(Debug, PartialEq, Eq,)]
 pub enum Feature {
+	/// Loader feature
 	Loader(String,),
+	/// Kernel feature
 	Kernel(String,),
+	/// Workspace feature
 	Workspace(String,),
 }
 
 impl Feature {
+	/// Creates a Feature enum from a string
+	///
+	/// # Parameters
+	///
+	/// * `s` - The feature string
+	///
+	/// # Returns
+	///
+	/// A vector of Feature enums
 	fn from_str(s: &str,) -> Vec<Self,> {
 		match s {
 			f if f == "rgb" || f == "bgr" || f == "bitmask" || f == "bltonly" => {
@@ -88,6 +131,7 @@ impl Feature {
 	}
 }
 
+/// Converts a Feature enum to an OsStr
 impl AsRef<OsStr,> for Feature {
 	fn as_ref(&self,) -> &OsStr {
 		match self {
@@ -98,15 +142,25 @@ impl AsRef<OsStr,> for Feature {
 	}
 }
 
+/// Command-line options
 #[derive(Debug,)]
 pub struct Opts {
+	/// Build mode (debug or release)
 	pub build_mode: BuildMode,
+	/// Target architecture
 	pub arch:       Architecture,
+	/// Build features
 	pub features:   Vec<Feature,>,
+	/// Debug mode flag
 	pub debug:      bool,
 }
 
 impl Opts {
+	/// Creates a new Opts instance from command-line arguments
+	///
+	/// # Returns
+	///
+	/// A new Opts instance with the parsed command-line options
 	pub fn new() -> Self {
 		let args = std::env::args();
 
