@@ -7,7 +7,7 @@ use oso_error::Rslt;
 pub mod parser_particle;
 
 ///
-pub trait ParserCombine {
+pub trait ParserFeed {
 	fn repeat() {}
 }
 
