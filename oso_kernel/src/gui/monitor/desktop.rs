@@ -2,21 +2,21 @@ use window::Window;
 
 use crate::base::graphic::position::Coordinal;
 use crate::base::util::LinkedList;
-use crate::error::KernelError;
+use oso_error::Rslt;
 
 pub mod window;
 
 pub trait Move {
-	fn move_up(&mut self, offset: usize,) -> Result<(), KernelError,>;
-	fn move_down(&mut self, offset: usize,) -> Result<(), KernelError,>;
-	fn move_left(&mut self, offset: usize,) -> Result<(), KernelError,>;
-	fn move_right(&mut self, offset: usize,) -> Result<(), KernelError,>;
-	fn move_to(&mut self, dest: impl Coordinal,) -> Result<(), KernelError,> {
+	fn move_up(&mut self, offset: usize,) -> Rslt<(),>;
+	fn move_down(&mut self, offset: usize,) -> Rslt<(),>;
+	fn move_left(&mut self, offset: usize,) -> Rslt<(),>;
+	fn move_right(&mut self, offset: usize,) -> Rslt<(),>;
+	fn move_to(&mut self, dest: impl Coordinal,) -> Rslt<(),> {
 		self.move_to_x(dest.x(),)?;
 		self.move_to_y(dest.y(),)
 	}
-	fn move_to_x(&mut self, dest: usize,) -> Result<(), KernelError,>;
-	fn move_to_y(&mut self, dest: usize,) -> Result<(), KernelError,>;
+	fn move_to_x(&mut self, dest: usize,) -> Rslt<(),>;
+	fn move_to_y(&mut self, dest: usize,) -> Rslt<(),>;
 }
 pub trait Layer {
 	fn back(&mut self,);
@@ -31,7 +31,7 @@ pub trait DesktopObject: Coordinal + Move {
 }
 
 pub trait DesktopDraw {
-	//fn draw_mouse_cursor(&mut self, cursor_buf: &impl MouseCursor,) -> Result<(), KernelError,>;
+	//fn draw_mouse_cursor(&mut self, cursor_buf: &impl MouseCursor,) -> Rslt<()>;
 }
 
 pub struct DesktopBuf<'a, W: Window,> {

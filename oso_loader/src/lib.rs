@@ -11,16 +11,16 @@
 
 extern crate alloc;
 
-use alloc::format;
 use alloc::vec::Vec;
 use chibi_uefi::protocol::HandleSearchType;
 use chibi_uefi::table::boot_services;
 use core::arch::asm;
 use core::ptr::NonNull;
-use error::OsoLoaderError;
 use oso_bridge::device_tree::DeviceTreeAddress;
 use oso_bridge::wfe;
 use oso_bridge::wfi;
+use oso_error::Rslt;
+use oso_error::oso_err;
 use raw::table::SystemTable;
 use raw::types::Status;
 use raw::types::UnsafeHandle;
@@ -30,11 +30,8 @@ use crate::raw::table::ConfigTable;
 
 pub mod chibi_uefi;
 pub mod elf;
-pub mod error;
 pub mod load;
 pub mod raw;
-
-pub type Rslt<T = Status,> = Result<T, OsoLoaderError,>;
 
 #[panic_handler]
 fn panic(panic: &core::panic::PanicInfo,) -> ! {
@@ -82,10 +79,7 @@ fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,> {
 }
 
 pub fn get_device_tree() -> Rslt<NonNull<ConfigTable,>,> {
-	unsafe { system_table().as_ref() }
-		.device_tree()?
-		.ok_or(OsoLoaderError::Uefi(format!("failed to get device tree"),),)
-	// .map(|ct| unsafe { ct.as_ref() },)?;
+	unsafe { system_table().as_ref() }.device_tree()?.ok_or(oso_err!("failed to get device tree"),)
 }
 
 pub fn exec_kernel(kernel_entry: u64, device_tree_ptr: DeviceTreeAddress,) {

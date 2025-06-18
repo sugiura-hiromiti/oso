@@ -1,4 +1,4 @@
-use crate::error::KernelError;
+use oso_error::Rslt;
 
 pub struct MenuBar {
 	size:      usize,
@@ -13,11 +13,11 @@ pub enum Direction {
 }
 
 pub trait MenuBarDraw {
-	fn draw_menu_bar(&mut self,) -> Result<(), KernelError,>;
+	fn draw_menu_bar(&mut self,) -> Rslt<(),>;
 }
 
 impl MenuBarDraw for MenuBar {
-	fn draw_menu_bar(&mut self,) -> Result<(), KernelError,> {
+	fn draw_menu_bar(&mut self,) -> Rslt<(),> {
 		todo!()
 	}
 }

@@ -3,12 +3,12 @@
 use super::graphic::FRAME_BUFFER;
 use crate::base::graphic::position::Coordinal;
 use crate::base::graphic::put_pixel;
-use crate::error::KernelError;
 use core::fmt::Write;
 use core::ops::Add;
 use core::ops::Div;
 use core::ops::Mul;
 use core::ops::Sub;
+use oso_error::Rslt;
 use oso_proc_macro::fonts_data;
 use oso_proc_macro::impl_int;
 
@@ -51,7 +51,7 @@ impl<C: Coordinal,> TextBuf<C,> {
 		self.col = 0;
 	}
 
-	fn put_char(&mut self, char: u8,) -> Result<(), KernelError,> {
+	fn put_char(&mut self, char: u8,) -> Rslt<(),> {
 		if char == b'\n' {
 			self.row += 1;
 			self.col = 0;

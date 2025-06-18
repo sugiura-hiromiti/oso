@@ -4,9 +4,9 @@ use crate::base::graphic::color::ColorRpr;
 use crate::base::graphic::position::Coord;
 use crate::base::graphic::position::Coordinal;
 use crate::base::graphic::put_pixel;
-use crate::error::KernelError;
 use crate::gui::monitor::desktop::DesktopObject;
 use crate::gui::monitor::desktop::Move;
+use oso_error::Rslt;
 
 // TODO: modularize project structure to remove pub keyword
 const MOUSE_CURSOR_WIDTH: usize = 15;
@@ -44,7 +44,7 @@ pub trait MouseCursor: DesktopObject {
 }
 
 pub trait MouseCursorDraw {
-	fn draw_mouse_cursor(&mut self,) -> Result<(), KernelError,>;
+	fn draw_mouse_cursor(&mut self,) -> Rslt<(),>;
 }
 
 /// belong to `gui` struct
@@ -73,7 +73,7 @@ impl CursorBuf {
 
 impl MouseCursor for CursorBuf {}
 impl MouseCursorDraw for CursorBuf {
-	fn draw_mouse_cursor(&mut self,) -> Result<(), KernelError,> {
+	fn draw_mouse_cursor(&mut self,) -> Rslt<(),> {
 		let mut coord = self.pos.clone();
 		for y in 0..self.height {
 			for x in 0..self.width {
@@ -122,32 +122,32 @@ impl DesktopObject for CursorBuf {
 }
 
 impl Move for CursorBuf {
-	fn move_up(&mut self, offset: usize,) -> Result<(), KernelError,> {
+	fn move_up(&mut self, offset: usize,) -> Rslt<(),> {
 		*self.pos.y_mut() -= offset;
 		Ok((),)
 	}
 
-	fn move_down(&mut self, offset: usize,) -> Result<(), KernelError,> {
+	fn move_down(&mut self, offset: usize,) -> Rslt<(),> {
 		*self.pos.y_mut() += offset;
 		Ok((),)
 	}
 
-	fn move_left(&mut self, offset: usize,) -> Result<(), KernelError,> {
+	fn move_left(&mut self, offset: usize,) -> Rslt<(),> {
 		*self.pos.x_mut() -= offset;
 		Ok((),)
 	}
 
-	fn move_right(&mut self, offset: usize,) -> Result<(), KernelError,> {
+	fn move_right(&mut self, offset: usize,) -> Rslt<(),> {
 		*self.pos.x_mut() += offset;
 		Ok((),)
 	}
 
-	fn move_to_x(&mut self, dest: usize,) -> Result<(), KernelError,> {
+	fn move_to_x(&mut self, dest: usize,) -> Rslt<(),> {
 		*self.pos.x_mut() = dest;
 		Ok((),)
 	}
 
-	fn move_to_y(&mut self, dest: usize,) -> Result<(), KernelError,> {
+	fn move_to_y(&mut self, dest: usize,) -> Rslt<(),> {
 		*self.pos.y_mut() = dest;
 		Ok((),)
 	}

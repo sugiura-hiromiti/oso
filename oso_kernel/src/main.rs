@@ -6,6 +6,7 @@ use core::arch::asm;
 #[cfg(target_arch = "aarch64")]
 use oso_bridge::device_tree::DeviceTreeAddress;
 use oso_bridge::wfi;
+use oso_error::Rslt;
 use oso_kernel::app::cursor::CursorBuf;
 use oso_kernel::app::cursor::MouseCursorDraw;
 use oso_kernel::base::graphic::FRAME_BUFFER;
@@ -76,7 +77,7 @@ pub extern "sysv64" fn kernel_main() {
 	}
 }
 
-fn app() -> Result<(), KernelError,> {
+fn app() -> Rslt<(),> {
 	fill_rectangle(&(100, 100,), &(700, 500,), &"#abcdef",)?;
 	fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#012345",)?;
 

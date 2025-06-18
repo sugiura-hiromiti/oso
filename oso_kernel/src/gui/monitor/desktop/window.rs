@@ -1,8 +1,7 @@
-use crate::base::graphic::position::Coordinal;
-use crate::error::KernelError;
-use crate::gui::monitor::desktop::DesktopObject;
-
 use super::Move;
+use crate::base::graphic::position::Coordinal;
+use crate::gui::monitor::desktop::DesktopObject;
+use oso_error::Rslt;
 
 pub trait WindowDraw {
 	fn draw_window(&mut self, win: &impl Window,);
@@ -77,12 +76,12 @@ impl<C: Coordinal,> Coordinal for WindowBuf<C,> {
 }
 
 impl<C: Coordinal,> Move for WindowBuf<C,> {
-	fn move_to_x(&mut self, dest: usize,) -> Result<(), KernelError,> {
+	fn move_to_x(&mut self, dest: usize,) -> Rslt<(),> {
 		*self.left_top.x_mut() = dest;
 		Ok((),)
 	}
 
-	fn move_to_y(&mut self, dest: usize,) -> Result<(), KernelError,> {
+	fn move_to_y(&mut self, dest: usize,) -> Rslt<(),> {
 		*self.left_top.y_mut() = dest;
 		Ok((),)
 	}
@@ -90,7 +89,7 @@ impl<C: Coordinal,> Move for WindowBuf<C,> {
 	/// # Panic
 	///
 	/// make sure that `self.width - offset >= 0`
-	fn move_left(&mut self, offset: usize,) -> Result<(), KernelError,> {
+	fn move_left(&mut self, offset: usize,) -> Rslt<(),> {
 		*self.left_top.x_mut() -= offset;
 		Ok((),)
 	}
@@ -98,7 +97,7 @@ impl<C: Coordinal,> Move for WindowBuf<C,> {
 	/// # Panic
 	///
 	/// make sure that `self.width + offset > "max width of display"`
-	fn move_right(&mut self, offset: usize,) -> Result<(), KernelError,> {
+	fn move_right(&mut self, offset: usize,) -> Rslt<(),> {
 		*self.left_top.x_mut() += offset;
 		Ok((),)
 	}
@@ -106,7 +105,7 @@ impl<C: Coordinal,> Move for WindowBuf<C,> {
 	/// # Panic
 	///
 	/// make sure that `self.height + offset > "max height of display"`
-	fn move_up(&mut self, offset: usize,) -> Result<(), KernelError,> {
+	fn move_up(&mut self, offset: usize,) -> Rslt<(),> {
 		*self.left_top.y_mut() -= offset;
 		Ok((),)
 	}
@@ -114,7 +113,7 @@ impl<C: Coordinal,> Move for WindowBuf<C,> {
 	/// # Panic
 	///
 	/// make sure that `self.width + offset > 800`
-	fn move_down(&mut self, offset: usize,) -> Result<(), KernelError,> {
+	fn move_down(&mut self, offset: usize,) -> Rslt<(),> {
 		*self.left_top.y_mut() += offset;
 		Ok((),)
 	}

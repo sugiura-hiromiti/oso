@@ -3,8 +3,6 @@ use crate::elf::hash::gnu_hash_len;
 use crate::elf::hash::hash_len;
 use crate::elf::program_header::ProgramHeader;
 use crate::elf::section_header::SectionHeader;
-use crate::error::OsoLoaderError;
-use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec;
@@ -22,6 +20,8 @@ use core::ops::Shr;
 use core::ops::Sub;
 use core::ops::SubAssign;
 use core::usize;
+use oso_error::OsoError;
+use oso_error::oso_err;
 use program_header::ProgramHeaderType;
 use section_header::SHT_GNU_VERDEF;
 use section_header::SHT_GNU_VERNEED;
@@ -693,10 +693,8 @@ fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> Rslt<ElfHe
 			let $field =
 				read_le_bytes(offset, ident_remain,).ok_or_else(|| {
 					let field = stringify!($field);
-					OsoLoaderError::EfiParse(format!(
-					"end of binary. unable to parse {} field of header flag field",
-					field
-				),)
+					let msg =("end of binary. unable to parse field of header flag field", field);
+					oso_error::oso_err!(msg)
 				})?;
 		};
 		($($fields:ident,)*)=>{
@@ -706,10 +704,10 @@ fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> Rslt<ElfHe
 		};
 	}
 
-	let ty: u16 = read_le_bytes(offset, ident_remain,).ok_or(OsoLoaderError::EfiParse(format!(
+	let ty: u16 = read_le_bytes(offset, ident_remain,).ok_or(oso_err!((
 		"end of binary. unable to parse {} field of header flag field",
 		stringify!(ty)
-	),),)?;
+	)),)?;
 	let ty = ElfType::try_from(ty,)?;
 	fields!(
 		machine,
@@ -783,7 +781,7 @@ impl ElfType {
 }
 
 impl TryFrom<u16,> for ElfType {
-	type Error = OsoLoaderError;
+	type Error = OsoError;
 
 	fn try_from(value: u16,) -> Result<Self, Self::Error,> {
 		let ty = match value {
@@ -797,7 +795,7 @@ impl TryFrom<u16,> for ElfType {
 			0xfeff => Self::OsSpecificRangeEnd,
 			0xff00 => Self::ProcessorSpecificRangeStart,
 			0xffff => Self::OsSpecificRangeEnd,
-			_ => return Err(OsoLoaderError::EfiParse(format!("unknown type: {value}"),),),
+			_ => return Err(oso_err!(("unknown type: {value}", value)),),
 		};
 		Ok(ty,)
 	}
@@ -815,16 +813,13 @@ pub struct ElfHeaderIdent {
 impl ElfHeaderIdent {
 	fn new(ident: &[u8],) -> Rslt<Self,> {
 		if ident.len() != ELF_IDENT_SIZE {
-			return Err(OsoLoaderError::EfiParse(format!(
-				"ident len is 16, but given ident len is {}",
-				ident.len(),
-			),),);
+			return Err(oso_err!(("ident len is 16, but given ident len is {}", ident.len(),)),);
 		}
 
 		// check magic number
 		// size of elf magic number is 4
 		if &ident[0..4] != ELF_MAGIC_NUMBER {
-			return Err(OsoLoaderError::EfiParse(format!("bad magic number: {:?}", &ident[0..4]),),);
+			return Err(oso_err!(("bad magic number: {:?}", &ident[0..4])),);
 		}
 
 		let file_class = FileClass::try_from(ident[ELF_FILE_CLASS_INDEX],)?;
@@ -859,13 +854,13 @@ impl FileClass {
 }
 
 impl TryFrom<u8,> for FileClass {
-	type Error = OsoLoaderError;
+	type Error = OsoError;
 
 	fn try_from(value: u8,) -> Result<Self, Self::Error,> {
 		match value {
 			ELF_32_BIT_OBJECT => Ok(Self::Bit32,),
 			ELF_64_BIT_OBJECT => Ok(Self::Bit64,),
-			_ => Err(OsoLoaderError::EfiParse(format!("invalid file class: {}", value),),),
+			_ => Err(oso_err!(("invalid file class: {}", value)),),
 		}
 	}
 }
@@ -887,17 +882,16 @@ pub enum TargetOsAbi {
 }
 
 impl TryFrom<u8,> for TargetOsAbi {
-	type Error = OsoLoaderError;
+	type Error = OsoError;
 
 	fn try_from(value: u8,) -> Result<Self, Self::Error,> {
 		match value {
 			0x0 => Ok(Self::SysV,),
 			0x53 => Ok(Self::Arm,),
 			0x61 => Ok(Self::Standalone,),
-			_ => Err(OsoLoaderError::EfiParse(format!(
-				"target os abi value is invalid or unsupported: {}",
-				value
-			),),),
+			_ => {
+				Err(oso_err!(format!("target os abi value is invalid or unsupported: {}", value)),)
+			},
 		}
 	}
 }
@@ -929,14 +923,14 @@ impl StringTable {
 	pub fn parse(binary: &[u8], offset: usize, len: usize, delimiter: u8,) -> Rslt<Self,> {
 		let (end, overflow,) = offset.overflowing_add(len,);
 		if overflow || end > binary.len() {
-			return Err(OsoLoaderError::EfiParse(format!(
+			return Err(oso_err!((
 				"string table size ({}) + offset ({}) is out of bounds for {} bytes. overflowed: \
 				 {}",
 				len,
 				offset,
 				binary.len(),
 				overflow
-			),),);
+			)),);
 		}
 
 		let mut rslt = Self::from_slice(&binary[offset..offset + len], delimiter,);
@@ -989,9 +983,7 @@ impl StringContext {
 				{
 					i += 1;
 					if i >= bytes.len() {
-						return Err(OsoLoaderError::EfiParse(format!(
-							"delimiter: {delimiter} not found"
-						),),);
+						return Err(oso_err!(("delimiter: {delimiter} not found", delimiter,)),);
 					}
 				}
 
@@ -1034,9 +1026,7 @@ impl SymbolTable {
 				Container::Big => Self::SIZE_OF_SYMBOL_64,
 			},)
 			.ok_or_else(|| {
-				OsoLoaderError::EfiParse(format!(
-					"too many elf symbols offset: {offset:#x}, count {count}"
-				),)
+				oso_err!(("too many elf symbols offset: {offset:#x}, count {count}", offset, count))
 			},)?;
 
 		let bytes = binary[offset..offset + size].to_vec();
@@ -1089,15 +1079,13 @@ impl Endian {
 }
 
 impl TryFrom<u8,> for Endian {
-	type Error = OsoLoaderError;
+	type Error = OsoError;
 
 	fn try_from(value: u8,) -> Result<Self, Self::Error,> {
 		match value {
 			1 => Ok(Self::Little,),
 			2 => Ok(Self::Big,),
-			_ => {
-				Err(OsoLoaderError::EfiParse(format!("invalid endianness flag value: {}", value),),)
-			},
+			_ => Err(oso_err!(("invalid endianness flag value: {}", value)),),
 		}
 	}
 }

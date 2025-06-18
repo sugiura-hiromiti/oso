@@ -2,6 +2,8 @@
 #![feature(unboxed_closures)]
 #![feature(associated_type_defaults)]
 
+use oso_error::Rslt;
+
 pub mod parser_particle;
 
 ///

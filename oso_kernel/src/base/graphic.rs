@@ -2,13 +2,12 @@ use crate::base::graphic::color::ColorRpr;
 use crate::base::graphic::color::PixelFormat;
 use crate::base::graphic::position::Coord;
 use crate::base::graphic::position::Coordinal;
-use crate::error::GraphicError;
-use crate::error::KernelError;
 #[cfg(feature = "bgr")] use color::Bgr;
 #[cfg(feature = "bitmask")] use color::Bitmask;
 #[cfg(feature = "bltonly")] use color::BltOnly;
 #[cfg(feature = "rgb")] use color::Rgb;
 use oso_bridge::graphic::FrameBufConf;
+use oso_error::Rslt;
 use oso_proc_macro::gen_wrapper_fn;
 
 pub mod color;
@@ -35,8 +34,7 @@ pub static FRAME_BUFFER: FrameBuffer<BltOnly,> =
 /// draw to display
 #[gen_wrapper_fn(FRAME_BUFFER)]
 pub trait DisplayDraw {
-	fn put_pixel(&self, coord: &impl Coordinal, color: &impl ColorRpr,)
-	-> Result<(), KernelError,>;
+	fn put_pixel(&self, coord: &impl Coordinal, color: &impl ColorRpr,) -> Rslt<(),>;
 
 	/// # Params
 	///
@@ -58,14 +56,14 @@ pub trait DisplayDraw {
 		left_top: &impl Coordinal,
 		right_bottom: &impl Coordinal,
 		color: &impl ColorRpr,
-	) -> Result<(), KernelError,>;
+	) -> Rslt<(),>;
 
 	fn outline_rectangle(
 		&self,
 		left_top: &impl Coordinal,
 		right_bottom: &impl Coordinal,
 		color: &impl ColorRpr,
-	) -> Result<(), KernelError,>;
+	) -> Rslt<(),>;
 }
 
 /// contains frame buffer itself & some helper data like display width/height, pixel format ..
@@ -150,9 +148,7 @@ impl<P: PixelFormat,> FrameBuffer<P,> {
 }
 
 impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
-	fn put_pixel(
-		&self, coord: &impl Coordinal, color: &impl ColorRpr,
-	) -> Result<(), KernelError,> {
+	fn put_pixel(&self, coord: &impl Coordinal, color: &impl ColorRpr,) -> Rslt<(),> {
 		let pos = self.pos(coord,);
 		let pxl = self.slice_mut(pos, 3,);
 		let color = self.drawer.color_repr(color,);
@@ -168,7 +164,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 		left_top: &impl Coordinal,
 		right_bottom: &impl Coordinal,
 		color: &impl ColorRpr,
-	) -> Result<(), KernelError,> {
+	) -> Rslt<(),> {
 		if left_top.x() > right_bottom.x()
 			|| left_top.y() > right_bottom.y()
 			|| right_bottom.x() > self.width
@@ -204,7 +200,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 		left_top: &impl Coordinal,
 		right_bottom: &impl Coordinal,
 		color: &impl ColorRpr,
-	) -> Result<(), KernelError,> {
+	) -> Rslt<(),> {
 		if left_top.x() > right_bottom.x()
 			|| left_top.y() > right_bottom.y()
 			|| right_bottom.x() > self.width

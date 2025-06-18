@@ -12,25 +12,6 @@ pub mod base;
 pub mod driver;
 pub mod gui;
 
-pub mod error {
-	#[derive(Debug,)]
-	pub enum KernelError {
-		Graphics(GraphicError,),
-	}
-
-	#[derive(Debug,)]
-	pub enum GraphicError {
-		InvalidCoordinate,
-	}
-	impl From<KernelError,> for core::fmt::Error {
-		fn from(_value: KernelError,) -> Self {
-			core::fmt::Error
-		}
-	}
-}
-
-pub type Rslt<T,> = Result<T, error::KernelError,>;
-
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo,) -> ! {
 	// println!("{}", info);
