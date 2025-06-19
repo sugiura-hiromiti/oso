@@ -6,35 +6,34 @@ use oso_error::Rslt;
 
 pub mod parser_particle;
 
+pub trait DoParse {
+	type Output;
+	fn parse<C,>(&self, context: C,) -> Rslt<Self::Output,>;
+}
+
 ///
-pub trait ParserFeed {
-	fn repeat() {}
+pub trait ParserFeed<T,> {
 }
 
-// pub trait ParserParticle<T,> {
-// 	type Output = T;
-// 	type SkipOutput;
-//
-// 	fn convert<C,>(&self, context: C,) -> Self::Output;
-// 	fn skip<C,>(&self, context: C,) -> Self::SkipOutput;
-// }
+pub struct ParseArray;
 
-pub trait ParseParticle<T,>: SourceReader<T,> + SourceEater<T,> {
-	fn as_reader(&self,) -> &impl SourceReader<T,> {
+pub trait ParseParticle: SourceReader + SourceEater {
+	fn as_reader(&self,) -> &impl SourceReader {
 		self
 	}
 
-	fn as_runner(&self,) -> &impl SourceReader<T,> {
+	fn as_runner(&self,) -> &impl SourceReader {
 		self
 	}
 }
 
-pub trait SourceReader<T,>: Sized {
-	fn convert<C,>(context: C,) -> Rslt<T,>;
-	fn skip<D,>(distance: D,);
-	fn next();
-	fn prev();
-	fn skip_until();
+pub trait SourceReader: Sized {
+	type Particle;
+	fn skip<D,>(&self, distance: D,) -> Rslt<(),>;
+	fn next(&self,) -> Rslt<Self::Particle,>;
+	fn prev(&self,) -> Rslt<Self::Particle,>;
+	fn skip_until<C,>(&self, condition: C,);
+	fn repeat(&self, n: usize,) -> impl DoParse;
 }
 
-pub trait SourceEater<T,>: Sized {}
+pub trait SourceEater: Sized {}
