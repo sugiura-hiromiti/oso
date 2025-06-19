@@ -3,18 +3,23 @@ use super::read_le_bytes;
 use crate::Rslt;
 use crate::elf::Container;
 use crate::elf::ElfHeader;
-use crate::error::OsoLoaderError;
-use alloc::format;
+use oso_error::loader::EfiParseError;
+use oso_error::oso_err;
 
-pub fn gnu_hash_len(binary: &[u8], mut offset: usize, context: &Context,) -> Rslt<usize,> {
+pub fn gnu_hash_len(
+	binary: &[u8],
+	mut offset: usize,
+	context: &Context,
+) -> Rslt<usize, EfiParseError,> {
 	let buckets_count = read_le_bytes::<u32,>(&mut offset, binary,).unwrap() as usize;
 	let min_chain = read_le_bytes::<u32,>(&mut offset, binary,).unwrap() as usize;
 	let bloom_size = read_le_bytes::<u32,>(&mut offset, binary,).unwrap() as usize;
 	if buckets_count == 0 || min_chain == 0 || bloom_size == 0 {
-		return Err(OsoLoaderError::EfiParse(format!(
-			"invalid gnu hash: buckets_count={buckets_count} min_chain={min_chain} \
-			 bloom_size={bloom_size}"
-		),),);
+		return Err(oso_err!(EfiParseError::InvalidGnuHash {
+			buckets_count,
+			min_chain,
+			bloom_size
+		}),);
 	}
 
 	// find the last bucket
@@ -45,8 +50,11 @@ pub fn gnu_hash_len(binary: &[u8], mut offset: usize, context: &Context,) -> Rsl
 }
 
 pub fn hash_len(
-	binary: &[u8], mut offset: usize, machine: u16, context: &Context,
-) -> Rslt<usize,> {
+	binary: &[u8],
+	mut offset: usize,
+	machine: u16,
+	context: &Context,
+) -> Rslt<usize, EfiParseError,> {
 	offset = offset.saturating_add(4,);
 	let nchain = if (machine == ElfHeader::EM_FAKE_ALPHA || machine == ElfHeader::EM_S390)
 		&& context.container == Container::Big

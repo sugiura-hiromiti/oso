@@ -22,17 +22,17 @@ pub fn impl_status(spec_page: &StatusCode,) -> proc_macro2::TokenStream {
 			#(#warn_assoc)*
 			#(#error_assoc)*
 
-			pub fn ok_or(self) -> Rslt<Self,> {
+			pub fn ok_or(self) -> Rslt<Self, oso_error::loader::UefiError> {
 				use alloc::string::ToString;
 				match self {
 					#(#success_match)*
 					#(#warn_match)*
 					#(#error_match)*
-					Self(code) => Err(OsoLoaderError::Uefi("vendor custom error code".to_string())),
+					Self(code) => Err(oso_error::oso_err!(oso_error::loader::UefiError::CustomStatus)),
 				}
 			}
 
-			pub fn ok_or_with<T>(self, with: impl FnOnce(Self)->T) -> Rslt<T> {
+			pub fn ok_or_with<T>(self, with: impl FnOnce(Self) -> T) -> Rslt<T, oso_error::Loader::UefiError> {
 				let status = self.ok_or()?;
 				Ok(with(status))
 			}
@@ -76,10 +76,8 @@ fn err_match(mnemonic: &syn::Ident, msg: &String,) -> proc_macro2::TokenStream {
 	let mnemonic_str = mnemonic.to_string();
 	quote::quote! {
 	Self::#mnemonic => {
-		let mut mnemonic = #mnemonic_str.to_string();
-		mnemonic.push_str(": ");
-		mnemonic.push_str(#msg);
-		Err(OsoLoaderError::Uefi(mnemonic))
+		let mut mnemonic = concat!(#mnemonic_str, ": ", #msg);
+		Err(oso_error::oso_err!(UefiError::ErrorStatus(#mnemonic)))
 	},
 	}
 }

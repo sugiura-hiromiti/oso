@@ -2,7 +2,6 @@
 
 use super::graphic::FRAME_BUFFER;
 use crate::base::graphic::position::Coordinal;
-use crate::base::graphic::put_pixel;
 use core::fmt::Write;
 use core::ops::Add;
 use core::ops::Div;
@@ -74,7 +73,7 @@ impl<C: Coordinal,> TextBuf<C,> {
 				let bit = font_data & (0b1 << flag);
 				if bit != 0 {
 					let coord = (col_pos + i, row_pos + j,);
-					put_pixel(&coord, &"#000000",)?;
+					// put_pixel(&coord, &"#000000",)?;
 				}
 			}
 		}

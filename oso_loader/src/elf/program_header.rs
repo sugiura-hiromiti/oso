@@ -1,9 +1,11 @@
 use crate::Rslt;
 use crate::elf::read_le_bytes;
-use crate::error::OsoLoaderError;
 use alloc::format;
 use alloc::vec;
 use alloc::vec::Vec;
+use oso_error::OsoError;
+use oso_error::loader::EfiParseError;
+use oso_error::oso_err;
 
 #[derive(PartialEq, Eq,)]
 pub struct ProgramHeader {
@@ -21,7 +23,11 @@ impl ProgramHeader {
 	/// size of program header in 64bit architecture
 	const SIZE_64: usize = 56;
 
-	pub fn parse(binary: &[u8], offset: &mut usize, count: usize,) -> Rslt<Vec<Self,>,> {
+	pub fn parse(
+		binary: &[u8],
+		offset: &mut usize,
+		count: usize,
+	) -> Rslt<Vec<Self,>, EfiParseError,> {
 		assert!(count <= binary.len() / Self::SIZE_64, "binary is too small");
 
 		let mut program_headers = Vec::with_capacity(count,);
@@ -119,7 +125,7 @@ pub enum ProgramHeaderType {
 }
 
 impl TryFrom<u32,> for ProgramHeaderType {
-	type Error = OsoLoaderError;
+	type Error = OsoError<EfiParseError,>;
 
 	fn try_from(value: u32,) -> Result<Self, Self::Error,> {
 		let ty = match value {
@@ -144,9 +150,7 @@ impl TryFrom<u32,> for ProgramHeaderType {
 			0x6fff_fffb => Self::Sunwstack,
 			7 => Self::Tls,
 			_ => {
-				return Err(OsoLoaderError::EfiParse(format!(
-					"invalid program header type value: {value}"
-				),),);
+				return Err(oso_err!(EfiParseError::InvalidProgramHeaderType(value)),);
 			},
 		};
 		Ok(ty,)

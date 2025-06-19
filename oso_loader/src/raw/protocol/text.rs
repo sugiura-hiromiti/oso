@@ -1,10 +1,11 @@
-use crate::Rslt;
 use crate::into_null_terminated_utf16;
 use crate::raw::types::Boolean;
 use crate::raw::types::Status;
 use crate::raw::types::text::InputKey;
 use crate::raw::types::text::TextOutputModePtr;
 use core::ffi::c_void;
+
+type Rslt = oso_error::Rslt<Status,>;
 
 #[repr(C)]
 pub struct TextInputProtocol {

@@ -3,6 +3,7 @@
 #![feature(associated_type_defaults)]
 
 use oso_error::Rslt;
+use oso_error::parser::ParserError;
 
 pub mod parser_particle;
 
@@ -12,8 +13,7 @@ pub trait DoParse {
 }
 
 ///
-pub trait ParserFeed<T,> {
-}
+pub trait ParserFeed<T,> {}
 
 pub struct ParseArray;
 
