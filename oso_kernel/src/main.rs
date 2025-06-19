@@ -19,9 +19,8 @@ use oso_kernel::base::graphic::color::Bitmask;
 use oso_kernel::base::graphic::color::BltOnly;
 #[cfg(feature = "rgb")]
 use oso_kernel::base::graphic::color::Rgb;
-use oso_kernel::base::graphic::fill_rectangle;
-use oso_kernel::base::graphic::outline_rectangle;
-use oso_kernel::error::KernelError;
+// use oso_kernel::base::graphic::fill_rectangle;
+// use oso_kernel::base::graphic::outline_rectangle;
 use oso_kernel::init;
 use oso_kernel::println;
 
@@ -78,16 +77,16 @@ pub extern "sysv64" fn kernel_main() {
 }
 
 fn app() -> Rslt<(),> {
-	fill_rectangle(&(100, 100,), &(700, 500,), &"#abcdef",)?;
-	fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#012345",)?;
-
-	fill_rectangle(&(100, 100,), &(200, 200,), &"#fedcba",)?;
-
-	fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#ffffff",)?;
-	fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#abcdef",)?;
-	outline_rectangle(&(100, 100,), &(300, 300,), &"#fedcba",)?;
-	outline_rectangle(&(101, 101,), &(299, 299,), &"#fedcba",)?;
-	outline_rectangle(&(102, 102,), &(298, 298,), &"#fedcba",)?;
+	// fill_rectangle(&(100, 100,), &(700, 500,), &"#abcdef",)?;
+	// fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#012345",)?;
+	//
+	// fill_rectangle(&(100, 100,), &(200, 200,), &"#fedcba",)?;
+	//
+	// fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#ffffff",)?;
+	// fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#abcdef",)?;
+	// outline_rectangle(&(100, 100,), &(300, 300,), &"#fedcba",)?;
+	// outline_rectangle(&(101, 101,), &(299, 299,), &"#fedcba",)?;
+	// outline_rectangle(&(102, 102,), &(298, 298,), &"#fedcba",)?;
 
 	println!("width: {} height: {}", FRAME_BUFFER.width, FRAME_BUFFER.height);
 	println!("size: {} stride: {}", FRAME_BUFFER.size, FRAME_BUFFER.stride);

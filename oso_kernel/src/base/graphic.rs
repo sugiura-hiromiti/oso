@@ -33,9 +33,10 @@ pub static FRAME_BUFFER: FrameBuffer<BltOnly,> =
 	FrameBuffer { drawer: BltOnly, buf: 0, size: 0, width: 0, height: 0, stride: 0, };
 
 /// draw to display
-#[gen_wrapper_fn(FRAME_BUFFER)]
+// #[gen_wrapper_fn(FRAME_BUFFER)]
 pub trait DisplayDraw {
-	fn put_pixel(&self, coord: &impl Coordinal, color: &impl ColorRpr,) -> Rslt<(),>;
+	type Output = Rslt<(), GraphicError,>;
+	fn put_pixel(&self, coord: &impl Coordinal, color: &impl ColorRpr,) -> Self::Output;
 
 	/// # Params
 	///
@@ -57,14 +58,14 @@ pub trait DisplayDraw {
 		left_top: &impl Coordinal,
 		right_bottom: &impl Coordinal,
 		color: &impl ColorRpr,
-	) -> Rslt<(),>;
+	) -> Self::Output;
 
 	fn outline_rectangle(
 		&self,
 		left_top: &impl Coordinal,
 		right_bottom: &impl Coordinal,
 		color: &impl ColorRpr,
-	) -> Rslt<(),>;
+	) -> Self::Output;
 }
 
 /// contains frame buffer itself & some helper data like display width/height, pixel format ..
@@ -149,7 +150,7 @@ impl<P: PixelFormat,> FrameBuffer<P,> {
 }
 
 impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
-	fn put_pixel(&self, coord: &impl Coordinal, color: &impl ColorRpr,) -> Rslt<(),> {
+	fn put_pixel(&self, coord: &impl Coordinal, color: &impl ColorRpr,) -> Self::Output {
 		let pos = self.pos(coord,);
 		let pxl = self.slice_mut(pos, 3,);
 		let color = self.drawer.color_repr(color,);
@@ -165,7 +166,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 		left_top: &impl Coordinal,
 		right_bottom: &impl Coordinal,
 		color: &impl ColorRpr,
-	) -> Rslt<(),> {
+	) -> Self::Output {
 		if left_top.x() > right_bottom.x()
 			|| left_top.y() > right_bottom.y()
 			|| right_bottom.x() > self.width
@@ -201,7 +202,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 		left_top: &impl Coordinal,
 		right_bottom: &impl Coordinal,
 		color: &impl ColorRpr,
-	) -> Rslt<(),> {
+	) -> Self::Output {
 		if left_top.x() > right_bottom.x()
 			|| left_top.y() > right_bottom.y()
 			|| right_bottom.x() > self.width

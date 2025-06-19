@@ -87,12 +87,13 @@
 #![no_std]
 #![feature(type_alias_impl_trait)]
 
-extern crate alloc;
+// extern crate alloc;
 
 use core::fmt::Debug;
 
 pub mod kernel;
 pub mod loader;
+pub mod parser;
 
 /// A type alias for commonly used Result type with OsoError as the error type.
 ///
@@ -114,7 +115,7 @@ pub mod loader;
 /// 	if true { Ok(42,) } else { Err(oso_err!("Operation failed"),) }
 /// }
 /// ```
-pub type Rslt<T,> = Result<T, OsoError,>;
+pub type Rslt<T = (), V = (),> = Result<T, OsoError<V,>,>;
 
 /// A flexible error type for representing errors in no_std environments.
 ///
@@ -161,7 +162,7 @@ pub type Rslt<T,> = Result<T, OsoError,>;
 /// error.desc(NetworkError { status_code: 404, message: "Resource not found".into(), },);
 /// ```
 #[derive(Debug, Default,)]
-pub struct OsoError<V = (),>
+pub struct OsoError<V,>
 where V: Debug + Default
 {
 	pub from: &'static str,
@@ -198,6 +199,9 @@ where V: Debug + Default
 #[macro_export]
 macro_rules! oso_err {
 	($causal:expr) => {
+		$crate::OsoError { from: module_path!(), desc: Some($causal,), }
+	};
+	() => {
 		$crate::OsoError { from: module_path!(), ..Default::default() }
 	};
 }
@@ -238,6 +242,17 @@ impl<V: Debug + Default,> OsoError<V,> {
 	pub fn desc(&mut self, val: V,) -> &mut Self {
 		self.desc = Some(val,);
 		self
+	}
+}
+impl<V: Debug + Default,> From<OsoError<V,>,> for core::fmt::Error {
+	fn from(_value: OsoError<V,>,) -> Self {
+		core::fmt::Error
+	}
+}
+
+impl From<OsoError<(),>,> for OsoError<&str,> {
+	fn from(_value: OsoError<(),>,) -> Self {
+		oso_err!()
 	}
 }
 

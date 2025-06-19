@@ -3,6 +3,7 @@
 #![feature(associated_type_defaults)]
 
 use oso_error::Rslt;
+use oso_error::parser::ParserError;
 
 pub mod parser_particle;
 
@@ -30,7 +31,7 @@ pub trait ParseParticle<T,>: SourceReader<T,> + SourceEater<T,> {
 }
 
 pub trait SourceReader<T,>: Sized {
-	fn convert<C,>(context: C,) -> Rslt<T,>;
+	fn convert<C,>(context: C,) -> Rslt<T, ParserError,>;
 	fn skip<D,>(distance: D,);
 	fn next();
 	fn prev();

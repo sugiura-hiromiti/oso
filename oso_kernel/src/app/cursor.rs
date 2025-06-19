@@ -3,7 +3,6 @@ use crate::base::graphic::color::Color;
 use crate::base::graphic::color::ColorRpr;
 use crate::base::graphic::position::Coord;
 use crate::base::graphic::position::Coordinal;
-use crate::base::graphic::put_pixel;
 use crate::gui::monitor::desktop::DesktopObject;
 use crate::gui::monitor::desktop::Move;
 use oso_error::Rslt;
@@ -78,8 +77,8 @@ impl MouseCursorDraw for CursorBuf {
 		for y in 0..self.height {
 			for x in 0..self.width {
 				match MOUSE_CURSOR[y][x] {
-					'@' => put_pixel(&coord, &self.outline_color,)?,
-					'.' => put_pixel(&coord, &self.body_color,)?,
+					'@' => todo!(), //put_pixel(&coord, &self.outline_color,)?,
+					'.' => todo!(), //put_pixel(&coord, &self.body_color,)?,
 					_ => (),
 				}
 				*coord.x_mut() += 1;

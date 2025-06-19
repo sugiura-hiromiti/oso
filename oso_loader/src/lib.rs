@@ -78,7 +78,7 @@ fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,> {
 	utf16_repr
 }
 
-pub fn get_device_tree() -> Rslt<NonNull<ConfigTable,>,> {
+pub fn get_device_tree() -> Rslt<NonNull<ConfigTable,>, &'static str,> {
 	unsafe { system_table().as_ref() }.device_tree()?.ok_or(oso_err!("failed to get device tree"),)
 }
 
