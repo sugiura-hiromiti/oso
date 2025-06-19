@@ -5,4 +5,3 @@ mnt/
 *.img
 *.elf
 *.sh
-rust-toolchain.toml
