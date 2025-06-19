@@ -3,6 +3,8 @@ use crate::elf::read_le_bytes;
 use alloc::format;
 use alloc::vec::Vec;
 use oso_error::Rslt;
+use oso_error::loader::EfiParseError;
+use oso_error::loader::EfiParseStage;
 use oso_error::oso_err;
 
 /// Undefined section.
@@ -119,7 +121,11 @@ pub struct SectionHeader {
 impl SectionHeader {
 	const SIZE_64: usize = 64;
 
-	pub fn parse(binary: &[u8], offset: &mut usize, count: usize,) -> Rslt<Vec<Self,>,> {
+	pub fn parse(
+		binary: &[u8],
+		offset: &mut usize,
+		count: usize,
+	) -> Rslt<Vec<Self,>, EfiParseError,> {
 		assert!(count <= binary.len() / Self::SIZE_64, "binary is too small");
 
 		let mut section_headers = Vec::with_capacity(count,);
@@ -133,7 +139,7 @@ impl SectionHeader {
 		Ok(section_headers,)
 	}
 
-	fn parse_fields(binary: &[u8], offset: &mut usize,) -> Rslt<Self,> {
+	fn parse_fields(binary: &[u8], offset: &mut usize,) -> Rslt<Self, EfiParseError,> {
 		macro_rules! fields {
 			($field:ident) => {
 				let Some($field,) = read_le_bytes(offset, binary,) else {
@@ -183,7 +189,7 @@ impl SectionHeader {
 		todo!()
 	}
 
-	pub fn check_size(&self, size: usize,) -> Rslt<(),> {
+	pub fn check_size(&self, size: usize,) -> Rslt<(), EfiParseError,> {
 		if self.ty == SHT_NOBITS || self.size == 0 {
 			return Ok((),);
 		}
@@ -192,8 +198,8 @@ impl SectionHeader {
 		if overflow || end > size as u64 {
 			return Err(oso_err!(EfiParseError::SizeOverflow {
 				stage:    EfiParseStage::SectionHeader,
-				name:     self.name,
-				expected: size,
+				name:     self.name as u64,
+				expected: size as u64,
 				base:     self.offset,
 				size:     self.size,
 			}),);
@@ -203,8 +209,8 @@ impl SectionHeader {
 		if overflow {
 			return Err(oso_err!(EfiParseError::SizeOverflow {
 				stage:    EfiParseStage::SectionHeader,
-				name:     self.name,
-				expected: size,
+				name:     self.name as u64,
+				expected: size as u64,
 				base:     self.address,
 				size:     self.size,
 			}),);
@@ -235,7 +241,7 @@ pub fn get_string_table(
 	section_headers: &[SectionHeader],
 	mut idx: usize,
 	binary: &[u8],
-) -> Rslt<StringTable,> {
+) -> Rslt<StringTable, EfiParseError,> {
 	if idx == SHN_XINDEX as usize {
 		if section_headers.is_empty() {
 			return Ok(StringTable::default(),);

@@ -21,6 +21,8 @@ use core::ops::Sub;
 use core::ops::SubAssign;
 use core::usize;
 use oso_error::OsoError;
+use oso_error::loader::EfiParseError;
+use oso_error::loader::EfiParseStage;
 use oso_error::oso_err;
 use program_header::ProgramHeaderType;
 use section_header::SHT_GNU_VERDEF;
@@ -81,7 +83,7 @@ pub struct Elf {
 }
 
 impl Elf {
-	pub fn parse(binary: &[u8],) -> Rslt<Self,> {
+	pub fn parse(binary: &[u8],) -> Rslt<Self, EfiParseError,> {
 		let header = ElfHeader::parse(binary,)?;
 		oso_proc_macro::test_elf_header_parse!(header);
 
@@ -665,7 +667,7 @@ impl ElfHeader {
 	/// LSI Logic 16-bit DSP Processor
 	pub const EM_ZSP: u16 = 79;
 
-	pub fn parse(binary: &[u8],) -> Rslt<Self,> {
+	pub fn parse(binary: &[u8],) -> Rslt<Self, EfiParseError,> {
 		let ident = &binary[..ELF_IDENT_SIZE];
 		let ident = ElfHeaderIdent::new(ident,)?;
 		let remain = &binary[ELF_IDENT_SIZE..];
@@ -685,7 +687,10 @@ impl ElfHeader {
 	}
 }
 
-fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> Rslt<ElfHeader,> {
+fn header_flag_fields(
+	ident: ElfHeaderIdent,
+	ident_remain: &[u8],
+) -> Rslt<ElfHeader, EfiParseError,> {
 	let offset = &mut 0;
 
 	macro_rules! fields {
@@ -693,8 +698,10 @@ fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> Rslt<ElfHe
 			let $field =
 				read_le_bytes(offset, ident_remain,).ok_or_else(|| {
 					let field = stringify!($field);
-					let msg =("end of binary. unable to parse field of header flag field", field);
-					oso_error::oso_err!(msg)
+					oso_error::oso_err!(oso_error::loader::EfiParseError::EndOfBinary{
+						parser_pos: field,
+						stage: oso_error::loader::EfiParseStage::Header
+					})
 				})?;
 		};
 		($($fields:ident,)*)=>{
@@ -704,10 +711,11 @@ fn header_flag_fields(ident: ElfHeaderIdent, ident_remain: &[u8],) -> Rslt<ElfHe
 		};
 	}
 
-	let ty: u16 = read_le_bytes(offset, ident_remain,).ok_or(oso_err!((
-		"end of binary. unable to parse {} field of header flag field",
-		stringify!(ty)
-	)),)?;
+	let ty: u16 =
+		read_le_bytes(offset, ident_remain,).ok_or(oso_err!(EfiParseError::EndOfBinary {
+			parser_pos: "ty",
+			stage:      oso_error::loader::EfiParseStage::Header,
+		}),)?;
 	let ty = ElfType::try_from(ty,)?;
 	fields!(
 		machine,
@@ -781,7 +789,7 @@ impl ElfType {
 }
 
 impl TryFrom<u16,> for ElfType {
-	type Error = OsoError;
+	type Error = OsoError<EfiParseError,>;
 
 	fn try_from(value: u16,) -> Result<Self, Self::Error,> {
 		let ty = match value {
@@ -795,7 +803,7 @@ impl TryFrom<u16,> for ElfType {
 			0xfeff => Self::OsSpecificRangeEnd,
 			0xff00 => Self::ProcessorSpecificRangeStart,
 			0xffff => Self::OsSpecificRangeEnd,
-			_ => return Err(oso_err!(("unknown type: {value}", value)),),
+			_ => return Err(oso_err!(EfiParseError::UnknownEfiType(value)),),
 		};
 		Ok(ty,)
 	}
@@ -811,15 +819,17 @@ pub struct ElfHeaderIdent {
 }
 
 impl ElfHeaderIdent {
-	fn new(ident: &[u8],) -> Rslt<Self,> {
+	fn new(ident: &[u8],) -> Rslt<Self, EfiParseError,> {
 		if ident.len() != ELF_IDENT_SIZE {
-			return Err(oso_err!(("ident len is 16, but given ident len is {}", ident.len(),)),);
+			return Err(oso_err!(EfiParseError::InvalidIdentLen(ident.len())),);
 		}
 
 		// check magic number
 		// size of elf magic number is 4
 		if &ident[0..4] != ELF_MAGIC_NUMBER {
-			return Err(oso_err!(("bad magic number: {:?}", &ident[0..4])),);
+			return Err(oso_err!(EfiParseError::BadMagicNumber(
+				ident[0], ident[1], ident[2], ident[3]
+			)),);
 		}
 
 		let file_class = FileClass::try_from(ident[ELF_FILE_CLASS_INDEX],)?;
@@ -854,13 +864,13 @@ impl FileClass {
 }
 
 impl TryFrom<u8,> for FileClass {
-	type Error = OsoError;
+	type Error = OsoError<EfiParseError,>;
 
 	fn try_from(value: u8,) -> Result<Self, Self::Error,> {
 		match value {
 			ELF_32_BIT_OBJECT => Ok(Self::Bit32,),
 			ELF_64_BIT_OBJECT => Ok(Self::Bit64,),
-			_ => Err(oso_err!(("invalid file class: {}", value)),),
+			_ => Err(oso_err!(EfiParseError::InvalidFileClass(value)),),
 		}
 	}
 }
@@ -882,16 +892,14 @@ pub enum TargetOsAbi {
 }
 
 impl TryFrom<u8,> for TargetOsAbi {
-	type Error = OsoError;
+	type Error = OsoError<EfiParseError,>;
 
 	fn try_from(value: u8,) -> Result<Self, Self::Error,> {
 		match value {
 			0x0 => Ok(Self::SysV,),
 			0x53 => Ok(Self::Arm,),
 			0x61 => Ok(Self::Standalone,),
-			_ => {
-				Err(oso_err!(format!("target os abi value is invalid or unsupported: {}", value)),)
-			},
+			_ => Err(oso_err!(EfiParseError::OsAbiOutOfSupport(value)),),
 		}
 	}
 }
@@ -920,17 +928,21 @@ impl StringTable {
 	/// - bytes
 	///
 	/// bytes expected to be entire elf file
-	pub fn parse(binary: &[u8], offset: usize, len: usize, delimiter: u8,) -> Rslt<Self,> {
+	pub fn parse(
+		binary: &[u8],
+		offset: usize,
+		len: usize,
+		delimiter: u8,
+	) -> Rslt<Self, EfiParseError,> {
 		let (end, overflow,) = offset.overflowing_add(len,);
 		if overflow || end > binary.len() {
-			return Err(oso_err!((
-				"string table size ({}) + offset ({}) is out of bounds for {} bytes. overflowed: \
-				 {}",
-				len,
-				offset,
-				binary.len(),
-				overflow
-			)),);
+			return Err(oso_err!(EfiParseError::SizeOverflow {
+				stage:    EfiParseStage::StringTable,
+				name:     0,
+				expected: binary.len() as u64,
+				base:     offset as u64,
+				size:     len as u64,
+			}),);
 		}
 
 		let mut rslt = Self::from_slice(&binary[offset..offset + len], delimiter,);
@@ -974,7 +986,7 @@ pub enum StringContext {
 }
 
 impl StringContext {
-	fn read_bytes(&self, bytes: &[u8],) -> Rslt<String,> {
+	fn read_bytes(&self, bytes: &[u8],) -> Rslt<String, EfiParseError,> {
 		let bytes = match self {
 			StringContext::Delimiter(delimiter,) => {
 				let mut i = 0;
@@ -983,7 +995,7 @@ impl StringContext {
 				{
 					i += 1;
 					if i >= bytes.len() {
-						return Err(oso_err!(("delimiter: {delimiter} not found", delimiter,)),);
+						return Err(oso_err!(EfiParseError::DelimiterNotFound(*delimiter)),);
 					}
 				}
 
@@ -993,7 +1005,6 @@ impl StringContext {
 			StringContext::Length(l,) => &bytes[..*l],
 		};
 
-		// TODO: check encoding is actually utf8
 		let rslt = String::from_utf8_lossy(bytes,);
 		Ok(rslt.to_string(),)
 	}
@@ -1019,15 +1030,18 @@ impl SymbolTable {
 	/// size of symbol structure in 64bit.
 	const SIZE_OF_SYMBOL_64: usize = 4 + 1 + 1 + 2 + 8 + 8;
 
-	fn parse(binary: &[u8], offset: usize, count: usize, context: &Context,) -> Rslt<Self,> {
+	fn parse(
+		binary: &[u8],
+		offset: usize,
+		count: usize,
+		context: &Context,
+	) -> Rslt<Self, EfiParseError,> {
 		let size = count
 			.checked_mul(match context.container {
 				Container::Little => todo!(),
 				Container::Big => Self::SIZE_OF_SYMBOL_64,
 			},)
-			.ok_or_else(|| {
-				oso_err!(("too many elf symbols offset: {offset:#x}, count {count}", offset, count))
-			},)?;
+			.ok_or_else(|| oso_err!(EfiParseError::TooManySymbolsOffset { offset, count }),)?;
 
 		let bytes = binary[offset..offset + size].to_vec();
 
@@ -1079,13 +1093,13 @@ impl Endian {
 }
 
 impl TryFrom<u8,> for Endian {
-	type Error = OsoError;
+	type Error = OsoError<EfiParseError,>;
 
 	fn try_from(value: u8,) -> Result<Self, Self::Error,> {
 		match value {
 			1 => Ok(Self::Little,),
 			2 => Ok(Self::Big,),
-			_ => Err(oso_err!(("invalid endianness flag value: {}", value)),),
+			_ => Err(oso_err!(EfiParseError::InvalidEndianFlag(value)),),
 		}
 	}
 }
@@ -1284,7 +1298,10 @@ impl Dynamic {
 	/// The versioning entry types. The next are defined as part of the GNU extension
 	pub const DT_VERSYM: u64 = 0x6fff_fff0;
 
-	fn parse(binary: &[u8], program_headers: &Vec<ProgramHeader,>,) -> Rslt<Option<Self,>,> {
+	fn parse(
+		binary: &[u8],
+		program_headers: &Vec<ProgramHeader,>,
+	) -> Rslt<Option<Self,>, EfiParseError,> {
 		for program_header in program_headers {
 			if program_header.ty == ProgramHeaderType::Dynamic {
 				let offset = program_header.offset as usize;
@@ -1496,7 +1513,7 @@ impl RelocationSection {
 		size: usize,
 		is_addend: bool,
 		ctx: &Context,
-	) -> Rslt<Self,> {
+	) -> Rslt<Self, EfiParseError,> {
 		let bytes = if size != 0 { &binary[offset..offset + size] } else { &[] }.to_vec();
 
 		Ok(Self {
@@ -1653,7 +1670,7 @@ impl SymbolVersionSection {
 		binary: &[u8],
 		section_headers: &Vec<SectionHeader,>,
 		ctx: &Context,
-	) -> Rslt<Option<Self,>,> {
+	) -> Rslt<Option<Self,>, EfiParseError,> {
 		let (offset, size,) = if let Some(section_header,) =
 			section_headers.iter().find(|section_header| section_header.ty == SHT_GNU_VERSYM,)
 		{
@@ -1677,7 +1694,7 @@ impl VersionDefinitionSection {
 		binary: &[u8],
 		section_headers: &Vec<SectionHeader,>,
 		ctx: &Context,
-	) -> Rslt<Option<Self,>,> {
+	) -> Rslt<Option<Self,>, EfiParseError,> {
 		let (offset, size, count,) = if let Some(section_header,) =
 			section_headers.iter().find(|section_header| section_header.ty == SHT_GNU_VERDEF,)
 		{
@@ -1705,7 +1722,7 @@ impl VersionNeededSection {
 		binary: &[u8],
 		section_headers: &Vec<SectionHeader,>,
 		ctx: &Context,
-	) -> Rslt<Option<Self,>,> {
+	) -> Rslt<Option<Self,>, EfiParseError,> {
 		let (offset, size, count,) = if let Some(section_header,) =
 			section_headers.iter().find(|section_header| section_header.ty == SHT_GNU_VERNEED,)
 		{
