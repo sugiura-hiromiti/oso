@@ -1,9 +1,9 @@
 use super::StringTable;
-use crate::Rslt;
 use crate::elf::read_le_bytes;
-use crate::error::OsoLoaderError;
 use alloc::format;
 use alloc::vec::Vec;
+use oso_error::Rslt;
+use oso_error::oso_err;
 
 /// Undefined section.
 pub const SHN_UNDEF: u32 = 0;
@@ -137,10 +137,10 @@ impl SectionHeader {
 		macro_rules! fields {
 			($field:ident) => {
 				let Some($field,) = read_le_bytes(offset, binary,) else {
-					return Err(OsoLoaderError::EfiParse(format!(
-						"end of binary. unable to parse {} field of section header",
-						stringify!($field)
-					),),);
+					return Err(oso_err!(EfiParseError::EndOfBinary {
+						parser_pos: stringify!($field),
+						stage: oso_error::loader::EfiParseStage::SectionHeader
+					}),);
 				};
 			};
 			($($fields:ident,)*) => {
@@ -190,18 +190,24 @@ impl SectionHeader {
 
 		let (end, overflow,) = self.offset.overflowing_add(self.size,);
 		if overflow || end > size as u64 {
-			return Err(OsoLoaderError::EfiParse(format!(
-				"section {} size ({}) + offset ({}) is out of bounds. Overflowed: {}",
-				self.name, self.offset, self.size, overflow
-			),),);
+			return Err(oso_err!(EfiParseError::SizeOverflow {
+				stage:    EfiParseStage::SectionHeader,
+				name:     self.name,
+				expected: size,
+				base:     self.offset,
+				size:     self.size,
+			}),);
 		}
 
 		let (_, overflow,) = self.address.overflowing_add(self.size,);
 		if overflow {
-			return Err(OsoLoaderError::EfiParse(format!(
-				"section {} size ({}) + address ({}) is out of bounds. Overflowed: {}",
-				self.name, self.address, self.size, overflow
-			),),);
+			return Err(oso_err!(EfiParseError::SizeOverflow {
+				stage:    EfiParseStage::SectionHeader,
+				name:     self.name,
+				expected: size,
+				base:     self.address,
+				size:     self.size,
+			}),);
 		}
 
 		Ok((),)

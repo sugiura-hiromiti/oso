@@ -2,7 +2,6 @@
 
 use crate::Rslt;
 use crate::c_style_enum;
-use crate::error::OsoLoaderError;
 use core::ffi::c_void;
 
 pub mod capsule;

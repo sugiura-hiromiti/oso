@@ -6,8 +6,9 @@ use crate::base::graphic::position::Coordinal;
 #[cfg(feature = "bitmask")] use color::Bitmask;
 #[cfg(feature = "bltonly")] use color::BltOnly;
 #[cfg(feature = "rgb")] use color::Rgb;
-use oso_bridge::graphic::FrameBufConf;
 use oso_error::Rslt;
+use oso_error::kernel::GraphicError;
+use oso_error::oso_err;
 use oso_proc_macro::gen_wrapper_fn;
 
 pub mod color;
@@ -170,7 +171,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 			|| right_bottom.x() > self.width
 			|| right_bottom.y() > self.height
 		{
-			return Err(KernelError::Graphics(GraphicError::InvalidCoordinate,),);
+			return Err(oso_err!(GraphicError::InvalidCoordinate),);
 		}
 
 		// PERF: convert color into `[u8; 3]` before loop because this reduce determination just
@@ -206,7 +207,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 			|| right_bottom.x() > self.width
 			|| right_bottom.y() > self.height
 		{
-			return Err(KernelError::Graphics(GraphicError::InvalidCoordinate,),);
+			return Err(oso_err!(GraphicError::InvalidCoordinate),);
 		}
 
 		let width = right_bottom.x() - left_top.x() - 1;
