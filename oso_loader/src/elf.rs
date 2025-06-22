@@ -966,7 +966,7 @@ impl StringTable {
 	}
 
 	fn get_at(&self, offset: usize,) -> Option<String,> {
-		match self.strings.binary_search_by_key(&offset, |(key, _value,)| *key,) {
+		let rslt = match self.strings.binary_search_by_key(&offset, |(key, _value,)| *key,) {
 			Ok(index,) => Some(self.strings[index].1.clone(),),
 			Err(index,) => {
 				if index == 0 {
@@ -975,7 +975,8 @@ impl StringTable {
 				let (string_begin_offset, entire_string,) = &self.strings[index - 1];
 				entire_string.get(offset - string_begin_offset..,).map(|s| s.to_string(),)
 			},
-		}
+		};
+		rslt
 	}
 }
 
