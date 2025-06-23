@@ -32,7 +32,7 @@ pub fn impl_status(spec_page: &StatusCode,) -> proc_macro2::TokenStream {
 				}
 			}
 
-			pub fn ok_or_with<T>(self, with: impl FnOnce(Self) -> T) -> Rslt<T, oso_error::Loader::UefiError> {
+			pub fn ok_or_with<T>(self, with: impl FnOnce(Self) -> T) -> Rslt<T, oso_error::loader::UefiError> {
 				let status = self.ok_or()?;
 				Ok(with(status))
 			}
@@ -77,7 +77,7 @@ fn err_match(mnemonic: &syn::Ident, msg: &String,) -> proc_macro2::TokenStream {
 	quote::quote! {
 	Self::#mnemonic => {
 		let mut mnemonic = concat!(#mnemonic_str, ": ", #msg);
-		Err(oso_error::oso_err!(UefiError::ErrorStatus(#mnemonic)))
+		Err(oso_error::oso_err!(UefiError::ErrorStatus(mnemonic)))
 	},
 	}
 }
@@ -98,8 +98,6 @@ pub fn elf_header_info() -> proc_macro2::TokenStream {
 			panic!("{}", module_path!())
 		},
 	};
-
-	Diagnostic::new(Level::Note, format!("header:\n{header:#?}"),).emit();
 
 	let ident = elf_header_ident_build(header,);
 	let ty = parse_ty(header,);

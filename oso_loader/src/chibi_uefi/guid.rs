@@ -1,7 +1,7 @@
 use crate::Rslt;
-use crate::error::OsoLoaderError;
 use crate::raw::types::Guid;
 use alloc::format;
+use oso_error::oso_err;
 
 #[macro_export]
 macro_rules! guid {
@@ -130,14 +130,14 @@ impl Hex {
 }
 
 impl TryFrom<char,> for Hex {
-	type Error = OsoLoaderError;
+	type Error = oso_error::OsoError<&'static str,>;
 
 	fn try_from(value: char,) -> Result<Self, Self::Error,> {
 		let value = value as u8;
 		let code = match value {
 			c if Hex::is_valid_hex(c,) => Hex::to_hex(c,),
 			_ => {
-				return Err(OsoLoaderError::Uefi(format!("invalid hex char. 0~f are expected"),),);
+				return Err(oso_err!("invalid hex char. 0~f are expected"),);
 			},
 		};
 		Ok(code,)

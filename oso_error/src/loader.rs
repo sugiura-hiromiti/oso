@@ -1,3 +1,5 @@
+use crate::OsoError;
+
 #[derive(Debug, Default,)]
 pub enum EfiParseError {
 	EndOfBinary {
@@ -47,4 +49,11 @@ pub enum UefiError {
 	#[default]
 	CustomStatus,
 	ErrorStatus(&'static str,),
+	Custom(&'static str,),
+}
+
+impl From<OsoError<UefiError,>,> for OsoError<(),> {
+	fn from(value: OsoError<UefiError,>,) -> Self {
+		OsoError { from: value.from, desc: Some((),), }
+	}
 }

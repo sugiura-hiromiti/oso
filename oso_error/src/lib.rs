@@ -163,7 +163,7 @@ pub type Rslt<T = (), V = (),> = Result<T, OsoError<V,>,>;
 /// ```
 #[derive(Debug, Default,)]
 pub struct OsoError<V,>
-where V: Debug + Default
+where V: Debug
 {
 	pub from: &'static str,
 	pub desc: Option<V,>,
@@ -244,6 +244,7 @@ impl<V: Debug + Default,> OsoError<V,> {
 		self
 	}
 }
+
 impl<V: Debug + Default,> From<OsoError<V,>,> for core::fmt::Error {
 	fn from(_value: OsoError<V,>,) -> Self {
 		core::fmt::Error

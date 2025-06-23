@@ -1,8 +1,6 @@
 use super::Handle;
 use super::image_handle;
 use super::table::boot_services;
-use crate::Rslt;
-use crate::error::OsoLoaderError;
 use crate::guid;
 use crate::raw::protocol::device_path::DevicePathProtocol;
 use crate::raw::protocol::file::SimpleFileSystemProtocol;
@@ -14,10 +12,14 @@ use crate::raw::types::UnsafeHandle;
 use crate::raw::types::file::FileInfo;
 use crate::raw::types::file::FileSystemInfo;
 use crate::raw::types::file::FileSystemVolumeLabel;
-use alloc::string::ToString;
 use core::ffi::c_void;
 use core::ptr;
 use core::ptr::NonNull;
+use oso_error::Rslt;
+use oso_error::loader::UefiError;
+use oso_error::oso_err;
+
+type RsltU<T,> = Rslt<T, UefiError,>;
 
 pub trait Protocol {
 	const GUID: Guid;
@@ -52,7 +54,9 @@ impl Protocol for GraphicsOutputProtocol {
 }
 
 impl BootServices {
-	pub unsafe fn locate_handle_buffer(&self, ty: HandleSearchType,) -> Rslt<&mut [UnsafeHandle],> {
+	pub unsafe fn locate_handle_buffer(
+		&self, ty: HandleSearchType,
+	) -> RsltU<&mut [UnsafeHandle],> {
 		let (ty, guid, key,) = match ty {
 			HandleSearchType::AllHandles => (0, ptr::null(), ptr::null(),),
 			HandleSearchType::ByRegisterNotify(protocol_search_key,) => {
@@ -76,18 +80,17 @@ impl BootServices {
 		HandleSearchType::ByProtocol(&P::GUID,)
 	}
 
-	pub unsafe fn handles_for_protocol<P: Protocol,>(&self,) -> Rslt<&mut [UnsafeHandle],> {
+	pub unsafe fn handles_for_protocol<P: Protocol,>(&self,) -> RsltU<&mut [UnsafeHandle],> {
 		let search_ty = self.protocol_for::<P>();
 		unsafe { self.locate_handle_buffer(search_ty,) }
 	}
 
-	pub unsafe fn handle_for_protocol<P: Protocol,>(&self,) -> Rslt<Handle,> {
+	pub unsafe fn handle_for_protocol<P: Protocol,>(&self,) -> RsltU<Handle,> {
 		let handles = unsafe { self.handles_for_protocol::<P>() }?;
-		let first_handle = *handles
-			.first()
-			.ok_or(OsoLoaderError::Uefi("no handle for protocol obtained".to_string(),),)?;
+		let first_handle =
+			*handles.first().ok_or(oso_err!(UefiError::Custom("length of handles is 0")),)?;
 		unsafe { Handle::from_ptr(first_handle,) }
-			.ok_or(OsoLoaderError::Uefi("handle is null".to_string(),),)
+			.ok_or(oso_err!(UefiError::Custom("handle is null")),)
 	}
 
 	/// # Parms
@@ -113,7 +116,7 @@ impl BootServices {
 		&self,
 		necessity: OpenProtoNecessity,
 		attr: OpenProtoAttr,
-	) -> Rslt<ProtocolInterface<P,>,> {
+	) -> RsltU<ProtocolInterface<P,>,> {
 		let mut interface = ptr::null_mut();
 		unsafe {
 			(self.open_protocol)(
@@ -138,12 +141,12 @@ impl BootServices {
 	pub fn open_protocol_exclusive<P: Protocol,>(
 		&self,
 		handle: Handle,
-	) -> Rslt<ProtocolInterface<P,>,> {
+	) -> RsltU<ProtocolInterface<P,>,> {
 		let necessity = OpenProtoNecessity::for_app(handle,);
 		unsafe { self.open_protocol(necessity, OpenProtoAttr::EXCULSIVE,) }
 	}
 
-	pub fn open_protocol_with<P: Protocol,>(&self,) -> Rslt<ProtocolInterface<P,>,> {
+	pub fn open_protocol_with<P: Protocol,>(&self,) -> RsltU<ProtocolInterface<P,>,> {
 		let bs = boot_services();
 		let handle = unsafe { bs.handle_for_protocol::<P>() }?;
 		let necessity = OpenProtoNecessity::for_app(handle,);
@@ -155,7 +158,7 @@ impl BootServices {
 	pub fn handle_protocol<P: Protocol,>(
 		&self,
 		handle: Handle,
-	) -> Rslt<NonNull<ProtocolInterface<P,>,>,> {
+	) -> RsltU<NonNull<ProtocolInterface<P,>,>,> {
 		let interface = ptr::null_mut();
 		unsafe {
 			(self.handle_protocol)(handle.as_ptr(), &P::GUID, interface,).ok_or_with(|_| {

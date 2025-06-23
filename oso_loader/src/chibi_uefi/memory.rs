@@ -1,7 +1,7 @@
+use oso_error::loader::UefiError;
+
 use super::table::boot_services;
 use crate::Rslt;
-use crate::print;
-use crate::println;
 use crate::raw::service::BootServices;
 use crate::raw::types::PhysicalAddress;
 use crate::raw::types::Status;
@@ -12,6 +12,8 @@ use crate::raw::types::memory::MemoryType;
 use core::alloc::GlobalAlloc;
 use core::alloc::Layout;
 use core::ptr::NonNull;
+
+type RsltU<T,> = Rslt<T, UefiError,>;
 
 #[global_allocator]
 static LOADER_ALLOCATOR: LoaderAllocator = LoaderAllocator;
@@ -43,13 +45,16 @@ fn alloc_error(layout: Layout,) -> ! {
 }
 
 impl BootServices {
-	pub fn allocate_pool(&self, mem_ty: MemoryType, size: usize,) -> Rslt<NonNull<u8,>,> {
+	pub fn allocate_pool(&self, mem_ty: MemoryType, size: usize,) -> RsltU<NonNull<u8,>,> {
 		let mut buf = core::ptr::null_mut();
-		unsafe { (self.allocate_pool)(mem_ty, size, &mut buf,).ok_or()? };
-		Ok(NonNull::new(buf,).expect("allocate_pool must not return a null pointer if successful",),)
+		unsafe { (self.allocate_pool)(mem_ty, size, &mut buf,) }.ok_or()?;
+		Ok(unsafe {
+			// "allocate_pool must not return a null pointer if successful
+			NonNull::new_unchecked(buf,)
+		},)
 	}
 
-	pub fn free_pool(&self, ptr: &mut u8,) -> Rslt<Status,> {
+	pub fn free_pool(&self, ptr: &mut u8,) -> RsltU<Status,> {
 		unsafe { (self.free_pool)(ptr,).ok_or() }
 	}
 
@@ -59,7 +64,7 @@ impl BootServices {
 		mem_ty: MemoryType,
 		page_count: usize,
 		mut alloc_head: PhysicalAddress,
-	) -> Rslt<PhysicalAddress,> {
+	) -> RsltU<PhysicalAddress,> {
 		unsafe { (self.allocate_pages)(allocation_type, mem_ty, page_count, &mut alloc_head,) }
 			.ok_or_with(|_| alloc_head,)
 	}
@@ -93,7 +98,7 @@ impl BootServices {
 		(map_size, descriptor_size,)
 	}
 
-	pub fn get_memory_map(&self, buf: &mut [u8],) -> Rslt<MemoryMapInfo,> {
+	pub fn get_memory_map(&self, buf: &mut [u8],) -> RsltU<MemoryMapInfo,> {
 		let mut map_size = buf.len();
 		let map_buf = buf.as_mut_ptr().cast::<MemoryDescriptor>();
 		let mut map_key = 0;

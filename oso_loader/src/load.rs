@@ -19,7 +19,10 @@ use oso_bridge::graphic::FrameBufConf;
 pub fn kernel() -> Rslt<PhysicalAddress,> {
 	let mut kernel_file = open_kernel_file()?;
 	let contents = unsafe { kernel_file.as_mut() }.read_as_bytes()?;
-	let elf = Elf::parse(&contents,)?;
+	let elf = match Elf::parse(&contents,) {
+		Ok(elf,) => elf,
+		Err(e,) => panic!("unrecoverable error: {e:?}"),
+	};
 
 	// #[cfg(target_arch = "aarch64")]
 	// test_elf_parse(&elf,);

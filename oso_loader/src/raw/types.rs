@@ -3,6 +3,7 @@
 use crate::Rslt;
 use crate::c_style_enum;
 use core::ffi::c_void;
+use oso_error::loader::UefiError;
 
 pub mod capsule;
 pub mod event;
@@ -87,6 +88,7 @@ impl Guid {
 }
 
 oso_proc_macro::status_from_spec!(2.11);
+
 // #[repr(usize)]
 // #[derive(Eq, PartialEq, Clone, Debug,)]
 // pub enum Status {}

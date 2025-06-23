@@ -4,8 +4,8 @@ use crate::raw::types::Status;
 use crate::raw::types::text::InputKey;
 use crate::raw::types::text::TextOutputModePtr;
 use core::ffi::c_void;
-
-type Rslt = oso_error::Rslt<Status,>;
+use oso_error::Rslt;
+use oso_error::loader::UefiError;
 
 #[repr(C)]
 pub struct TextInputProtocol {
@@ -37,7 +37,7 @@ impl TextOutputProtocol {
 	/// # Params
 	///
 	/// this function expects `s` to be encoded as utf8
-	pub fn output(&mut self, s: impl AsRef<str,>,) -> Rslt {
+	pub fn output(&mut self, s: impl AsRef<str,>,) -> Rslt<Status, UefiError,> {
 		let utf16_repr = into_null_terminated_utf16(s,);
 		let utf16_repr = utf16_repr.as_ptr();
 		unsafe { (self.output)(self, utf16_repr,) }.ok_or()
@@ -50,7 +50,7 @@ impl TextOutputProtocol {
 		unsafe { (self.test)(self, utf16_repr,) }.is_success()
 	}
 
-	pub fn clear(&mut self,) -> Rslt {
+	pub fn clear(&mut self,) -> Rslt<Status, UefiError,> {
 		unsafe { (self.clear)(self,) }.ok_or()
 	}
 }
