@@ -9,7 +9,7 @@ use crate::base::graphic::position::Coordinal;
 use oso_error::Rslt;
 use oso_error::kernel::GraphicError;
 use oso_error::oso_err;
-use oso_proc_macro::gen_wrapper_fn;
+// use oso_proc_macro::gen_wrapper_fn;
 
 pub mod color;
 pub mod position;

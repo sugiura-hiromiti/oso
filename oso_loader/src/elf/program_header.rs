@@ -1,7 +1,6 @@
 use crate::Rslt;
 use crate::elf::read_le_bytes;
 use alloc::format;
-use alloc::vec;
 use alloc::vec::Vec;
 use oso_error::OsoError;
 use oso_error::loader::EfiParseError;

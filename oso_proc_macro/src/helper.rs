@@ -452,7 +452,7 @@ pub fn program_headers_info() -> proc_macro2::TokenStream {
 	},);
 
 	quote::quote! {
-		vec![
+		alloc::vec![
 			#(#program_headers, )*
 		]
 	}

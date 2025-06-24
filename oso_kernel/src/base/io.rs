@@ -72,7 +72,7 @@ impl<C: Coordinal,> TextBuf<C,> {
 				// drawed or not
 				let bit = font_data & (0b1 << flag);
 				if bit != 0 {
-					let coord = (col_pos + i, row_pos + j,);
+					let _coord = (col_pos + i, row_pos + j,);
 					// put_pixel(&coord, &"#000000",)?;
 				}
 			}
@@ -125,28 +125,28 @@ pub fn print(args: core::fmt::Arguments,) {
 	.expect("unable to write to console",)
 }
 
-macro_rules! to_txt {
-	(let $rslt:ident = $exp:expr) => {
-		let mut ___original = $exp.clone();
-		let mut ___num = [0; oso_kernel::base::text::MAX_DIGIT];
-		let mut ___digits = $exp.digit_count();
-
-		/// マイナスだった場合は`-`を先頭にくっつける
-		for i in 0..___digits {
-			___num[i] = ___original.shift_right() + b'0';
-		}
-
-		if $exp < 0 {
-			___num[___digits] = b'-';
-			___digits += 1;
-		}
-
-		let mut rslt = &mut ___num[..___digits];
-		rslt.reverse();
-
-		let $rslt = unsafe { core::str::from_utf8_unchecked(rslt,) };
-	};
-}
+// macro_rules! to_txt {
+// 	(let $rslt:ident = $exp:expr) => {
+// 		let mut ___original = $exp.clone();
+// 		let mut ___num = [0; oso_kernel::base::text::MAX_DIGIT];
+// 		let mut ___digits = $exp.digit_count();
+//
+// 		/// マイナスだった場合は`-`を先頭にくっつける
+// 		for i in 0..___digits {
+// 			___num[i] = ___original.shift_right() + b'0';
+// 		}
+//
+// 		if $exp < 0 {
+// 			___num[___digits] = b'-';
+// 			___digits += 1;
+// 		}
+//
+// 		let mut rslt = &mut ___num[..___digits];
+// 		rslt.reverse();
+//
+// 		let $rslt = unsafe { core::str::from_utf8_unchecked(rslt,) };
+// 	};
+// }
 
 pub trait Integer:
 	Add<Output = Self,>

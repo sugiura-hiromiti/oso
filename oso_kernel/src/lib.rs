@@ -10,7 +10,6 @@ use oso_bridge::wfe;
 pub mod app;
 pub mod base;
 pub mod driver;
-pub mod gui;
 
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo,) -> ! {

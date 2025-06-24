@@ -1,10 +1,6 @@
 use crate::base::graphic::FRAME_BUFFER;
-use crate::base::graphic::color::Color;
-use crate::base::graphic::color::ColorRpr;
 use crate::base::graphic::position::Coord;
 use crate::base::graphic::position::Coordinal;
-use crate::gui::monitor::desktop::DesktopObject;
-use crate::gui::monitor::desktop::Move;
 use oso_error::Rslt;
 
 // TODO: modularize project structure to remove pub keyword
@@ -38,21 +34,15 @@ pub const MOUSE_CURSOR: [[char; MOUSE_CURSOR_WIDTH]; MOUSE_CURSOR_HEIGHT] = [
 	[' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '@', '@', ' ', ' ', ' ', ' ', ' ',],
 ];
 
-pub trait MouseCursor: DesktopObject {
-	//const CURSOR: [[char; Self::WIDTH]; Self::HEIGHT];
-}
-
 pub trait MouseCursorDraw {
 	fn draw_mouse_cursor(&mut self,) -> Rslt<(),>;
 }
 
 /// belong to `gui` struct
 pub struct CursorBuf {
-	pos:           Coord,
-	width:         usize,
-	height:        usize,
-	body_color:    Color,
-	outline_color: Color,
+	pos:    Coord,
+	width:  usize,
+	height: usize,
 }
 
 impl CursorBuf {
@@ -60,17 +50,10 @@ impl CursorBuf {
 		let mut pos = FRAME_BUFFER.right_bottom();
 		*pos.x_mut() = pos.x() / 2;
 		*pos.y_mut() = pos.y() / 2;
-		Self {
-			pos,
-			width: MOUSE_CURSOR_WIDTH,
-			height: MOUSE_CURSOR_HEIGHT,
-			body_color: "#000000".to_color(),
-			outline_color: "#ffffff".to_color(),
-		}
+		Self { pos, width: MOUSE_CURSOR_WIDTH, height: MOUSE_CURSOR_HEIGHT, }
 	}
 }
 
-impl MouseCursor for CursorBuf {}
 impl MouseCursorDraw for CursorBuf {
 	fn draw_mouse_cursor(&mut self,) -> Rslt<(),> {
 		let mut coord = self.pos.clone();
@@ -109,69 +92,3 @@ impl Coordinal for CursorBuf {
 		self.pos.y_mut()
 	}
 }
-
-impl DesktopObject for CursorBuf {
-	fn width(&self,) -> usize {
-		self.width
-	}
-
-	fn height(&self,) -> usize {
-		self.height
-	}
-}
-
-impl Move for CursorBuf {
-	fn move_up(&mut self, offset: usize,) -> Rslt<(),> {
-		*self.pos.y_mut() -= offset;
-		Ok((),)
-	}
-
-	fn move_down(&mut self, offset: usize,) -> Rslt<(),> {
-		*self.pos.y_mut() += offset;
-		Ok((),)
-	}
-
-	fn move_left(&mut self, offset: usize,) -> Rslt<(),> {
-		*self.pos.x_mut() -= offset;
-		Ok((),)
-	}
-
-	fn move_right(&mut self, offset: usize,) -> Rslt<(),> {
-		*self.pos.x_mut() += offset;
-		Ok((),)
-	}
-
-	fn move_to_x(&mut self, dest: usize,) -> Rslt<(),> {
-		*self.pos.x_mut() = dest;
-		Ok((),)
-	}
-
-	fn move_to_y(&mut self, dest: usize,) -> Rslt<(),> {
-		*self.pos.y_mut() = dest;
-		Ok((),)
-	}
-}
-
-// impl<P: PixelFormat,> MouseCursorDraw for FrameBuffer<P,> {
-// 	fn draw_mouse_cursor(&mut self, cursor_buf: &impl MouseCursor,) -> Result<(), KernelError,> {
-// 		let x = cursor_buf.x();
-// 		let y = cursor_buf.y();
-//
-// 		for i in 0..cursor_buf.width() {
-// 			for j in 0..cursor_buf.height() {
-// 				// match MOUSE_CURSOR[j][i] {
-// 				match MOUSE_CURSOR[j][i] {
-// 					'@' => {
-// 						self.put_pixel(&(x + i, y + j,), &"#ffffff",)?;
-// 					},
-// 					'.' => {
-// 						self.put_pixel(&(x + i, y + j,), &"#000000",)?;
-// 					},
-// 					_ => continue,
-// 				};
-// 			}
-// 		}
-//
-// 		Ok((),)
-// 	}
-// }

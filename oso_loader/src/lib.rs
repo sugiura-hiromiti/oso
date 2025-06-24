@@ -14,7 +14,6 @@ extern crate alloc;
 use alloc::vec::Vec;
 use chibi_uefi::protocol::HandleSearchType;
 use chibi_uefi::table::boot_services;
-use core::arch::asm;
 use core::ptr::NonNull;
 use oso_bridge::device_tree::DeviceTreeAddress;
 use oso_bridge::wfe;
@@ -100,6 +99,7 @@ pub fn exec_kernel(kernel_entry: u64, device_tree_ptr: DeviceTreeAddress,) {
 
 	#[cfg(target_arch = "aarch64")]
 	unsafe {
+		use core::arch::asm;
 		// 全てのデータアクセスが完了するまで待機
 		asm!("dsb sy");
 

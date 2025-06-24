@@ -2,6 +2,7 @@
 //! TODO:
 //! - derive macroを用いて型定義からlazyパーサーを自動生成する
 //! - マクロが生成するパーサーのための基盤を`oso_binary_parser`で提供する
+#![allow(dead_code)]
 
 use oso_error::Rslt;
 
@@ -44,7 +45,7 @@ pub trait MemoryReserveEntry: BinaryParser<false, usize,> {
 pub trait DeviceTreeStructure: DeviceTreeStrings {
 	fn next_node(&self,) -> StructureToken;
 	fn next_node_tree(&self,) -> StructureToken;
-	fn get_node(&self, name: &str,) {}
+	fn get_node(&self, name: &str,);
 }
 
 pub trait DeviceTreeStrings {
@@ -110,7 +111,7 @@ pub trait BinaryParserTarget: Sized {
 }
 
 impl BinaryParserTarget for usize {
-	fn try_interpret(bytes: &[u8],) -> Rslt<Self::Output,> {
+	fn try_interpret(_bytes: &[u8],) -> Rslt<Self::Output,> {
 		todo!()
 	}
 }
@@ -167,7 +168,7 @@ impl BinaryParser<false, usize,> for MemoryReserveEntryData {
 		todo!()
 	}
 
-	fn set_pos(&mut self, to: usize,) {
+	fn set_pos(&mut self, _to: usize,) {
 		todo!()
 	}
 }
