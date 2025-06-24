@@ -1,6 +1,4 @@
 use super::raw::types::Status;
-use crate::print;
-use crate::println;
 use crate::raw::service::BootServices;
 use crate::raw::service::RuntimeServices;
 use crate::raw::types::UnsafeHandle;

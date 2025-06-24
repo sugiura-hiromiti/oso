@@ -1,5 +1,4 @@
 use crate::Rslt;
-use crate::error::OsoLoaderError;
 use crate::into_null_terminated_utf16;
 use crate::raw::protocol::file::FileProtocolV1;
 use crate::raw::protocol::file::SimpleFileSystemProtocol;
@@ -8,14 +7,15 @@ use crate::raw::types::file::FileAttributes;
 use crate::raw::types::file::FileInfo;
 use crate::raw::types::file::FileInformation;
 use crate::raw::types::file::OpenMode;
-use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::ptr;
 use core::ptr::NonNull;
+use oso_error::loader::UefiError;
+use oso_error::oso_err;
 
 impl SimpleFileSystemProtocol {
-	pub fn open_volume(&mut self,) -> Rslt<&mut FileProtocolV1,> {
+	pub fn open_volume(&mut self,) -> Rslt<&mut FileProtocolV1, UefiError,> {
 		let mut root = ptr::null_mut();
 		unsafe { (self.open_volume)(self, &mut root,) }
 			.ok_or_with(|_| unsafe { root.as_mut() }.expect("root directory handle is null",),)
@@ -29,7 +29,7 @@ impl FileProtocolV1 {
 		path: impl AsRef<str,>,
 		mode: OpenMode,
 		attrs: FileAttributes,
-	) -> Rslt<&mut FileProtocolV1,> {
+	) -> Rslt<&mut FileProtocolV1, UefiError,> {
 		let path = into_null_terminated_utf16(path,);
 		let path = path.as_ptr();
 
@@ -44,7 +44,7 @@ impl FileProtocolV1 {
 	/// # Return
 	///
 	/// returns bytes amount of read data
-	pub unsafe fn read(&mut self, buf: &mut [u8],) -> Rslt<usize,> {
+	pub unsafe fn read(&mut self, buf: &mut [u8],) -> Rslt<usize, UefiError,> {
 		let mut len = buf.len();
 		unsafe { (self.read)(self, &mut len, buf.as_mut_ptr().cast(),) }.ok_or_with(|_| len,)
 	}
@@ -57,12 +57,12 @@ impl FileProtocolV1 {
 		Ok(buf,)
 	}
 
-	pub fn get_info<F: FileInformation,>(&mut self, buf: &mut [u8],) -> Rslt<*mut F,> {
+	pub fn get_info<F: FileInformation,>(&mut self, buf: &mut [u8],) -> Rslt<*mut F, UefiError,> {
 		let mut len = buf.len();
 		unsafe { (self.get_info)(self, &F::GUID, &mut len, buf.as_mut_ptr().cast(),) }.ok_or()?;
 
 		NonNull::new(buf,)
-			.ok_or(OsoLoaderError::Uefi("file information is null".to_string(),),)
+			.ok_or(oso_err!(UefiError::Custom("file information is null")),)
 			.map(|s| s.as_ptr().cast(),)
 	}
 
@@ -74,7 +74,7 @@ impl FileProtocolV1 {
 		Ok(unsafe { *file_info },)
 	}
 
-	pub fn info_size<F: FileInformation,>(&mut self,) -> Rslt<usize,> {
+	pub fn info_size<F: FileInformation,>(&mut self,) -> Rslt<usize, UefiError,> {
 		let mut len = 0;
 		let status = unsafe { (self.get_info)(self, &F::GUID, &mut len, ptr::null_mut(),) };
 		match status {

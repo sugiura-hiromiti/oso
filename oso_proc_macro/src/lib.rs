@@ -4,11 +4,7 @@ extern crate proc_macro;
 
 use colored::Colorize;
 use oso_proc_macro_logic as macro_logic;
-use proc_macro::Diagnostic;
-use proc_macro::Level;
 use proc_macro::TokenStream;
-use proc_macro2::Span;
-use syn::LitFloat;
 use syn::parse_macro_input;
 
 mod helper;
@@ -118,7 +114,6 @@ pub fn status_from_spec(version: TokenStream,) -> TokenStream {
 pub fn test_elf_header_parse(header: TokenStream,) -> TokenStream {
 	let answer = helper::elf_header_info();
 
-	Diagnostic::new(Level::Note, format!("{answer:#?}"),).emit();
 	let header = proc_macro2::TokenStream::from(header,);
 	let rslt = quote::quote! {#header};
 

@@ -20,6 +20,7 @@ use oso_bridge::device_tree::DeviceTreeAddress;
 use oso_bridge::wfe;
 use oso_bridge::wfi;
 use oso_error::Rslt;
+use oso_error::loader::UefiError;
 use oso_error::oso_err;
 use raw::table::SystemTable;
 use raw::types::Status;
@@ -78,8 +79,10 @@ fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,> {
 	utf16_repr
 }
 
-pub fn get_device_tree() -> Rslt<NonNull<ConfigTable,>, &'static str,> {
-	unsafe { system_table().as_ref() }.device_tree()?.ok_or(oso_err!("failed to get device tree"),)
+pub fn get_device_tree() -> Rslt<NonNull<ConfigTable,>, UefiError,> {
+	unsafe { system_table().as_ref() }
+		.device_tree()?
+		.ok_or(oso_err!(UefiError::Custom("failed to get device tree")),)
 }
 
 pub fn exec_kernel(kernel_entry: u64, device_tree_ptr: DeviceTreeAddress,) {

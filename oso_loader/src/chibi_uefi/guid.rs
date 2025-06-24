@@ -1,6 +1,5 @@
 use crate::Rslt;
 use crate::raw::types::Guid;
-use alloc::format;
 use oso_error::oso_err;
 
 #[macro_export]
@@ -224,6 +223,7 @@ impl<const BYTES: usize,> const AsBytes<BYTES, [u8; BYTES],> for [Hex; BYTES] {
 }
 
 #[const_trait]
+#[allow(dead_code)]
 trait AsLeBytes<const BYTES: usize, O = Self,>:
 	AsBytes<BYTES, O,> + BytesNotTooLong<true,> + BytesIsEven<true, BYTES,>
 {

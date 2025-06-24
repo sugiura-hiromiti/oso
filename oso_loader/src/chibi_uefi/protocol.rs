@@ -76,7 +76,7 @@ impl BootServices {
 	}
 
 	/// return guid to search protocol
-	pub fn protocol_for<P: Protocol,>(&self,) -> HandleSearchType {
+	pub fn protocol_for<P: Protocol,>(&'_ self,) -> HandleSearchType<'_,> {
 		HandleSearchType::ByProtocol(&P::GUID,)
 	}
 

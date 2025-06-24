@@ -1739,6 +1739,7 @@ impl VersionNeededSection {
 	}
 }
 
+#[allow(dead_code)]
 trait Integer<T: PrimitiveInteger,>:
 	Add
 	+ AddAssign

@@ -1,3 +1,5 @@
+use oso_error::loader::UefiError;
+
 use super::service::BootServices;
 use super::service::RuntimeServices;
 use super::types::Char16;
@@ -70,16 +72,19 @@ impl ConfigTableStream {
 pub const DEVICE_TREE_TABLE_GUID: Guid = guid!("b1b621d5-f19c-41a5-830b-d9152c69aae0");
 
 impl SystemTable {
-	pub fn get_config_tables(&self,) -> Rslt<ConfigTableStream,> {
+	pub fn get_config_tables(&self,) -> Rslt<ConfigTableStream, UefiError,> {
 		let config_tables = NonNull::new(self.config_tables,);
 		Ok(ConfigTableStream { max_index: self.config_table_count, config_tables, },)
 	}
 
-	pub fn config_table_with(&self, guid: Guid,) -> Rslt<Option<NonNull<ConfigTable,>,>,> {
+	pub fn config_table_with(
+		&self,
+		guid: Guid,
+	) -> Rslt<Option<NonNull<ConfigTable,>,>, UefiError,> {
 		Ok(self.get_config_tables()?.config_table_with(guid,),)
 	}
 
-	pub fn device_tree(&self,) -> Rslt<Option<NonNull<ConfigTable,>,>,> {
+	pub fn device_tree(&self,) -> Rslt<Option<NonNull<ConfigTable,>,>, UefiError,> {
 		self.config_table_with(DEVICE_TREE_TABLE_GUID,)
 	}
 }

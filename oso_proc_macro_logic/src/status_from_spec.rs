@@ -102,6 +102,7 @@ fn get_element_by_id(node: Rc<Node,>, id: &str,) -> Option<Rc<Node,>,> {
 
 /// if there is not elements match, return None
 /// if this function returns Some but vector is len 0, something went wrong
+#[allow(dead_code)]
 fn get_elements_by_attribute(node: Rc<Node,>, attr: &str, value: &str,) -> Vec<Rc<Node,>,> {
 	let mut rslt = vec![];
 	let matches = match &node.data {
@@ -185,6 +186,7 @@ fn status_codes_info(rows: Vec<Vec<String,>,>,) -> Vec<StatusCodeInfo,> {
 		.collect()
 }
 
+#[allow(dead_code)]
 fn inspect_children(node: Rc<Node,>,) {
 	Diagnostic::new(Level::Help, "start inspect_children --------------------------------",).emit();
 	node.children.borrow().iter().enumerate().for_each(|(i, n,)| {
@@ -203,6 +205,7 @@ fn inspect_children(node: Rc<Node,>,) {
 	Diagnostic::new(Level::Help, "start inspect_children --------------------------------",).emit();
 }
 
+#[allow(dead_code)]
 fn inspect_node(node: Rc<Node,>,) {
 	Diagnostic::new(Level::Note, format!("{node:#?}"),).emit();
 }
