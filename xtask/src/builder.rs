@@ -176,7 +176,8 @@ impl Builder {
 	/// # Returns
 	///
 	/// Ok(()) if QEMU runs successfully, or an error if it fails
-	pub fn run(self,) -> Rslt<(),> {
+	pub fn run(&self,) -> Rslt<(),> {
+		println!("pre_drop----------------------");
 		let mounted_disk = self.mount_img()?;
 		self.build_boot_dir()?;
 
@@ -194,31 +195,6 @@ impl Builder {
 			},);
 
 			Command::new(qemu_system,).args(qemu_args,).run()?;
-			/*
-						//add args for debugging
-			if self.opts().debug {
-				let dbg_args = [
-					"-gdb",
-					"tcp::12345",
-					"-S",
-					"'",
-					"&",
-					"&&",
-					"lldb",
-					"-s",
-					"./lldb_startup_command.txt",
-				];
-				dbg_args.into_iter().for_each(|arg| {
-					args.push_back(arg.to_string(),);
-				},);
-
-				let launch_qemu_in_child_process = ["zsh", "-c", "'",];
-				launch_qemu_in_child_process.iter().rev().for_each(|s| {
-					args.push_front(s.to_string(),);
-				},);
-			}
-
-				*/
 		} else {
 			Command::new(qemu_system,).args(qemu_args,).run()?;
 		}
@@ -233,12 +209,15 @@ impl Builder {
 	///
 	/// The name of the mounted disk or an error if it fails
 	fn mount_img(&self,) -> Rslt<String,> {
+		println!("pre_drop2----------------------");
 		self.set_disk_img()?;
 
+		println!("pre_drop3----------------------");
 		// set mount point
 		self.create_mount_point()?;
+		println!("pre_drop4----------------------");
 
-		let mounted_disk = match self.host_os {
+		let mounted_disk = match &self.host_os {
 			HostOs::Mac => {
 				let out = Command::new("hdiutil",)
 					.args(["attach", "-imagekey", "diskimage-class=CRawDiskImage", "-nomount",],)
@@ -266,10 +245,12 @@ impl Builder {
 				mounted_disk.to_string()
 			},
 			HostOs::Linux => {
+				println!("pre_drop5----------------------");
 				Command::new("sudo",)
 					.args(["mount", "-o", "loop",],)
 					.args([self.disk_img_path()?, self.mount_point_path()?,],)
 					.run()?;
+				println!("pre_drop6----------------------");
 				"".to_string()
 			},
 		};
