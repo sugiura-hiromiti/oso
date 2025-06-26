@@ -66,8 +66,11 @@ impl Builder {
 	/// Ok(()) if the build succeeds, or an error if it fails
 	pub fn build(&self,) -> Rslt<(),> {
 		set_current_dir(&self.workspace.root,)?;
-		self.build_loader()?;
-		self.build_kernel()
+
+		// order should not be loader -> kernel.
+		// because loader is depending kernel by proc macro
+		self.build_kernel()?;
+		self.build_loader()
 	}
 
 	/// Builds the OSO loader (UEFI application)
@@ -177,7 +180,7 @@ impl Builder {
 		let mounted_disk = self.mount_img()?;
 		self.build_boot_dir()?;
 
-		detatch(&mounted_disk,)?;
+		self.detatch(&mounted_disk,)?;
 
 		// run qemu
 		let qemu_system = self.qemu();
@@ -234,30 +237,43 @@ impl Builder {
 
 		// set mount point
 		self.create_mount_point()?;
-		let out = Command::new("hdiutil",)
-			.args(["attach", "-imagekey", "diskimage-class=CRawDiskImage", "-nomount",],)
-			.arg(self.disk_img_path()?,)
-			.output()?;
 
-		println!("{}", "mounting img:".bold().bright_green());
+		let mounted_disk = match self.host_os {
+			HostOs::Mac => {
+				let out = Command::new("hdiutil",)
+					.args(["attach", "-imagekey", "diskimage-class=CRawDiskImage", "-nomount",],)
+					.arg(self.disk_img_path()?,)
+					.output()?;
 
-		// get name of mounted disk
-		let stdout = unsafe { String::from_utf8_unchecked(out.stdout,) };
-		let stderr = unsafe { String::from_utf8_unchecked(out.stderr,) };
-		print!("\tstdout: {}", stdout);
-		println!("\tstderr: {}", stderr);
+				println!("{}", "mounting img:".bold().bright_green());
 
-		if let Err(e,) = out.status.exit_ok() {
-			return Err(e.into(),);
-		}
-		let mounted_disk = stdout.trim();
+				// get name of mounted disk
+				let stdout = unsafe { String::from_utf8_unchecked(out.stdout,) };
+				let stderr = unsafe { String::from_utf8_unchecked(out.stderr,) };
+				print!("\tstdout: {}", stdout);
+				println!("\tstderr: {}", stderr);
 
-		// mount disk image
-		Command::new("mount",)
-			.args(["-t", "msdos", mounted_disk,],)
-			.arg(self.mount_point_path()?,)
-			.run()?;
-		Ok(mounted_disk.to_string(),)
+				if let Err(e,) = out.status.exit_ok() {
+					return Err(e.into(),);
+				}
+				let mounted_disk = stdout.trim();
+
+				// mount disk image
+				Command::new("mount",)
+					.args(["-t", "msdos", mounted_disk,],)
+					.arg(self.mount_point_path()?,)
+					.run()?;
+				mounted_disk.to_string()
+			},
+			HostOs::Linux => {
+				Command::new("mount",)
+					.args(["-o", "loop",],)
+					.args([self.disk_img_path()?, self.mount_point_path()?,],)
+					.run()?;
+				"".to_string()
+			},
+		};
+		Ok(mounted_disk,)
 	}
 
 	/// Creates and formats a disk image
@@ -411,6 +427,32 @@ impl Builder {
 		let target_json = workspace::load_json(&target_json,)?;
 		workspace::detect_build_artifact(target_json,)
 	}
+
+	/// Detaches a mounted disk image
+	///
+	/// # Parameters
+	///
+	/// * `mounted_disk` - The name of the mounted disk
+	///
+	/// # Returns
+	///
+	/// Ok(()) if the disk is detached successfully, or an error if it fails
+	pub fn detatch(&self, mounted_disk: &String,) -> Rslt<(),> {
+		Command::new("eza",)
+			.args(
+				"-ahlF --icons --group-directories-first --sort=extension --time-style=iso --git \
+				 --no-user --no-time -T target/xtask"
+					.split_whitespace(),
+			)
+			.run()?;
+
+		match self.host_os {
+			HostOs::Mac => Command::new("hdiutil",).args(["detach", mounted_disk,],).run(),
+			HostOs::Linux => {
+				Command::new("sudo",).arg("umount",).arg(self.mount_point_path()?,).run()
+			},
+		}
+	}
 }
 
 /// Automatically cleans up temporary files and unmounts disk images when the Builder is dropped
@@ -482,24 +524,4 @@ fn cargo_build(opts: &Opts,) -> Rslt<Command,> {
 	}
 
 	Ok(cmd,)
-}
-
-/// Detaches a mounted disk image
-///
-/// # Parameters
-///
-/// * `mounted_disk` - The name of the mounted disk
-///
-/// # Returns
-///
-/// Ok(()) if the disk is detached successfully, or an error if it fails
-pub fn detatch(mounted_disk: &String,) -> Rslt<(),> {
-	Command::new("eza",)
-		.args(
-			"-ahlF --icons --group-directories-first --sort=extension --time-style=iso --git \
-			 --no-user --no-time -T target/xtask"
-				.split_whitespace(),
-		)
-		.run()?;
-	Command::new("hdiutil",).args(["detach", mounted_disk,],).run()
 }
