@@ -495,7 +495,8 @@ impl HostOs {
 	pub fn new() -> Rslt<Self,> {
 		let a = Command::new("uname",).arg("-s",).output()?;
 		let os_name = String::from_utf8(a.stdout,)?;
-		match os_name.as_str() {
+		let os_name = os_name.trim();
+		match os_name {
 			"Linux" => Ok(Self::Linux,),
 			"Darwin" => Ok(Self::Mac,),
 			_ => Err(anyhow!("building on {os_name} does not supported"),),
