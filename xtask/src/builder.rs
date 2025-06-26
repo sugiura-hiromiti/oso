@@ -267,7 +267,7 @@ impl Builder {
 			},
 			HostOs::Linux => {
 				Command::new("mount",)
-					.args(["-o", "loop",],)
+					.args(["-o", "loop0",],)
 					.args([self.disk_img_path()?, self.mount_point_path()?,],)
 					.run()?;
 				"".to_string()
