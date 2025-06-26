@@ -17,6 +17,7 @@ use crate::workspace;
 use crate::workspace::LOADER;
 use crate::workspace::OsoWorkSpace;
 use anyhow::Result as Rslt;
+use anyhow::anyhow;
 use colored::Colorize;
 use std::env::set_current_dir;
 use std::path::Path;
@@ -38,6 +39,8 @@ pub struct Builder {
 	workspace: OsoWorkSpace,
 	/// OVMF firmware information
 	firmware:  Firmware,
+	/// current host os
+	host_os:   HostOs,
 }
 
 impl Builder {
@@ -52,7 +55,8 @@ impl Builder {
 		let opts = Opts::new();
 		let workspace = OsoWorkSpace::new()?;
 		let ovmf = Firmware::new(&opts.arch,)?;
-		Ok(Self { opts, workspace, firmware: ovmf, },)
+		let host_os = HostOs::new()?;
+		Ok(Self { opts, workspace, firmware: ovmf, host_os, },)
 	}
 
 	/// Builds the OSO loader and kernel
@@ -435,6 +439,24 @@ impl Drop for Builder {
 				.bold()
 				.yellow()
 			),
+		}
+	}
+}
+
+#[derive(Debug,)]
+pub enum HostOs {
+	Mac,
+	Linux,
+}
+
+impl HostOs {
+	pub fn new() -> Rslt<Self,> {
+		let a = Command::new("uname",).arg("-s",).output()?;
+		let os_name = String::from_utf8(a.stdout,)?;
+		match os_name.as_str() {
+			"Linux" => Ok(Self::Linux,),
+			"Darwin" => Ok(Self::Mac,),
+			_ => Err(anyhow!("building on {os_name} does not supported"),),
 		}
 	}
 }
