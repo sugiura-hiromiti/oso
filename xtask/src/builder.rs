@@ -266,8 +266,8 @@ impl Builder {
 				mounted_disk.to_string()
 			},
 			HostOs::Linux => {
-				Command::new("mount",)
-					.args(["-o", "loop0",],)
+				Command::new("sudo",)
+					.args(["mount", "-o", "loop",],)
 					.args([self.disk_img_path()?, self.mount_point_path()?,],)
 					.run()?;
 				"".to_string()
