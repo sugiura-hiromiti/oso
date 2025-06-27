@@ -28,6 +28,9 @@
 
 use anyhow::Result as Rslt;
 use builder::Builder;
+use colored::Colorize;
+use std::process::Command;
+use util_common_code::Run;
 
 pub mod builder;
 pub mod qemu;
@@ -40,7 +43,29 @@ pub mod workspace;
 /// and runs QEMU with the appropriate configuration.
 fn main() -> Rslt<(),> {
 	let builder = Builder::new()?;
-	builder.build()?;
-	builder.run()?;
+
+	let app = || {
+		builder.build()?;
+		builder.run()
+	};
+
+	match app() {
+		Ok(_,) => println!("\n\nprogram run successfully\nexit"),
+		Err(e,) => {
+			eprintln!("{} error msg:\n```rust\n{e:#?}\n```", "program panicked".red().bold())
+		},
+	}
+
+	print_workspace()?;
 	Ok((),)
+}
+
+fn print_workspace() -> Rslt<(),> {
+	Command::new("eza",)
+		.args(
+			"-ahlF --icons --group-directories-first --sort=extension --time-style=iso --git \
+			 --no-user --no-time -T target/xtask"
+				.split_whitespace(),
+		)
+		.run()
 }
