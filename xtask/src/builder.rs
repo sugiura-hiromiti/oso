@@ -67,6 +67,9 @@ impl Builder {
 	pub fn build(&self,) -> Rslt<(),> {
 		set_current_dir(&self.workspace.root,)?;
 
+		self.mount_point_path()?;
+		println!("mount path successfully created");
+
 		// order should not be loader -> kernel.
 		// because loader is depending kernel by proc macro
 		self.build_kernel()?;
