@@ -10,6 +10,7 @@
 //! - Configuring and running QEMU with the appropriate firmware and disk image
 //! - Cleanup of temporary files and unmounting disk images
 
+use crate::print_workspace;
 use crate::qemu::Firmware;
 use crate::shell::Architecture;
 use crate::shell::Opts;
@@ -67,8 +68,9 @@ impl Builder {
 	pub fn build(&self,) -> Rslt<(),> {
 		set_current_dir(&self.workspace.root,)?;
 
-		self.mount_point_path()?;
-		println!("mount path successfully created");
+		// self.create_boot_dir()?;
+		// println!("{}", "mount path successfully created".blue().bold(),);
+		// print_workspace()?;
 
 		// order should not be loader -> kernel.
 		// because loader is depending kernel by proc macro
@@ -180,7 +182,6 @@ impl Builder {
 	///
 	/// Ok(()) if QEMU runs successfully, or an error if it fails
 	pub fn run(&self,) -> Rslt<(),> {
-		println!("pre_drop----------------------");
 		let mounted_disk = self.mount_img()?;
 		self.build_boot_dir()?;
 
@@ -212,13 +213,10 @@ impl Builder {
 	///
 	/// The name of the mounted disk or an error if it fails
 	fn mount_img(&self,) -> Rslt<String,> {
-		println!("pre_drop2----------------------");
 		self.set_disk_img()?;
 
-		println!("pre_drop3----------------------");
 		// set mount point
 		self.create_mount_point()?;
-		println!("pre_drop4----------------------");
 
 		let mounted_disk = match &self.host_os {
 			HostOs::Mac => {
@@ -248,7 +246,6 @@ impl Builder {
 				mounted_disk.to_string()
 			},
 			HostOs::Linux => {
-				println!("pre_drop5----------------------");
 				Command::new("sudo",)
 					.args(["mount", "-o", "loop",],)
 					.args([self.disk_img_path()?, self.mount_point_path()?,],)
@@ -351,7 +348,9 @@ impl Builder {
 	/// The path to the boot directory or an error if it fails
 	fn create_boot_dir(&self,) -> Rslt<PathBuf,> {
 		let boot_dir = self.mount_point_path()?.join(BOOT_DIR,);
+		println!("[pre_drop] from: {} line {}", module_path!(), line!());
 		fs_err::create_dir_all(&boot_dir,)?;
+		println!("[pre_drop] from: {} line {}", module_path!(), line!());
 
 		Ok(boot_dir,)
 	}
@@ -422,14 +421,6 @@ impl Builder {
 	///
 	/// Ok(()) if the disk is detached successfully, or an error if it fails
 	pub fn detatch(&self, mounted_disk: &String,) -> Rslt<(),> {
-		Command::new("eza",)
-			.args(
-				"-ahlF --icons --group-directories-first --sort=extension --time-style=iso --git \
-				 --no-user --no-time -T target/xtask"
-					.split_whitespace(),
-			)
-			.run()?;
-
 		match self.host_os {
 			HostOs::Mac => Command::new("hdiutil",).args(["detach", mounted_disk,],).run(),
 			HostOs::Linux => {
