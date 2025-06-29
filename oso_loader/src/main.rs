@@ -30,6 +30,7 @@ pub extern "efiapi" fn efi_image_entry_point(
 	Status::EFI_SUCCESS
 }
 
+
 fn app() -> Rslt<(u64, DeviceTreeAddress,),> {
 	let kernel_addr = kernel()?;
 	let device_tree = get_device_tree()?;
