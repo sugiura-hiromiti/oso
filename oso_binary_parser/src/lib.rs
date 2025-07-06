@@ -43,8 +43,3 @@ pub trait IO {}
 /// collection  of parser components.
 /// each functionality itself is tiny parser
 pub trait ParserComponents {}
-
-// ------------ framework of  parser
-pub struct Parse{
-	left: impl Parser
-}
