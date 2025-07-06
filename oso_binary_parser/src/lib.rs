@@ -8,6 +8,7 @@ use oso_error::Rslt;
 use oso_error::parser::ParserError;
 
 ///
+#[const_trait]
 pub trait Parser<C: Context,> {}
 
 // ----------------- fundementals to generate parser
@@ -31,6 +32,7 @@ pub trait Context: DataState + IO {
 	//IO
 }
 
+#[const_trait]
 pub trait DataState {}
 
 #[const_trait]
