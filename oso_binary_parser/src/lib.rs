@@ -42,4 +42,6 @@ pub trait IO {}
 
 /// collection  of parser components.
 /// each functionality itself is tiny parser
-pub trait ParserComponents {}
+pub trait ParserComponents {
+	fn map(&self,);
+}
