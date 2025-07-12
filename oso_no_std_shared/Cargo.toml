@@ -1,5 +1,5 @@
 [package]
-name = "oso_bridge"
+name = "oso_no_std_shared"
 version = "0.1.0"
 edition = "2024"
 

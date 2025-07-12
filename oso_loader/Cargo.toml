@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-oso_bridge = { path = "../oso_bridge" }
 oso_error = { path = "../oso_error" }
+oso_no_std_shared = { path = "../oso_no_std_shared" }
 oso_proc_macro = { path = "../oso_proc_macro" }
 
 [features]

@@ -391,17 +391,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
 
 [[package]]
-name = "oso_binary_parser"
-version = "0.1.0"
-dependencies = [
- "oso_error",
-]
-
-[[package]]
-name = "oso_bridge"
-version = "0.1.0"
-
-[[package]]
 name = "oso_error"
 version = "0.1.0"
 
@@ -409,9 +398,9 @@ version = "0.1.0"
 name = "oso_kernel"
 version = "0.1.0"
 dependencies = [
- "oso_binary_parser",
- "oso_bridge",
  "oso_error",
+ "oso_no_std_shared",
+ "oso_parser",
  "oso_proc_macro",
 ]
 
@@ -419,9 +408,20 @@ dependencies = [
 name = "oso_loader"
 version = "0.1.0"
 dependencies = [
- "oso_bridge",
  "oso_error",
+ "oso_no_std_shared",
  "oso_proc_macro",
+]
+
+[[package]]
+name = "oso_no_std_shared"
+version = "0.1.0"
+
+[[package]]
+name = "oso_parser"
+version = "0.1.0"
+dependencies = [
+ "oso_error",
 ]
 
 [[package]]
