@@ -10,7 +10,6 @@
 //! - Configuring and running QEMU with the appropriate firmware and disk image
 //! - Cleanup of temporary files and unmounting disk images
 
-use crate::print_workspace;
 use crate::qemu::Firmware;
 use crate::shell::Architecture;
 use crate::shell::Opts;

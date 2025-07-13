@@ -1,4 +1,4 @@
-use oso_bridge::graphic::PixelFormatConf;
+use oso_no_std_shared::bridge::graphic::PixelFormatConf;
 
 use crate::c_style_enum;
 

@@ -400,7 +400,6 @@ version = "0.1.0"
 dependencies = [
  "oso_error",
  "oso_no_std_shared",
- "oso_parser",
  "oso_proc_macro",
 ]
 
@@ -415,10 +414,6 @@ dependencies = [
 
 [[package]]
 name = "oso_no_std_shared"
-version = "0.1.0"
-
-[[package]]
-name = "oso_parser"
 version = "0.1.0"
 dependencies = [
  "oso_error",

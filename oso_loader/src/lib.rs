@@ -15,12 +15,12 @@ use alloc::vec::Vec;
 use chibi_uefi::protocol::HandleSearchType;
 use chibi_uefi::table::boot_services;
 use core::ptr::NonNull;
-use oso_bridge::device_tree::DeviceTreeAddress;
-use oso_bridge::wfe;
-use oso_bridge::wfi;
 use oso_error::Rslt;
 use oso_error::loader::UefiError;
 use oso_error::oso_err;
+use oso_no_std_shared::bridge::device_tree::DeviceTreeAddress;
+use oso_no_std_shared::wfe;
+use oso_no_std_shared::wfi;
 use raw::table::SystemTable;
 use raw::types::Status;
 use raw::types::UnsafeHandle;
@@ -36,7 +36,7 @@ pub mod raw;
 #[panic_handler]
 fn panic(panic: &core::panic::PanicInfo,) -> ! {
 	println!("{panic:#?}");
-	wfe();
+	wfe()
 }
 
 #[macro_export]

@@ -5,7 +5,7 @@
 #![feature(new_range_api)]
 #![feature(generic_const_exprs)]
 
-use oso_bridge::wfe;
+use oso_no_std_shared::wfe;
 
 pub mod app;
 pub mod base;

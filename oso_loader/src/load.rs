@@ -14,7 +14,7 @@ use crate::raw::types::file::OpenMode;
 use crate::raw::types::memory::AllocateType;
 use alloc::vec::Vec;
 use core::ptr::NonNull;
-use oso_bridge::graphic::FrameBufConf;
+use oso_no_std_shared::bridge::graphic::FrameBufConf;
 
 pub fn kernel() -> Rslt<PhysicalAddress,> {
 	let mut kernel_file = open_kernel_file()?;

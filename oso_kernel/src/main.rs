@@ -3,10 +3,10 @@
 // #![feature(stdarch_arm_hints)]
 
 use core::arch::asm;
-#[cfg(target_arch = "aarch64")]
-use oso_bridge::device_tree::DeviceTreeAddress;
-use oso_bridge::wfi;
 use oso_error::Rslt;
+#[cfg(target_arch = "aarch64")]
+use oso_no_std_shared::bridge::device_tree::DeviceTreeAddress;
+use oso_no_std_shared::wfi;
 // use oso_kernel::base::graphic::FrameBuffer;
 // #[cfg(feature = "bgr")]
 // use oso_kernel::base::graphic::color::Bgr;
