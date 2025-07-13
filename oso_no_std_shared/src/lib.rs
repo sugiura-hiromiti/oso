@@ -1,50 +1,20 @@
-//! # OSO Bridge
-//!
-//! `oso_bridge` is a no_std crate that provides low-level interfaces and utilities for 
-//! operating system development, particularly focused on bare-metal environments.
-//! 
-//! This crate serves as a bridge between hardware and the operating system kernel,
-//! providing essential primitives for CPU control, framebuffer management, and device tree access.
-//!
-//! ## Features
-//!
-//! - CPU control functions (wait for interrupt, wait for event, no-operation)
-//! - Framebuffer configuration for graphics output
-//! - Device tree address handling
-//!
-//! ## Usage
-//!
-//! This crate is designed to be used in no_std environments, typically in kernel or bootloader code:
-//!
-//! ```rust,no_run
-//! use oso_bridge::{wfi, graphic::FrameBufConf, graphic::PixelFormatConf};
-//!
-//! // Configure a framebuffer
-//! let framebuf = FrameBufConf::new(
-//!     PixelFormatConf::Rgb,
-//!     0x1000_0000 as *mut u8,  // Base address
-//!     1024 * 768 * 4,          // Size (bytes)
-//!     1024,                    // Width (pixels)
-//!     768,                     // Height (pixels)
-//!     1024 * 4,                // Stride (bytes per row)
-//! );
-//!
-//! // Put the CPU into a low-power state until an interrupt occurs
-//! wfi(); // This function never returns
-//! ```
-
 #![no_std]
+#![feature(unboxed_closures)]
 #![feature(associated_type_defaults)]
+#![feature(impl_trait_in_assoc_type)]
+#![feature(const_trait_impl)]
+#![feature(type_alias_impl_trait)]
+
+pub mod bridge;
+pub mod data;
+pub mod parser;
 
 use core::arch::asm;
 
-pub mod device_tree;
-pub mod graphic;
-
 /// Puts the CPU into a low-power state until an interrupt occurs.
 ///
-/// This function enters an infinite loop where the CPU is repeatedly put into a 
-/// wait-for-interrupt state. This is commonly used in bare-metal environments to 
+/// This function enters an infinite loop where the CPU is repeatedly put into a
+/// wait-for-interrupt state. This is commonly used in bare-metal environments to
 /// conserve power when there's no work to be done.
 ///
 /// # Platform-specific behavior
@@ -78,8 +48,8 @@ pub fn wfi() -> ! {
 
 /// Puts the CPU into a low-power state until an event occurs.
 ///
-/// This function enters an infinite loop where the CPU is repeatedly put into a 
-/// wait-for-event state. This is similar to `wfi()` but responds to events rather 
+/// This function enters an infinite loop where the CPU is repeatedly put into a
+/// wait-for-event state. This is similar to `wfi()` but responds to events rather
 /// than just interrupts, which can be useful in certain synchronization scenarios.
 ///
 /// # Platform-specific behavior

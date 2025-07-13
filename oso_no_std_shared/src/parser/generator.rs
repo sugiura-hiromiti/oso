@@ -8,25 +8,15 @@ use oso_error::parser::ParserError;
 pub trait ParserGenerator<C: Context,> {
 	// fn parser_lists(&self,) -> &[impl Parser<C,>];
 	// fn parser<F: Fn(&Self,) -> Rslt<R, ParserError,>, R,>(&self,) -> F;
-	fn parser(&self,) -> impl Parser;
+	fn parser<PC: Context,>(&self,) -> impl Parser<PC,>;
 }
 
 /// parts of parser target. separated for better scalability
-#[const_trait]
-pub trait Context: DataState + IO {
-	fn len(&self,) -> usize;
-}
-
-#[const_trait]
-pub trait DataState {
+pub trait Context {
+	type Output;
+	const SIZE: usize = size_of::<Self::Output,>();
 	fn pos(&self,) -> usize;
-}
-
-#[const_trait]
-pub trait IO {
-	fn size<T,>() -> usize {
-		size_of::<T,>()
-	}
+	fn field_count() {}
 }
 
 // --------------------- components for constructing parser
@@ -38,5 +28,7 @@ pub trait ParserComponents<C: Context,> {
 }
 
 // -------------------- output of parsergengen
-#[const_trait]
-pub trait Parser {}
+/// TODO: implement this trait for `Tree`
+pub trait Parser<C: Context,> {
+	fn parse(&self,) -> Rslt<C::Output, ParserError,>;
+}
