@@ -1,6 +1,6 @@
 //! provide tree structure data type and its manipulation functionality
 
-use oso_error::Rslt;
+// use oso_error::Rslt;
 
 pub type WalkRslt<'a, N, T,> = impl WalkTried<'a, N, T,>;
 
@@ -26,7 +26,7 @@ where
 	fn current(&self,) -> Self;
 
 	fn children(&self,) -> WalkRslt<'a, N, Self,>;
-	fn parent(&self,) -> WalkRslt<'a, N, Self,> + use<'a,>;
+	fn parent(&self,) -> WalkRslt<'a, N, Self,>;
 	// TODO: handle opaque type,  recursive trait method and lifetime at once
 	#[define_opaque(WalkRslt)]
 	fn nth_ancestor(&self, n: usize,) -> WalkRslt<'a, N, Self,> {
