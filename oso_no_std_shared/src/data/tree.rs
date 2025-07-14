@@ -11,6 +11,7 @@ pub struct Tree<'a, N: NodeValue,> {
 	parent:   Option<&'a Self,>,
 }
 
+/// TODO: consider remove default implementation of nth_ancestor
 pub trait TreeWalk<'a, N: NodeValue,>: Sized + Iterator
 where
 	N: 'a,
