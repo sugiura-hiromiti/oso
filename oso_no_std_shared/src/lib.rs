@@ -3,7 +3,6 @@
 #![feature(associated_type_defaults)]
 #![feature(impl_trait_in_assoc_type)]
 #![feature(const_trait_impl)]
-#![feature(type_alias_impl_trait)]
 
 pub mod bridge;
 pub mod data;
