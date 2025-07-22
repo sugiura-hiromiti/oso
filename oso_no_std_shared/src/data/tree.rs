@@ -31,10 +31,16 @@ pub trait TreeWalk<
 		C: Coordinate,
 	>(
 		&mut self,
-	) -> WalkRslt<N2, O, C,>;
+	) -> WalkRslt<true, ROOT_IS_BOTTOM, true, true, N2, O, C,>;
 	/// return tree on current position
 	/// there is similar method `node` which returns current **node**
-	fn current<N2: NodeValue, O: TreeWalk<N2,>, C: Coordinate,>(&self,) -> O;
+	fn current<
+		N2: NodeValue,
+		O: TreeWalk<IS_TOP, IS_BOTTOM, IS_LEFT_MOST, IS_RIGHT_MOST, N2,>,
+		C: Coordinate,
+	>(
+		&self,
+	) -> O;
 
 	fn children<N2: NodeValue, O: TreeWalk<N2,>, C: Coordinate,>(&mut self,)
 	-> WalkRslt<N2, O, C,>;
