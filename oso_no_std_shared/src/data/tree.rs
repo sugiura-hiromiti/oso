@@ -8,7 +8,7 @@ pub struct Tree<'a, N: NodeValue,> {
 }
 
 /// TODO: consider remove default implementation of nth_ancestor
-pub trait TreeWalk<N: NodeValue,>: Sized + Iterator + core::fmt::Debug {
+pub trait TreeWalk<N: NodeValue,>: Sized + Iterator  {
 	type ChildTree;
 
 	// type TreeType: TreeWalk<'a, N,>;
