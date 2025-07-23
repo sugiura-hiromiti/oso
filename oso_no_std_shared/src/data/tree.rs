@@ -11,15 +11,8 @@ pub struct Tree<'a, N: NodeValue,> {
 /// - [x] consider remove default implementation of nth_ancestor
 /// - [ ] introduce generic const to represent border condition like position is root, has no more
 /// child, first/last brother etc.
-pub trait TreeWalk<
-	const IS_TOP: bool,
-	const IS_BOTTOM: bool,
-	const IS_LEFT_MOST: bool,
-	const IS_RIGHT_MOST: bool,
-	N: NodeValue,
->: Sized + Iterator
-{
-	type ChildTree;
+pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
+	type ChildTree: Iterator;
 
 	// type TreeType: TreeWalk<'a, N,>;
 
@@ -31,7 +24,7 @@ pub trait TreeWalk<
 		C: Coordinate,
 	>(
 		&mut self,
-	) -> WalkRslt<true, ROOT_IS_BOTTOM, true, true, N2, O, C,>;
+	) -> WalkRslt<O, C,>;
 	/// return tree on current position
 	/// there is similar method `node` which returns current **node**
 	fn current<
@@ -42,14 +35,36 @@ pub trait TreeWalk<
 		&self,
 	) -> O;
 
-	fn children<N2: NodeValue, O: TreeWalk<N2,>, C: Coordinate,>(&mut self,)
-	-> WalkRslt<N2, O, C,>;
-	fn parent<N2: NodeValue, O: TreeWalk<N2,>, C: Coordinate,>(&mut self,) -> WalkRslt<N2, O, C,>;
+	fn children<C: Coordinate,>(&mut self,) -> WalkRslt<Self::ChildTree, C,>;
+	fn parent<
+		const PARENT_IS_TOP: bool,
+		const PARENT_IS_LEFT_MOST: bool,
+		const PARENT_IS_RIGHT_MOST: bool,
+		N2: NodeValue,
+		O: TreeWalk<PARENT_IS_TOP, false, PARENT_IS_LEFT_MOST, PARENT_IS_RIGHT_MOST, N2,>,
+		C: Coordinate,
+	>(
+		&mut self,
+	) -> WalkRslt<O, C,>;
 	// TODO: handle opaque type,  recursive trait method and lifetime at once
-	fn nth_ancestor<N2: NodeValue, O: TreeWalk<N2,>, C: Coordinate,>(
+	fn nth_ancestor<
+		const ANCESTOR_IS_TOP: bool,
+		const ANCESTOR_IS_BOTTOM: bool,
+		const ANCESTOR_IS_LEFT_MOST: bool,
+		const ANCESTOR_IS_RIGHT_MOST: bool,
+		N2: NodeValue,
+		O: TreeWalk<
+				ANCESTOR_IS_TOP,
+				ANCESTOR_IS_BOTTOM,
+				ANCESTOR_IS_LEFT_MOST,
+				ANCESTOR_IS_RIGHT_MOST,
+				N2,
+			>,
+		C: Coordinate,
+	>(
 		&mut self,
 		n: usize,
-	) -> WalkRslt<N2, O, C,> {
+	) -> WalkRslt<O, C,> {
 		if n == 0 {
 			self.as_walk_tried()
 		} else {
@@ -62,42 +77,114 @@ pub trait TreeWalk<
 		}
 	}
 
-	fn nth_brother<N2: NodeValue, O: TreeWalk<N2,>, C: Coordinate,>(
+	fn nth_brother<
+		const BROTHER_IS_TOP: bool,
+		const BROTHER_IS_BOTTOM: bool,
+		const BROTHER_IS_LEFT_MOST: bool,
+		const BROTHER_IS_RIGHT_MOST: bool,
+		N2: NodeValue,
+		O: TreeWalk<
+				BROTHER_IS_TOP,
+				BROTHER_IS_BOTTOM,
+				BROTHER_IS_LEFT_MOST,
+				BROTHER_IS_RIGHT_MOST,
+				N2,
+			>,
+		C: Coordinate,
+	>(
 		&mut self,
 		n: usize,
-	) -> WalkRslt<N2, O, C,> {
+	) -> WalkRslt<O, C,> {
+		todo!()
 	}
-	fn next_brother<N2: NodeValue, O: TreeWalk<N2,>, C: Coordinate,>(
+	fn next_brother<
+		const BROTHER_IS_TOP: bool,
+		const BROTHER_IS_BOTTOM: bool,
+		const BROTHER_IS_RIGHT_MOST: bool,
+		N2: NodeValue,
+		O: TreeWalk<BROTHER_IS_TOP, BROTHER_IS_BOTTOM, false, BROTHER_IS_RIGHT_MOST, N2,>,
+		C: Coordinate,
+	>(
 		&mut self,
-	) -> WalkRslt<N2, O, C,> {
+	) -> WalkRslt<O, C,> {
+		todo!()
 	}
-	fn prev_brother<N2: NodeValue, O: TreeWalk<N2,>, C: Coordinate,>(
+	fn prev_brother<
+		const BROTHER_IS_TOP: bool,
+		const BROTHER_IS_BOTTOM: bool,
+		const BROTHER_IS_LEFT_MOST: bool,
+		N2: NodeValue,
+		O: TreeWalk<BROTHER_IS_TOP, BROTHER_IS_BOTTOM, BROTHER_IS_LEFT_MOST, false, N2,>,
+		C: Coordinate,
+	>(
 		&mut self,
-	) -> WalkRslt<N2, O, C,> {
+	) -> WalkRslt<O, C,> {
+		todo!()
 	}
-	fn first_brother<N2: NodeValue, O: TreeWalk<N2,>, C: Coordinate,>(
+	fn first_brother<
+		const BROTHER_IS_TOP: bool,
+		const BROTHER_IS_BOTTOM: bool,
+		const BROTHER_IS_RIGHT_MOST: bool,
+		N2: NodeValue,
+		O: TreeWalk<BROTHER_IS_TOP, BROTHER_IS_BOTTOM, true, BROTHER_IS_RIGHT_MOST, N2,>,
+		C: Coordinate,
+	>(
 		&mut self,
-	) -> WalkRslt<N2, O, C,>;
-	fn last_brother<N2: NodeValue, O: TreeWalk<N2,>, C: Coordinate,>(
+	) -> WalkRslt<O, C,>;
+	fn last_brother<
+		const BROTHER_IS_TOP: bool,
+		const BROTHER_IS_BOTTOM: bool,
+		const BROTHER_IS_LEFT_MOST: bool,
+		N2: NodeValue,
+		O: TreeWalk<BROTHER_IS_TOP, BROTHER_IS_BOTTOM, BROTHER_IS_LEFT_MOST, true, N2,>,
+		C: Coordinate,
+	>(
 		&mut self,
-	) -> WalkRslt<N2, O, C,>;
+	) -> WalkRslt<O, C,>;
 
-	fn nth_child<N2: NodeValue, O: TreeWalk<N2,>, C: Coordinate,>(
+	fn nth_child<
+		const CHILD_IS_BOTTOM: bool,
+		const CHILD_IS_LEFT_MOST: bool,
+		const CHILD_IS_RIGHT_MOST: bool,
+		N2: NodeValue,
+		O: TreeWalk<false, CHILD_IS_BOTTOM, CHILD_IS_LEFT_MOST, CHILD_IS_RIGHT_MOST, N2,>,
+		C: Coordinate,
+	>(
 		&mut self,
 		n: usize,
-	) -> WalkRslt<N2, O, C,>;
-	fn first_child<N2: NodeValue, O: TreeWalk<N2,>, C: Coordinate,>(
+	) -> WalkRslt<O, C,>;
+	fn first_child<
+		const CHILD_IS_BOTTOM: bool,
+		const CHILD_IS_RIGHT_MOST: bool,
+		N2: NodeValue,
+		O: TreeWalk<false, CHILD_IS_BOTTOM, true, CHILD_IS_RIGHT_MOST, N2,>,
+		C: Coordinate,
+	>(
 		&mut self,
-	) -> WalkRslt<N2, O, C,>;
-	fn last_child<N2: NodeValue, O: TreeWalk<N2,>, C: Coordinate,>(
+	) -> WalkRslt<O, C,>;
+	fn last_child<
+		const CHILD_IS_BOTTOM: bool,
+		const CHILD_IS_LEFT_MOST: bool,
+		N2: NodeValue,
+		O: TreeWalk<false, CHILD_IS_BOTTOM, CHILD_IS_LEFT_MOST, true, N2,>,
+		C: Coordinate,
+	>(
 		&mut self,
-	) -> WalkRslt<N2, O, C,>;
+	) -> WalkRslt<O, C,>;
 
 	/// set current position specified by `coordinate`
-	fn set_pos<N2: NodeValue, O: TreeWalk<N2,>, C: Coordinate,>(
+	fn set_pos<
+		const POS_IS_TOP: bool,
+		const POS_IS_BOTTOM: bool,
+		const POS_IS_LEFT_MOST: bool,
+		const POS_IS_RIGHT_MOST: bool,
+		N2: NodeValue,
+		O: TreeWalk<POS_IS_TOP, POS_IS_BOTTOM, POS_IS_LEFT_MOST, POS_IS_RIGHT_MOST, N2,>,
+		C: Coordinate,
+	>(
 		&mut self,
 		coordinate: impl Coordinate,
-	) -> WalkRslt<N2, O, C,>;
+	) -> WalkRslt<O, C,>;
 
 	// NOTE: current position info
 	fn has_child(&self,) -> bool;
@@ -109,9 +196,13 @@ pub trait TreeWalk<
 	fn get_pos_in_brother() -> usize;
 
 	fn get_pos(&self,) -> impl Coordinate;
-	fn as_walk_tried<N2: NodeValue, O: TreeWalk<N2,>, C: Coordinate,>(
+	fn as_walk_tried<
+		N2: NodeValue,
+		O: TreeWalk<IS_TOP, IS_BOTTOM, IS_LEFT_MOST, IS_RIGHT_MOST, N2,>,
+		C: Coordinate,
+	>(
 		&self,
-	) -> WalkRslt<N2, O, C,>;
+	) -> WalkRslt<O, C,>;
 
 	fn value(&self,) -> N::Output;
 	/// return node on current position
@@ -195,18 +286,10 @@ impl<T: Clone,> AsMut<T,> for Node<T,> {
 	}
 }
 
-pub struct WalkRslt<
-	const IS_TOP: bool,
-	const IS_BOTTOM: bool,
-	const IS_LEFT_MOST: bool,
-	const IS_RIGHT_MOST: bool,
-	N: NodeValue,
-	T: TreeWalk<IS_TOP, IS_BOTTOM, IS_LEFT_MOST, IS_RIGHT_MOST, N,>,
-	C: Coordinate,
-> {
-	__constraint: core::marker::PhantomData<N,>,
-	tree:         Option<T,>,
-	coord:        C,
+pub struct WalkRslt<T, C,> {
+	// __constraint: core::marker::PhantomData<N,>,
+	tree:  Option<T,>,
+	coord: C,
 }
 
 impl<
@@ -217,8 +300,7 @@ impl<
 	N: NodeValue,
 	T: TreeWalk<IS_TOP, IS_BOTTOM, IS_LEFT_MOST, IS_RIGHT_MOST, N,>,
 	C: Coordinate,
-> WalkTried<IS_TOP, IS_BOTTOM, IS_LEFT_MOST, IS_RIGHT_MOST, N, T,>
-	for WalkRslt<IS_TOP, IS_BOTTOM, IS_LEFT_MOST, IS_RIGHT_MOST, N, T, C,>
+> WalkTried<IS_TOP, IS_BOTTOM, IS_LEFT_MOST, IS_RIGHT_MOST, N, T,> for WalkRslt<T, C,>
 {
 	type C = C;
 
@@ -239,6 +321,10 @@ impl<
 	}
 
 	fn from(tn: T, coord: Self::C,) -> Self {
-		Self { __constraint: core::marker::PhantomData::<N,>, tree: Some(tn,), coord, }
+		Self {
+			//__constraint: core::marker::PhantomData::<N,>,
+			tree: Some(tn,),
+			coord,
+		}
 	}
 }
