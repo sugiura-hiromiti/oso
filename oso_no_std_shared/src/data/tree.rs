@@ -1,5 +1,7 @@
 //! provide tree structure data type and its manipulation functionality
 
+// use oso_error::Rslt;
+
 /// generic parameter `T` can be virtually different between children by using enum
 pub struct Tree<'a, N: NodeValue,> {
 	value:    N,
@@ -7,15 +9,15 @@ pub struct Tree<'a, N: NodeValue,> {
 	parent:   Option<&'a Self,>,
 }
 
-pub trait TreeWindow<N: NodeValue,>: TreeWalk<N,> {
-	type ChildrenN: NodeValue;
-	type Children: TreeWalk<Self::ChildrenN,>;
 
-	type BrothersN: NodeValue;
-	type Brothers: TreeWalk<Self::BrothersN,>;
-	fn children<WT: WalkTried<T = Self::Children,>,>(&mut self,) -> WT;
-	fn brothers<WT: WalkTried<T = Self::Brothers,>,>(&mut self,) -> WT;
-}
+/// TODO: consider remove default implementation of nth_ancestor
+pub trait TreeWalk<'a, N: NodeValue,>: Sized + Iterator
+where
+	N: 'a,
+	Self: 'a,
+{
+	type ChildTree;
+	// type TreeType: TreeWalk<'a, N,>;
 
 /// TODO:
 /// - [x] consider remove default implementation of nth_ancestor
@@ -23,51 +25,51 @@ pub trait TreeWindow<N: NodeValue,>: TreeWalk<N,> {
 /// child, first/last brother etc.
 pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	// NOTE: walk operation
-	fn root<WT: WalkTried,>(&mut self,) -> WT;
+
+	fn root<N2: NodeValue + 'a, O: TreeWalk<'a, N2,>,>(&self,) -> impl WalkTried<'a, N2, O,>;
 	/// return tree on current position
 	/// there is similar method `node` which returns current **node**
-	fn current(&self,) -> impl TreeWalk<N,>;
+	fn current<N2: NodeValue + 'a, O: TreeWalk<'a, N2,>,>(&self,) -> O;
 
-	fn parent<WT: WalkTried,>(&mut self,) -> WT;
-	fn nth_ancestor<WT: WalkTried,>(&mut self, n: usize,) -> WT {
-		if n == 0 {
-			self.as_walk_tried()
-		} else {
-			let mut parent = self.parent::<WT>();
-			if parent.has_success() {
-				TreeWalk::nth_ancestor::<WT,>(parent.current_tree_mut().as_mut().unwrap(), n - 1,)
-			} else {
-				parent
-			}
-		}
-	}
+	fn children<N2: NodeValue + 'a, O: TreeWalk<'a, N2,>,>(&self,) -> impl WalkTried<'a, N2, O,>;
+	fn parent<N2: NodeValue + 'a, O: TreeWalk<'a, N2,>,>(&self,) -> impl WalkTried<'a, N2, O,>;
+	// TODO: handle opaque type,  recursive trait method and lifetime at once
+	// #[define_opaque(WalkRslt)]
+	fn nth_ancestor<N2: NodeValue + 'a, O: TreeWalk<'a, N2,>,>(
+		&self,
+		n: usize,
+	) -> impl WalkTried<'a, N2, O,>;
 
-	fn nth_brother<WT: WalkTried,>(&mut self, n: usize,) -> WT {
-		let cur_bro_pos = self.get_pos().last_dimension();
+	fn nth_brother<N2: NodeValue + 'a, O: TreeWalk<'a, N2,>,>(
+		&self,
+		n: usize,
+	) -> impl WalkTried<'a, N2, O,>;
+	fn next_brother<N2: NodeValue + 'a, O: TreeWalk<'a, N2,>,>(
+		&self,
+	) -> impl WalkTried<'a, N2, O,>;
+	fn prev_brother<N2: NodeValue + 'a, O: TreeWalk<'a, N2,>,>(
+		&self,
+	) -> impl WalkTried<'a, N2, O,>;
+	fn first_brother<N2: NodeValue + 'a, O: TreeWalk<'a, N2,>,>(
+		&self,
+	) -> impl WalkTried<'a, N2, O,>;
+	fn last_brother<N2: NodeValue + 'a, O: TreeWalk<'a, N2,>,>(
+		&self,
+	) -> impl WalkTried<'a, N2, O,>;
 
-		match cur_bro_pos.cmp(&n,) {
-			core::cmp::Ordering::Less => {
-				self.next_brother::<WT>().current_tree_mut().as_mut().unwrap().nth_brother(n,)
-			},
-			core::cmp::Ordering::Equal => self.as_walk_tried(),
-			core::cmp::Ordering::Greater => todo!(),
-		}
-	}
-	fn next_brother<WT: WalkTried,>(&mut self,) -> WT {
-		todo!()
-	}
-	fn prev_brother<WT: WalkTried,>(&mut self,) -> WT {
-		todo!()
-	}
-	fn first_brother<WT: WalkTried,>(&mut self,) -> WT;
-	fn last_brother<WT: WalkTried,>(&mut self,) -> WT;
-
-	fn nth_child<WT: WalkTried,>(&mut self, n: usize,) -> WT;
-	fn first_child<WT: WalkTried,>(&mut self,) -> WT;
-	fn last_child<WT: WalkTried,>(&mut self,) -> WT;
+	fn nth_child<N2: NodeValue + 'a, O: TreeWalk<'a, N2,>,>(
+		&self,
+		n: usize,
+	) -> impl WalkTried<'a, N2, O,>;
+	fn first_child<N2: NodeValue + 'a, O: TreeWalk<'a, N2,>,>(&self,)
+	-> impl WalkTried<'a, N2, O,>;
+	fn last_child<N2: NodeValue + 'a, O: TreeWalk<'a, N2,>,>(&self,) -> impl WalkTried<'a, N2, O,>;
 
 	/// set current position specified by `coordinate`
-	fn set_pos<WT: WalkTried,>(&mut self, coordinate: impl Coordinate,) -> WT;
+	fn set_pos<N2: NodeValue + 'a, O: TreeWalk<'a, N2,>,>(
+		&self,
+		coordinate: impl Coordinate,
+	) -> impl WalkTried<'a, N2, O,>;
 
 	// NOTE: current position info
 	fn has_child(&self,) -> bool;
@@ -79,7 +81,10 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	fn get_pos_in_brother() -> usize;
 
 	fn get_pos(&self,) -> impl Coordinate;
-	fn as_walk_tried<WT: WalkTried,>(&self,) -> WT;
+
+	fn as_walk_tried<N2: NodeValue + 'a, O: TreeWalk<'a, N2,>,>(
+		&self,
+	) -> impl WalkTried<'a, N2, O,>;
 
 	fn value(&self,) -> N::Output;
 	/// return node on current position
