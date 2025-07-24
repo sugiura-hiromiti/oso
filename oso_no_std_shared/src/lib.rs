@@ -1,9 +1,49 @@
+//! # OSO No-Std Shared Library
+//!
+//! This crate provides shared utilities and data structures for the OSO operating system
+//! that work in `no_std` environments. It serves as a foundational library containing
+//! common functionality used across different components of the OSO ecosystem.
+//!
+//! ## Features
+//!
+//! - **Bridge Module**: Low-level hardware interfaces and CPU control functions
+//! - **Data Module**: Generic data structures like trees for system data management
+//! - **Parser Module**: Parsing utilities for binary data, HTML, and code generation
+//! - **CPU Control**: Platform-specific CPU power management functions
+//!
+//! ## Architecture
+//!
+//! This crate is designed to work in bare-metal environments and uses several unstable
+//! Rust features to provide zero-cost abstractions and compile-time optimizations.
+//!
+//! ## Usage
+//!
+//! ```rust,no_run
+//! use oso_no_std_shared::bridge::graphic::{FrameBufConf, PixelFormatConf};
+//! use oso_no_std_shared::wfi;
+//!
+//! // Configure graphics
+//! let framebuf = FrameBufConf::new(
+//!     PixelFormatConf::Rgb,
+//!     0x1000_0000 as *mut u8,
+//!     1024 * 768 * 4,
+//!     1024,
+//!     768,
+//!     1024 * 4,
+//! );
+//!
+//! // Enter low-power state
+//! wfi(); // Never returns
+//! ```
+
 #![no_std]
+// Enable unstable features required for advanced type system usage
 #![feature(unboxed_closures)]
 #![feature(associated_type_defaults)]
 #![feature(impl_trait_in_assoc_type)]
 #![feature(const_trait_impl)]
 
+// Public modules
 pub mod bridge;
 pub mod data;
 pub mod parser;
@@ -24,7 +64,7 @@ use core::arch::asm;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use oso_bridge::wfi;
+/// use oso_no_std_shared::wfi;
 ///
 /// // After completing all necessary work:
 /// wfi(); // CPU will enter low-power state until an interrupt occurs
@@ -37,10 +77,11 @@ use core::arch::asm;
 pub fn wfi() -> ! {
 	loop {
 		unsafe {
+			// Platform-specific wait-for-interrupt implementation
 			#[cfg(target_arch = "aarch64")]
-			asm!("wfi");
+			asm!("wfi");  // ARM64: Wait For Interrupt
 			#[cfg(target_arch = "x86_64")]
-			asm!("hlt");
+			asm!("hlt");  // x86_64: Halt until interrupt
 		}
 	}
 }
@@ -59,7 +100,7 @@ pub fn wfi() -> ! {
 /// # Examples
 ///
 /// ```rust,no_run
-/// use oso_bridge::wfe;
+/// use oso_no_std_shared::wfe;
 ///
 /// // After setting up event monitoring:
 /// wfe(); // CPU will enter low-power state until an event occurs
@@ -72,10 +113,11 @@ pub fn wfi() -> ! {
 pub fn wfe() -> ! {
 	loop {
 		unsafe {
+			// Platform-specific wait-for-event implementation
 			#[cfg(target_arch = "aarch64")]
-			asm!("wfe");
+			asm!("wfe");  // ARM64: Wait For Event
 			#[cfg(target_arch = "x86_64")]
-			asm!("hlt");
+			asm!("hlt");  // x86_64: Halt (no direct WFE equivalent)
 		}
 	}
 }
@@ -94,7 +136,7 @@ pub fn wfe() -> ! {
 /// # Examples
 ///
 /// ```rust,no_run
-/// use oso_bridge::nop;
+/// use oso_no_std_shared::nop;
 ///
 /// // When you want to keep the CPU busy without doing work:
 /// nop(); // CPU will continuously execute no-operation instructions
@@ -107,10 +149,11 @@ pub fn wfe() -> ! {
 pub fn nop() -> ! {
 	loop {
 		unsafe {
+			// Platform-specific no-operation implementation
 			#[cfg(target_arch = "aarch64")]
-			asm!("nop");
+			asm!("nop");  // ARM64: No Operation
 			#[cfg(target_arch = "x86_64")]
-			asm!("hlt");
+			asm!("hlt");  // x86_64: Halt (alternative to spinning NOP)
 		}
 	}
 }
