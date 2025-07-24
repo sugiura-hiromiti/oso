@@ -185,7 +185,7 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 			}
 		}
 	}
-
+  
 	/// Navigate to the nth sibling of the current node.
 	///
 	/// # Parameters
@@ -413,6 +413,8 @@ pub trait WalkTried {
 	type T: TreeWalk<Self::N,>;
 	/// The coordinate type for position tracking
 	type C: Coordinate;
+	// type TreeNode: TreeWalk<'a, Self::N,>
+	// where Self::N: 'a;
 
 	/// Check if the walk operation was successful.
 	///
@@ -604,10 +606,19 @@ pub struct WalkRslt<N: NodeValue, T: TreeWalk<N,>, C: Coordinate,> {
 	coord:        C,
 }
 
-impl<N: NodeValue, T: TreeWalk<N,>, C: Coordinate,> WalkTried for WalkRslt<N, T, C,> {
+
+impl<
+	const IS_TOP: bool,
+	const IS_BOTTOM: bool,
+	const IS_LEFT_MOST: bool,
+	const IS_RIGHT_MOST: bool,
+	N: NodeValue,
+	T: TreeWalk<IS_TOP, IS_BOTTOM, IS_LEFT_MOST, IS_RIGHT_MOST, N,>,
+	C: Coordinate,
+> WalkTried<IS_TOP, IS_BOTTOM, IS_LEFT_MOST, IS_RIGHT_MOST, N, T,>
+	for WalkRslt<IS_TOP, IS_BOTTOM, IS_LEFT_MOST, IS_RIGHT_MOST, N, T, C,>
+{
 	type C = C;
-	type N = N;
-	type T = T;
 
 	fn has_success(&self,) -> bool {
 		self.tree.is_some()
