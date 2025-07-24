@@ -9,6 +9,7 @@ pub struct Tree<'a, N: NodeValue,> {
 	parent:   Option<&'a Self,>,
 }
 
+
 /// TODO: consider remove default implementation of nth_ancestor
 pub trait TreeWalk<'a, N: NodeValue,>: Sized + Iterator
 where
@@ -18,7 +19,13 @@ where
 	type ChildTree;
 	// type TreeType: TreeWalk<'a, N,>;
 
+/// TODO:
+/// - [x] consider remove default implementation of nth_ancestor
+/// - [-] introduce generic const to represent border condition like position is root, has no more
+/// child, first/last brother etc.
+pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	// NOTE: walk operation
+
 	fn root<N2: NodeValue + 'a, O: TreeWalk<'a, N2,>,>(&self,) -> impl WalkTried<'a, N2, O,>;
 	/// return tree on current position
 	/// there is similar method `node` which returns current **node**
@@ -71,8 +78,10 @@ where
 	fn child_count(&self,) -> usize;
 	fn brother_count(&self,) -> usize;
 	fn generation_count(&self,) -> usize;
+	fn get_pos_in_brother() -> usize;
 
 	fn get_pos(&self,) -> impl Coordinate;
+
 	fn as_walk_tried<N2: NodeValue + 'a, O: TreeWalk<'a, N2,>,>(
 		&self,
 	) -> impl WalkTried<'a, N2, O,>;
@@ -83,36 +92,35 @@ where
 	fn node(&self,) -> N;
 }
 
-pub trait WalkTried<'a, N: NodeValue + 'a, T: TreeWalk<'a, N,> + 'a,> {
-	// type TreeNode: TreeWalk<'a, Self::N,>
-	// where Self::N: 'a;
+pub trait WalkTried {
+	type N: NodeValue;
+	type T: TreeWalk<Self::N,>;
+	type C: Coordinate;
 
 	fn has_success(&self,) -> bool;
 	fn has_failed(&self,) -> bool {
 		!self.has_success()
 	}
 
-	fn last_valid_coordinate(&self,) -> impl Coordinate;
-	fn current_node(&'a self,) -> T;
+	fn last_valid_coordinate(&self,) -> &Self::C;
+	fn current_tree(&self,) -> &Option<Self::T,>;
+	fn current_tree_mut(&mut self,) -> &mut Option<Self::T,>;
 
-	fn from(tn: T, coord: impl Coordinate,) -> Self;
-}
-
-fn walk_tried_from<
-	'a,
-	N: NodeValue + 'a,
-	T: TreeWalk<'a, N,> + 'a,
-	WT: WalkTried<'a, N, T,> + 'a,
->(
-	tn: T,
-	coord: impl Coordinate,
-) -> WT {
-	WT::from(tn, coord,)
+	fn from(tn: Self::T, coord: Self::C,) -> Self;
 }
 
 pub trait Coordinate {
-	fn nth_dimension(&self,) -> usize;
+	fn nth_dimension(&self, n: usize,) -> usize;
+	fn first_dimension(&self,) -> usize {
+		self.nth_dimension(0,)
+	}
+	fn last_dimension(&self,) -> usize {
+		let last_dimension_is = self.dimension_count();
+		self.nth_dimension(last_dimension_is - 1,)
+	}
+
 	fn dimension_count(&self,) -> usize;
+	fn set_at(&mut self, dim: usize, value: usize,);
 }
 
 pub struct Node<T: Clone,>(T,);
@@ -142,5 +150,37 @@ impl<T: Clone,> AsRef<T,> for Node<T,> {
 impl<T: Clone,> AsMut<T,> for Node<T,> {
 	fn as_mut(&mut self,) -> &mut T {
 		&mut self.0
+	}
+}
+
+pub struct WalkRslt<N: NodeValue, T: TreeWalk<N,>, C: Coordinate,> {
+	__constraint: core::marker::PhantomData<N,>,
+	tree:         Option<T,>,
+	coord:        C,
+}
+
+impl<N: NodeValue, T: TreeWalk<N,>, C: Coordinate,> WalkTried for WalkRslt<N, T, C,> {
+	type C = C;
+	type N = N;
+	type T = T;
+
+	fn has_success(&self,) -> bool {
+		self.tree.is_some()
+	}
+
+	fn last_valid_coordinate(&self,) -> &Self::C {
+		&self.coord
+	}
+
+	fn current_tree(&self,) -> &Option<T,> {
+		&self.tree
+	}
+
+	fn current_tree_mut(&mut self,) -> &mut Option<T,> {
+		&mut self.tree
+	}
+
+	fn from(tn: T, coord: Self::C,) -> Self {
+		Self { __constraint: core::marker::PhantomData::<N,>, tree: Some(tn,), coord, }
 	}
 }
