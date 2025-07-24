@@ -9,6 +9,7 @@ pub struct Tree<'a, N: NodeValue,> {
 	parent:   Option<&'a Self,>,
 }
 
+
 /// TODO:
 /// - [x] consider remove default implementation of nth_ancestor
 /// - [ ] introduce generic const to represent border condition like position is root, has no more
@@ -24,6 +25,11 @@ pub trait TreeWalk<
 	type ChildTree;
 	// type TreeType: TreeWalk<'a, N,>;
 
+/// TODO:
+/// - [x] consider remove default implementation of nth_ancestor
+/// - [-] introduce generic const to represent border condition like position is root, has no more
+/// child, first/last brother etc.
+pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	// NOTE: walk operation
 	fn root<
 		const ROOT_IS_BOTTOM: bool,
@@ -104,6 +110,7 @@ pub trait TreeWalk<
 	fn get_pos_in_brother() -> usize;
 
 	fn get_pos(&self,) -> impl Coordinate;
+
 	fn as_walk_tried<N2: NodeValue, O: TreeWalk<IS_TOP, IS_BOTTOM, IS_LEFT_MOST, IS_RIGHT_MOST, N2,>, C: Coordinate,>(
 		&self,
 	) -> WalkRslt<IS_TOP, IS_BOTTOM, IS_LEFT_MOST, IS_RIGHT_MOST, N2, O, C,>;
@@ -113,6 +120,7 @@ pub trait TreeWalk<
 	/// there is similar method `current` which returns current **tree** that contains positon infos
 	fn node(&self,) -> N;
 }
+
 
 pub trait WalkTried<
 	const IS_TOP: bool,
@@ -133,6 +141,7 @@ pub trait WalkTried<
 	}
 
 	fn last_valid_coordinate(&self,) -> &Self::C;
+
 	fn current_tree(&self,) -> &Option<T,>;
 	fn current_tree_mut(&mut self,) -> &mut Option<T,>;
 
@@ -190,6 +199,7 @@ impl<T: Clone,> AsMut<T,> for Node<T,> {
 	}
 }
 
+
 pub struct WalkRslt<
 	const IS_TOP: bool,
 	const IS_BOTTOM: bool,
@@ -203,6 +213,7 @@ pub struct WalkRslt<
 	tree:         Option<T,>,
 	coord:        C,
 }
+
 
 impl<
 	const IS_TOP: bool,
