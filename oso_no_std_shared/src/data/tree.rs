@@ -100,6 +100,11 @@ pub trait TreeWindow<N: NodeValue,>: TreeWalk<N,> {
 	///
 	/// A walker that can traverse the sibling nodes
 	fn brothers<WT: WalkTried<T = Self::Brothers,>,>(&mut self,) -> WT;
+
+	fn as_tree_walk<N2: NodeValue,>(&self,) -> &impl TreeWalk<N2,>
+	where Self: TreeWalk<N2,> {
+		self
+	}
 }
 
 /// Core trait for tree traversal and navigation operations.
@@ -200,17 +205,9 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	///
 	/// A walk result indicating success or failure of the operation
 	fn nth_brother<WT: WalkTried,>(&mut self, n: usize,) -> WT {
-		let cur_bro_pos = self.get_pos().last_dimension();
-
-		match cur_bro_pos.cmp(&n,) {
-			// Current position is before target: move forward
-			core::cmp::Ordering::Less => {
-				self.next_brother::<WT>().current_tree_mut().as_mut().unwrap().nth_brother(n,)
-			},
-			// Already at target position
-			core::cmp::Ordering::Equal => self.as_walk_tried(),
-			core::cmp::Ordering::Greater => self.prev_brother::<WT>().current_tree_mut().as_mut().unwrap().nth_brother(n),
-		}
+		let mut coord = self.get_pos();
+		coord.set_last(n,);
+		self.set_pos(coord,)
 	}
 
 	/// Navigate to the next sibling of the current node.
@@ -223,7 +220,8 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	///
 	/// A walk result indicating success or failure of the operation
 	fn next_brother<WT: WalkTried,>(&mut self,) -> WT {
-		todo!()
+		let dim_count = self.get_pos().dimension_count();
+		self.move_pos(dim_count, 1,)
 	}
 
 	/// Navigate to the previous sibling of the current node.
@@ -236,7 +234,8 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	///
 	/// A walk result indicating success or failure of the operation
 	fn prev_brother<WT: WalkTried,>(&mut self,) -> WT {
-		todo!()
+		let dim_count = self.get_pos().dimension_count();
+		self.move_pos(dim_count, -1,)
 	}
 
 	/// Navigate to the first sibling (leftmost child of parent).
@@ -248,7 +247,11 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	/// # Returns
 	///
 	/// A walk result indicating success or failure of the operation
-	fn first_brother<WT: WalkTried,>(&mut self,) -> WT;
+	fn first_brother<WT: WalkTried,>(&mut self,) -> WT {
+		let mut coord = self.get_pos();
+		coord.set_last(0,);
+		self.set_pos(coord,)
+	}
 
 	/// Navigate to the last sibling (rightmost child of parent).
 	///
@@ -259,7 +262,12 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	/// # Returns
 	///
 	/// A walk result indicating success or failure of the operation
-	fn last_brother<WT: WalkTried,>(&mut self,) -> WT;
+	fn last_brother<WT: WalkTried,>(&mut self,) -> WT {
+		let brother_count = self.brother_count();
+		let mut coord = self.get_pos();
+		coord.set_last(brother_count - 1,);
+		self.set_pos(coord,)
+	}
 
 	/// Navigate to the nth child of the current node.
 	///
@@ -274,7 +282,11 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	/// # Returns
 	///
 	/// A walk result indicating success or failure of the operation
-	fn nth_child<WT: WalkTried,>(&mut self, n: usize,) -> WT;
+	fn nth_child<WT: WalkTried,>(&mut self, n: usize,) -> WT {
+		let mut coord = self.get_pos();
+		coord.add_dimention(n,);
+		self.set_pos(coord,)
+	}
 
 	/// Navigate to the first child of the current node.
 	///
@@ -285,7 +297,9 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	/// # Returns
 	///
 	/// A walk result indicating success or failure of the operation
-	fn first_child<WT: WalkTried,>(&mut self,) -> WT;
+	fn first_child<WT: WalkTried,>(&mut self,) -> WT {
+		self.nth_child(0,)
+	}
 
 	/// Navigate to the last child of the current node.
 	///
@@ -296,7 +310,10 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	/// # Returns
 	///
 	/// A walk result indicating success or failure of the operation
-	fn last_child<WT: WalkTried,>(&mut self,) -> WT;
+	fn last_child<WT: WalkTried,>(&mut self,) -> WT {
+		let children_count = self.child_count();
+		self.nth_child(children_count - 1,)
+	}
 
 	/// Set the current position to the specified coordinate.
 	///
@@ -312,6 +329,9 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	///
 	/// A walk result indicating success or failure of the operation
 	fn set_pos<WT: WalkTried,>(&mut self, coordinate: impl Coordinate,) -> WT;
+
+	/// similar to `set_pos` but act as moving by relative distance
+	fn move_pos<WT: WalkTried,>(&mut self, dimension: usize, distance: isize,) -> WT;
 
 	// === Position Information Methods ===
 
@@ -362,7 +382,7 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	/// # Returns
 	///
 	/// A coordinate representing the current position in the tree
-	fn get_pos(&self,) -> impl Coordinate;
+	fn get_pos(&self,) -> impl Coordinate + use<Self, N,>;
 
 	/// Convert the current state to a walk result.
 	///
@@ -520,6 +540,17 @@ pub trait Coordinate {
 	/// - `dim`: The dimension index to modify
 	/// - `value`: The new value for that dimension
 	fn set_at(&mut self, dim: usize, value: usize,);
+
+	fn set_first(&mut self, value: usize,) {
+		self.set_at(0, value,);
+	}
+
+	fn set_last(&mut self, value: usize,) {
+		let dim_count = self.dimension_count();
+		self.set_at(dim_count, value,);
+	}
+
+	fn add_dimention(&mut self, init: usize,);
 }
 
 /// A wrapper struct for node values.
