@@ -93,7 +93,7 @@ cargo xt
 | `oso_error`            | 共通エラー型とエラーハンドリングロジック                          |
 | `oso_bridge`           | ブートローダとカーネル間で共有されるデータ構造定義                |
 
-## build
+## Build
 
 **前提条件**：
 
@@ -110,3 +110,25 @@ cargo xt
 # x86も部分的にサポートしています
 cargo xt -86
 ```
+
+## 機能
+
+### グラフィックス機能
+
+- RGB、BGR、Bitmask形式のピクセルフォーマットサポート
+- Block Transfer Only (BLT) モード（デフォルト）
+- UEFI Graphics Output Protocol (GOP) 対応
+
+### アーキテクチャサポート
+
+- **主要ターゲット**: aarch64 (ARM64)
+- **部分サポート**: x86_64
+
+## ライセンス
+
+MIT OR Apache-2.0
+
+## 貢献
+
+このプロジェクトは実験的な性質を持ちますが、コントリビューションを歓迎します。
+Issue や Pull Request をお気軽にお送りください。
