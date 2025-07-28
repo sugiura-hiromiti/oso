@@ -88,18 +88,42 @@ Developer auxiliary tool suite.
 | `oso_error`            | Common error types and error handling logic                                   |
 | `util_common_code`     | General-purpose code shared between development tools                         |
 
-## build
+## Build
 
-Requirements:
+**Prerequisites**:
 
-- Rust (nightly)
+- nightly Rust
 - QEMU
-- macOS (currently required due to use of hdiutil; multi-platform support is planned)
+- macOS (uses `hdiutil` command, multi-platform support planned)
+
+**Usage examples**:
 
 ```bash
-# Build all crates, mount binaries, and launch in QEMU
+# Build each crate, mount binaries, and run QEMU
 cargo xt
 
-# Partial support for x86_64 as well
+# x86 is also partially supported
 cargo xt -86
 ```
+
+## Features
+
+### Graphics Features
+
+- RGB, BGR, Bitmask pixel format support
+- Block Transfer Only (BLT) mode (default)
+- UEFI Graphics Output Protocol (GOP) support
+
+### Architecture Support
+
+- **Primary target**: aarch64 (ARM64)
+- **Partial support**: x86_64
+
+## License
+
+MIT OR Apache-2.0
+
+## Contributing
+
+While this project is experimental in nature, contributions are welcome.
+Please feel free to submit Issues or Pull Requests.
