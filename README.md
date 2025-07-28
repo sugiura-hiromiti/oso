@@ -58,10 +58,8 @@ cargo xt
   - `app`：アプリ実行系
   - `base`：基本ライブラリ
   - `driver`：デバイス制御
-  - `gui`：グラフィカル表示
 - 他クレートとの連携：
-  - `oso_bridge`：ブートローダとカーネルの橋渡し
-  - `oso_binary_parser`：DeviceTree(.dtb)等のバイナリ解析
+  - `oso_no_std_shared`：no_std環境での共有ライブラリ
   - `oso_proc_macro`：マクロによる自動コード生成
   - `oso_error`：エラー処理体系
 
@@ -69,10 +67,11 @@ cargo xt
 
 独自実装のUEFI対応ブートローダ。
 
-- `chibi_uefi` モジュールで、UEFIのRustラッパーを提供
 - ELF形式のカーネル読み込み機能
+- グラフィックス機能サポート（RGB/BGR/Bitmask形式）
 - 使用クレート：
-  - `oso_bridge`
+  - `oso_no_std_shared`
+  - `oso_proc_macro`
   - `oso_error`
 
 ### `xtask`
@@ -87,11 +86,11 @@ cargo xt
 
 | クレート名             | 説明                                                              |
 | ---------------------- | ----------------------------------------------------------------- |
-| `oso_binary_parser`    | ELFやDeviceTreeなどのバイナリ形式を解析するための抽象枠組みを提供 |
+| `oso_no_std_shared`    | no_std環境で共有される基本的なデータ構造とユーティリティを提供    |
 | `oso_proc_macro_logic` | 手続きマクロの実装内部ロジックとそのテスト                        |
 | `oso_proc_macro`       | カーネルの構造体やパーサ・テスト生成を支援するマクロ群            |
 | `oso_error`            | 共通エラー型とエラーハンドリングロジック                          |
-| `oso_bridge`           | ブートローダとカーネル間で共有されるデータ構造定義                |
+| `util_common_code`     | 開発ツール間で共有される汎用コード                                |
 
 ## build
 
