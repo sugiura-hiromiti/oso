@@ -23,21 +23,21 @@ cd oso
 cargo xt
 ```
 
-## Philosophy & Characteristics
+## Development Philosophy & Features
 
-- [x] AArch64-first design
-- [x] Pure Rust implementation
-- [x] No external dependencies
-  - The xtask crate (for developer utilities) may use dependencies
-  - Some use of external crates is permitted when aligned with curiosity-driven learning, e.g.:
-    - Web scraping for automatically generating implementations from specs via proc macros
+- [x] aarch64 targeted
+- [x] pure Rust
+- [x] no dependencies
+  - External crates are used in the development auxiliary crate `xtask`
+  - Additionally, external crates are used for the following purposes to prioritize my technical curiosity:
+    - Web scraping: Automatically generating implementations with proc macros based on specifications
 - [x] Standards compliant
-  - Strives to follow de facto standards, avoiding unnecessary “original formats”
-- [x] Intentional Reinvention
-  - Instead of mimicking existing implementations, all code is written from scratch based on primary sources (specs, technical references)
-  - Aims to reinterpret what an OS can be — and what Rust can express at the OS level
-- [x] Advanced Rust usage
-  - Actively explores underused features and possibilities of Rust in OS development
+  - Developed to respect de facto standards and minimize custom specifications
+- [x] Active reinvention
+  - Code is built from scratch based on primary sources (specifications and references) without copying existing implementations
+  - This is to reinterpret the role and possibilities of OS during development and observe what OS and Rust can do from a level playing field
+- [x] Active use of Rust's higher-order features
+  - To explore Rust-specific advantages in OS development that existing projects have overlooked
 
 ## Project Structure
 
