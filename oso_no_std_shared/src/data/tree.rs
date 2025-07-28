@@ -209,8 +209,7 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 			},
 			// Already at target position
 			core::cmp::Ordering::Equal => self.as_walk_tried(),
-			// Current position is after target: move backward (TODO: implement)
-			core::cmp::Ordering::Greater => todo!(),
+			core::cmp::Ordering::Greater => self.prev_brother::<WT>().current_tree_mut().as_mut().unwrap().nth_brother(n),
 		}
 	}
 
