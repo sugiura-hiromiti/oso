@@ -66,7 +66,7 @@ pub struct Tree<'a, N: NodeValue,> {
 ///
 /// - `ChildrenN`: Node value type for child nodes
 /// - `Children`: Tree walker type for child nodes
-/// - `BrothersN`: Node value type for sibling nodes  
+/// - `BrothersN`: Node value type for sibling nodes
 /// - `Brothers`: Tree walker type for sibling nodes
 pub trait TreeWindow<N: NodeValue,>: TreeWalk<N,> {
 	/// Node value type for child nodes
@@ -78,7 +78,7 @@ pub trait TreeWindow<N: NodeValue,>: TreeWalk<N,> {
 	type BrothersN: NodeValue;
 	/// Tree walker type for sibling nodes
 	type Brothers: TreeWalk<Self::BrothersN,>;
-	
+
 	/// Get a walker for the children of the current node.
 	///
 	/// # Type Parameters
@@ -89,7 +89,7 @@ pub trait TreeWindow<N: NodeValue,>: TreeWalk<N,> {
 	///
 	/// A walker that can traverse the child nodes
 	fn children<WT: WalkTried<T = Self::Children,>,>(&mut self,) -> WT;
-	
+
 	/// Get a walker for the siblings of the current node.
 	///
 	/// # Type Parameters
@@ -111,8 +111,8 @@ pub trait TreeWindow<N: NodeValue,>: TreeWalk<N,> {
 /// # Design Notes
 ///
 /// - The `nth_ancestor` method has a default implementation for convenience
-/// - Border conditions (like reaching root or leaf nodes) are handled through
-///   the `WalkTried` return type
+/// - Border conditions (like reaching root or leaf nodes) are handled through the `WalkTried`
+///   return type
 /// - Position tracking is handled through the `Coordinate` trait
 ///
 /// # Type Parameters
@@ -120,7 +120,7 @@ pub trait TreeWindow<N: NodeValue,>: TreeWalk<N,> {
 /// - `N`: Type implementing `NodeValue` for the node data
 pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	// === Navigation Operations ===
-	
+
 	/// Navigate to the root of the tree.
 	///
 	/// # Type Parameters
@@ -131,7 +131,7 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	///
 	/// A walk result indicating success or failure of the operation
 	fn root<WT: WalkTried,>(&mut self,) -> WT;
-	
+
 	/// Get the current tree position.
 	///
 	/// This method returns a tree walker positioned at the current location.
@@ -152,7 +152,7 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	///
 	/// A walk result indicating success or failure of the operation
 	fn parent<WT: WalkTried,>(&mut self,) -> WT;
-	
+
 	/// Navigate to the nth ancestor of the current node.
 	///
 	/// This method provides a default implementation that recursively calls
@@ -185,7 +185,7 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 			}
 		}
 	}
-  
+
 	/// Navigate to the nth sibling of the current node.
 	///
 	/// # Parameters
@@ -213,7 +213,7 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 			core::cmp::Ordering::Greater => todo!(),
 		}
 	}
-	
+
 	/// Navigate to the next sibling of the current node.
 	///
 	/// # Type Parameters
@@ -226,7 +226,7 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	fn next_brother<WT: WalkTried,>(&mut self,) -> WT {
 		todo!()
 	}
-	
+
 	/// Navigate to the previous sibling of the current node.
 	///
 	/// # Type Parameters
@@ -239,7 +239,7 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	fn prev_brother<WT: WalkTried,>(&mut self,) -> WT {
 		todo!()
 	}
-	
+
 	/// Navigate to the first sibling (leftmost child of parent).
 	///
 	/// # Type Parameters
@@ -250,7 +250,7 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	///
 	/// A walk result indicating success or failure of the operation
 	fn first_brother<WT: WalkTried,>(&mut self,) -> WT;
-	
+
 	/// Navigate to the last sibling (rightmost child of parent).
 	///
 	/// # Type Parameters
@@ -276,7 +276,7 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	///
 	/// A walk result indicating success or failure of the operation
 	fn nth_child<WT: WalkTried,>(&mut self, n: usize,) -> WT;
-	
+
 	/// Navigate to the first child of the current node.
 	///
 	/// # Type Parameters
@@ -287,7 +287,7 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	///
 	/// A walk result indicating success or failure of the operation
 	fn first_child<WT: WalkTried,>(&mut self,) -> WT;
-	
+
 	/// Navigate to the last child of the current node.
 	///
 	/// # Type Parameters
@@ -315,14 +315,14 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	fn set_pos<WT: WalkTried,>(&mut self, coordinate: impl Coordinate,) -> WT;
 
 	// === Position Information Methods ===
-	
+
 	/// Check if the current node has any children.
 	///
 	/// # Returns
 	///
 	/// `true` if the node has children, `false` otherwise
 	fn has_child(&self,) -> bool;
-	
+
 	/// Check if the current node has a parent.
 	///
 	/// # Returns
@@ -336,21 +336,21 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	///
 	/// The count of direct children
 	fn child_count(&self,) -> usize;
-	
+
 	/// Get the number of siblings of the current node.
 	///
 	/// # Returns
 	///
 	/// The count of sibling nodes (including self)
 	fn brother_count(&self,) -> usize;
-	
+
 	/// Get the depth of the tree from the current node.
 	///
 	/// # Returns
 	///
 	/// The number of generations in the subtree rooted at this node
 	fn generation_count(&self,) -> usize;
-	
+
 	/// Get the position of this node among its siblings.
 	///
 	/// # Returns
@@ -364,7 +364,7 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	///
 	/// A coordinate representing the current position in the tree
 	fn get_pos(&self,) -> impl Coordinate;
-	
+
 	/// Convert the current state to a walk result.
 	///
 	/// # Type Parameters
@@ -377,14 +377,14 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	fn as_walk_tried<WT: WalkTried,>(&self,) -> WT;
 
 	// === Value Access Methods ===
-	
+
 	/// Get the output value of the current node.
 	///
 	/// # Returns
 	///
 	/// The output value as defined by the `NodeValue` trait
 	fn value(&self,) -> N::Output;
-	
+
 	/// Get the node value at the current position.
 	///
 	/// This method returns the node value itself, while `current()` returns
@@ -422,7 +422,7 @@ pub trait WalkTried {
 	///
 	/// `true` if the operation succeeded, `false` otherwise
 	fn has_success(&self,) -> bool;
-	
+
 	/// Check if the walk operation failed.
 	///
 	/// This is the logical inverse of `has_success()`.
@@ -442,14 +442,14 @@ pub trait WalkTried {
 	///
 	/// Reference to the last valid coordinate
 	fn last_valid_coordinate(&self,) -> &Self::C;
-	
+
 	/// Get an immutable reference to the current tree walker.
 	///
 	/// # Returns
 	///
 	/// Optional reference to the tree walker (None if operation failed)
 	fn current_tree(&self,) -> &Option<Self::T,>;
-	
+
 	/// Get a mutable reference to the current tree walker.
 	///
 	/// # Returns
@@ -485,7 +485,7 @@ pub trait Coordinate {
 	///
 	/// The coordinate value at the specified dimension
 	fn nth_dimension(&self, n: usize,) -> usize;
-	
+
 	/// Get the value of the first dimension.
 	///
 	/// This is a convenience method equivalent to `nth_dimension(0)`.
@@ -496,7 +496,7 @@ pub trait Coordinate {
 	fn first_dimension(&self,) -> usize {
 		self.nth_dimension(0,)
 	}
-	
+
 	/// Get the value of the last dimension.
 	///
 	/// # Returns
@@ -513,7 +513,7 @@ pub trait Coordinate {
 	///
 	/// The number of dimensions
 	fn dimension_count(&self,) -> usize;
-	
+
 	/// Set the value at a specific dimension.
 	///
 	/// # Parameters
@@ -552,7 +552,7 @@ where Self::Output: Clone
 {
 	/// The type of value stored in the node
 	type Output;
-	
+
 	/// Create a clone of the node's value.
 	///
 	/// # Returns
@@ -606,19 +606,10 @@ pub struct WalkRslt<N: NodeValue, T: TreeWalk<N,>, C: Coordinate,> {
 	coord:        C,
 }
 
-
-impl<
-	const IS_TOP: bool,
-	const IS_BOTTOM: bool,
-	const IS_LEFT_MOST: bool,
-	const IS_RIGHT_MOST: bool,
-	N: NodeValue,
-	T: TreeWalk<IS_TOP, IS_BOTTOM, IS_LEFT_MOST, IS_RIGHT_MOST, N,>,
-	C: Coordinate,
-> WalkTried<IS_TOP, IS_BOTTOM, IS_LEFT_MOST, IS_RIGHT_MOST, N, T,>
-	for WalkRslt<IS_TOP, IS_BOTTOM, IS_LEFT_MOST, IS_RIGHT_MOST, N, T, C,>
-{
+impl<N: NodeValue, T: TreeWalk<N,>, C: Coordinate,> WalkTried for WalkRslt<N, T, C,> {
 	type C = C;
+	type N = N;
+	type T = T;
 
 	fn has_success(&self,) -> bool {
 		self.tree.is_some()
@@ -637,10 +628,6 @@ impl<
 	}
 
 	fn from(tn: T, coord: Self::C,) -> Self {
-		Self { 
-			__constraint: core::marker::PhantomData::<N,>, 
-			tree: Some(tn,), 
-			coord, 
-		}
+		Self { __constraint: core::marker::PhantomData::<N,>, tree: Some(tn,), coord, }
 	}
 }
