@@ -91,7 +91,7 @@ pub trait BinaryParser<C: Context,>: Parser<C,> {}
 ///
 /// // Create a builder for parsing u32 values
 /// let builder = BinaryParserBuilder::<u32>::new();
-/// 
+///
 /// // Configure and build the parser
 /// let parser = builder
 ///     .with_endianness(Endianness::LittleEndian)
@@ -100,7 +100,7 @@ pub trait BinaryParser<C: Context,>: Parser<C,> {}
 /// ```
 pub struct BinaryParserBuilder<T,> {
 	/// Phantom data to maintain type parameter `T` without storing actual data
-	/// 
+	///
 	/// This field ensures that the builder maintains information about the
 	/// target type `T` at compile time, enabling type-safe parser construction
 	/// without runtime overhead.
@@ -132,13 +132,11 @@ impl<T,> BinaryParserBuilder<T,> {
 	/// let builder = BinaryParserBuilder::<u64>::new();
 	/// ```
 	pub fn new() -> Self {
-		Self {
-			__marker: PhantomData,
-		}
+		Self { __marker: PhantomData, }
 	}
-	
+
 	// Future methods that could be added to the builder:
-	
+
 	/// Configure the endianness for binary parsing.
 	///
 	/// # Parameters
@@ -157,7 +155,7 @@ impl<T,> BinaryParserBuilder<T,> {
 	//     // Configure endianness handling
 	//     self
 	// }
-	
+
 	/// Configure alignment requirements for binary parsing.
 	///
 	/// # Parameters
@@ -176,7 +174,7 @@ impl<T,> BinaryParserBuilder<T,> {
 	//     // Configure alignment requirements
 	//     self
 	// }
-	
+
 	/// Build the configured binary parser.
 	///
 	/// # Returns
@@ -187,8 +185,8 @@ impl<T,> BinaryParserBuilder<T,> {
 	///
 	/// This method is currently commented out but represents the final step
 	/// in the builder pattern where the configured parser is constructed.
-	// pub fn build<C: Context>(self) -> impl BinaryParser<C> {
-	//     // Construct the final parser with all configurations
-	//     todo!()
-	// }
+	pub fn build<C: Context,>(self,) {
+		// Construct the final parser with all configurations
+		todo!()
+	}
 }
