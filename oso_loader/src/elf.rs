@@ -1,3 +1,32 @@
+//! # ELF File Parsing and Loading Module
+//!
+//! This module provides comprehensive ELF (Executable and Linkable Format) file parsing
+//! capabilities for the OSO bootloader. It supports parsing ELF headers, program headers,
+//! section headers, and various ELF structures needed for kernel loading.
+//!
+//! ## Features
+//!
+//! - **ELF Header Parsing**: Validates and parses ELF file headers
+//! - **Program Header Processing**: Handles loadable segments and program information
+//! - **Section Header Analysis**: Processes section headers for symbol tables and relocations
+//! - **Dynamic Linking Support**: Handles dynamic symbols, relocations, and version information
+//! - **Multi-architecture Support**: Works with 32-bit and 64-bit ELF files
+//! - **Endianness Handling**: Supports both little-endian and big-endian formats
+//!
+//! ## ELF Structure Support
+//!
+//! The module supports parsing of:
+//! - Symbol tables (static and dynamic)
+//! - String tables
+//! - Relocation sections (REL and RELA)
+//! - Version information (definitions and requirements)
+//! - Dynamic linking information
+//! - Hash tables for symbol lookup
+//!
+//! ## Constants
+//!
+//! Various ELF format constants are defined for validation and parsing.
+
 use crate::Rslt;
 use crate::elf::hash::gnu_hash_len;
 use crate::elf::hash::hash_len;
@@ -33,30 +62,75 @@ use section_header::SHT_RELA;
 use section_header::SHT_SYMTAB;
 use section_header::get_string_table;
 
+/// Hash table implementations for symbol lookup
 pub mod hash;
+/// Program header parsing and types
 pub mod program_header;
+/// Section header parsing and types
 pub mod section_header;
 
-/// used to check magic number
+/// ELF magic number signature used to identify ELF files
 const ELF_MAGIC_NUMBER: &[u8; ELF_MAGIC_NUMBER_SIZE] = b"\x7fELF";
+/// Size of the ELF magic number in bytes
 const ELF_MAGIC_NUMBER_SIZE: usize = 4;
-/// size of ident in elf header
+/// Size of the ELF identification array in the header
 const ELF_IDENT_SIZE: usize = 16;
-/// file class byte index
+/// Index of the file class byte in the ELF identification array
 const ELF_FILE_CLASS_INDEX: usize = 4;
-/// indicates 32 bit file class object
+/// Value indicating a 32-bit ELF object file
 const ELF_32_BIT_OBJECT: u8 = 1;
-/// indicates 64 bit file class object
+/// Value indicating a 64-bit ELF object file
 const ELF_64_BIT_OBJECT: u8 = 2;
-/// index to flag of data encoding(endianness) in ident of elf header
+/// Index of the data encoding (endianness) byte in the ELF identification array
 const ELF_ENDIANNESS_INDEX: usize = 5;
-/// index to elf version flag
+/// Index of the ELF version byte in the identification array
 const ELF_VERSION_INDEX: usize = 6;
-/// index to target os abi flag
+/// Index of the target OS ABI byte in the identification array
 const ELF_OS_ABI_INDEX: usize = 7;
-/// index to abi version flag
+/// Index of the ABI version byte in the identification array
 const ELF_ABI_VERSION_INDEX: usize = 8;
 
+/// Represents a parsed ELF file with all its components
+///
+/// This structure contains all the parsed information from an ELF file,
+/// including headers, tables, and metadata necessary for loading and
+/// executing the binary.
+///
+/// # Fields
+///
+/// ## Core Structure
+/// - `header`: Main ELF header containing file metadata
+/// - `program_headers`: Array of program headers describing segments
+/// - `section_headers`: Array of section headers describing sections
+///
+/// ## String and Symbol Tables
+/// - `section_header_string_table`: Names of sections
+/// - `dynamic_string_table`: Strings used by dynamic linking
+/// - `dynamic_symbol_table`: Symbols for dynamic linking
+/// - `symbol_table`: Static symbol table
+/// - `string_table_for_symbol_table`: Strings for static symbols
+///
+/// ## Dynamic Linking Information
+/// - `dynamic_info`: Dynamic section information
+/// - `shared_object_name`: Name of shared object (if applicable)
+/// - `interpreter`: Path to dynamic linker/interpreter
+/// - `libraries`: List of required shared libraries
+/// - `runtime_search_path_deprecated`: Deprecated runtime search paths
+/// - `runtime_search_path`: Runtime library search paths
+///
+/// ## Relocation Information
+/// - `dynamic_relocation_with_addend`: RELA relocations
+/// - `dynamic_relocation`: REL relocations
+/// - `procedure_linkage_table_relocation`: PLT relocations
+/// - `section_relocations`: Per-section relocations
+///
+/// ## Version Information
+/// - `symbol_version_section`: Symbol version information
+/// - `version_definition_section`: Version definitions
+/// - `version_needed_section`: Required versions
+///
+/// ## Flags
+/// - `is_position_independent_executable`: Whether this is a PIE binary
 pub struct Elf {
 	pub header:                             ElfHeader,
 	pub program_headers:                    Vec<ProgramHeader,>,
@@ -83,6 +157,40 @@ pub struct Elf {
 }
 
 impl Elf {
+	/// Parses an ELF file from binary data
+	///
+	/// This method performs comprehensive parsing of an ELF file, extracting
+	/// all relevant information needed for loading and execution. The parsing
+	/// process includes validation of the ELF format and extraction of all
+	/// supported ELF structures.
+	///
+	/// # Arguments
+	///
+	/// * `binary` - Raw bytes of the ELF file to parse
+	///
+	/// # Returns
+	///
+	/// * `Ok(Elf)` - Successfully parsed ELF structure
+	/// * `Err(EfiParseError)` - If parsing fails due to invalid format or unsupported features
+	///
+	/// # Errors
+	///
+	/// This method can fail if:
+	/// - The file is not a valid ELF file (invalid magic number)
+	/// - The ELF format is unsupported (wrong architecture, endianness, etc.)
+	/// - Required sections or headers are malformed
+	/// - Memory allocation fails during parsing
+	///
+	/// # Parsing Process
+	///
+	/// 1. **Header Parsing**: Validates and parses the main ELF header
+	/// 2. **Program Headers**: Extracts segment information for loading
+	/// 3. **Section Headers**: Processes section metadata
+	/// 4. **String Tables**: Extracts various string tables
+	/// 5. **Symbol Tables**: Processes static and dynamic symbol information
+	/// 6. **Dynamic Information**: Handles dynamic linking metadata
+	/// 7. **Relocations**: Processes relocation entries
+	/// 8. **Version Information**: Extracts symbol versioning data
 	pub fn parse(binary: &[u8],) -> Rslt<Self, EfiParseError,> {
 		let header = ElfHeader::parse(binary,)?;
 		oso_proc_macro::test_elf_header_parse!(header);
@@ -256,18 +364,44 @@ impl Elf {
 		},)
 	}
 
+	/// Returns whether this ELF file is 64-bit
+	///
+	/// # Returns
+	///
+	/// `true` if this is a 64-bit ELF file, `false` if it's 32-bit
 	pub fn is_64(&self,) -> bool {
 		self.header.is_64()
 	}
 
+	/// Returns whether this ELF file is a shared library
+	///
+	/// A file is considered a library if it has the shared object type
+	/// but is not a position-independent executable.
+	///
+	/// # Returns
+	///
+	/// `true` if this is a shared library, `false` otherwise
 	pub fn is_lib(&self,) -> bool {
 		self.header.is_lib() && !self.is_position_independent_executable
 	}
 
+	/// Returns whether this ELF file uses little-endian byte ordering
+	///
+	/// # Returns
+	///
+	/// `true` if little-endian, `false` if big-endian
 	pub fn is_little_endian(&self,) -> bool {
 		self.header.is_little_endian()
 	}
 
+	/// Returns the entry point address of the ELF file
+	///
+	/// This is the virtual address where execution should begin
+	/// when the program is loaded.
+	///
+	/// # Returns
+	///
+	/// The entry point address as a `usize`
 	pub fn entry_point_address(&self,) -> usize {
 		self.header.entry as usize
 	}
