@@ -43,51 +43,50 @@ cargo xt
 
 This repository is a [Cargo workspace](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html) composed of multiple crates:
 
-### oso_kernel
+### `oso_kernel`
 
-The core kernel crate.
+The crate that constitutes the kernel body
 
-Highlights:
+**Features**
 
-- Uses many advanced nightly Rust features
-- Modular structure:
-  - app: Application runtime layer
-  - base: Core abstractions and utilities
-  - driver: Device drivers
-  - gui: Graphical user interface
-- Integrates with:
-  - oso_bridge: Interface between bootloader and kernel
-  - oso_binary_parser: Parses binary formats like DeviceTree (.dtb)
-  - oso_proc_macro: Procedural macros for code generation
-  - oso_error: Unified error handling framework
+- Extensive use of nightly Rust features
+- Module structure:
+  - `app`: Application execution system
+  - `base`: Basic library
+  - `driver`: Device control
+- Integration with other crates:
+  - `oso_no_std_shared`: Shared library for no_std environment
+  - `oso_proc_macro`: Automatic code generation through macros
+  - `oso_error`: Error handling system
 
-### oso_loader
+### `oso_loader`
 
-A custom UEFI-compliant bootloader.
+Custom UEFI-compatible bootloader implementation.
 
-- Includes chibi_uefi: a minimalist UEFI wrapper written in Rust
-- Supports ELF-based kernel loading
-- Uses:
-  - oso_bridge
-  - oso_error
+- ELF format kernel loading functionality
+- Graphics support (RGB/BGR/Bitmask formats)
+- Used crates:
+  - `oso_no_std_shared`
+  - `oso_proc_macro`
+  - `oso_error`
 
-### xtask
+### `xtask`
 
-Developer-focused CLI utilities.
+Developer auxiliary tool suite.
 
-- Builds for UEFI/QEMU environments
-- Handles boot image creation and QEMU execution
-- Automates deploy/test/dev flow
+- Build assistance for QEMU and UEFI targets
+- Startup scripts
+- Deployment and test automation processes
 
-### Supporting Crates
+### Auxiliary Crates List
 
-| クレート名             | 説明                                                                         |
-| ---------------------- | ---------------------------------------------------------------------------- |
-| `oso_binary_parser`    | Provides a general framework for parsing ELF, DeviceTree, and other binaries |
-| `oso_proc_macro_logic` | Internal logic and tests for procedural macro expansion                      |
-| `oso_proc_macro`       | Macros for generating kernel structs, parsers, and test scaffolding          |
-| `oso_error`            | Common error types and handling logic                                        |
-| `oso_bridge`           | Shared interface structures between bootloader and kernel                    |
+| Crate Name             | Description                                                                    |
+| ---------------------- | ------------------------------------------------------------------------------ |
+| `oso_no_std_shared`    | Provides basic data structures and utilities shared in no_std environment     |
+| `oso_proc_macro_logic` | Internal logic implementation and testing for procedural macros               |
+| `oso_proc_macro`       | Macro suite supporting kernel struct, parser, and test generation             |
+| `oso_error`            | Common error types and error handling logic                                   |
+| `util_common_code`     | General-purpose code shared between development tools                         |
 
 ## build
 
