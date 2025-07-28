@@ -1,1 +1,8 @@
 **/.DS_Store
+target/
+mnt/
+*.rpm
+*.raw
+*.img
+*.elf
+*.sh
