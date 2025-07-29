@@ -27,6 +27,16 @@ pub mod coord;
 pub mod walk_rslt;
 pub mod walker;
 
+//  TODO: -implement TreePart for Tree
+// - refactor codebase to use `TreePart` object as an atomic unit in `TreeWalk` and `TreeWindow`
+pub trait TreePart {
+	type N: NodeValue;
+	type C: Coordinate;
+
+	fn node(&self,) -> Self::N;
+	fn coord(&self,) -> Self::C;
+}
+
 /// A generic tree data structure with lifetime-managed references.
 ///
 /// This tree structure uses references to manage parent-child relationships
