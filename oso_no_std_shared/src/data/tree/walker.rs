@@ -17,16 +17,16 @@ use crate::data::tree::walk_rslt::WalkTried;
 /// - `Children`: Tree walker type for child nodes
 /// - `BrothersN`: Node value type for sibling nodes
 /// - `Brothers`: Tree walker type for sibling nodes
-pub trait TreeWindow<N: NodeValue,>: TreeWalk<N,> {
+pub trait TreeWindow<N: NodeValue,>: TreeWalker<N,> {
 	/// Node value type for child nodes
 	type ChildrenN: NodeValue;
 	/// Tree walker type for child nodes
-	type Children: TreeWalk<Self::ChildrenN,>;
+	type Children: TreeWalker<Self::ChildrenN,>;
 
 	/// Node value type for sibling nodes
 	type BrothersN: NodeValue;
 	/// Tree walker type for sibling nodes
-	type Brothers: TreeWalk<Self::BrothersN,>;
+	type Brothers: TreeWalker<Self::BrothersN,>;
 
 	/// Get a walker for the children of the current node.
 	///
@@ -50,7 +50,7 @@ pub trait TreeWindow<N: NodeValue,>: TreeWalk<N,> {
 	/// A walker that can traverse the sibling nodes
 	fn brothers<WT: WalkTried<T = Self::Brothers,>,>(&mut self,) -> WT;
 
-	fn as_tree_walk(&self,) -> &impl TreeWalk<N,> {
+	fn as_tree_walk(&self,) -> &impl TreeWalker<N,> {
 		self
 	}
 }
@@ -73,7 +73,7 @@ pub trait TreeWindow<N: NodeValue,>: TreeWalk<N,> {
 /// # Type Parameters
 ///
 /// - `N`: Type implementing `NodeValue` for the node data
-pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
+pub trait TreeWalker<N: NodeValue,>: Sized + Iterator {
 	// === Navigation Operations ===
 
 	/// Navigate to the root of the tree.
@@ -95,7 +95,7 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	/// # Returns
 	///
 	/// A tree walker at the current position
-	fn current(&self,) -> impl TreeWalk<N,>;
+	fn current(&self,) -> impl TreeWalker<N,>;
 
 	/// Navigate to the parent of the current node.
 	///
@@ -133,7 +133,7 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 			let mut parent = self.parent::<WT>();
 			if parent.has_success() {
 				// Successfully found parent, continue recursion
-				TreeWalk::nth_ancestor::<WT,>(parent.current_tree_mut().as_mut().unwrap(), n - 1,)
+				TreeWalker::nth_ancestor::<WT,>(parent.current_tree_mut().as_mut().unwrap(), n - 1,)
 			} else {
 				// Failed to find parent, return the failure
 				parent
@@ -234,7 +234,7 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	/// A walk result indicating success or failure of the operation
 	fn nth_child<WT: WalkTried,>(&mut self, n: usize,) -> WT {
 		let mut coord = self.get_pos();
-		coord.add_dimention(n,);
+		coord.add_dim(n,);
 		self.set_pos(coord,)
 	}
 
@@ -344,6 +344,11 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	///
 	/// A walk result representing the current state
 	fn as_walk_tried<WT: WalkTried,>(&self,) -> WT;
+
+	fn as_tree_window(&self,) -> &impl TreeWindow<N,>
+	where Self: TreeWindow<N,> {
+		self
+	}
 
 	// === Value Access Methods ===
 

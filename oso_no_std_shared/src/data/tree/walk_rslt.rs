@@ -1,6 +1,6 @@
 use crate::data::tree::NodeValue;
 use crate::data::tree::coord::Coordinate;
-use crate::data::tree::walker::TreeWalk;
+use crate::data::tree::walker::TreeWalker;
 
 /// Trait for representing the result of tree walk operations.
 ///
@@ -16,7 +16,7 @@ pub trait WalkTried {
 	/// The node value type
 	type N: NodeValue;
 	/// The tree walker type
-	type T: TreeWalk<Self::N,>;
+	type T: TreeWalker<Self::N,>;
 	/// The coordinate type for position tracking
 	type C: Coordinate;
 	// type TreeNode: TreeWalk<'a, Self::N,>
@@ -94,7 +94,7 @@ pub trait WalkTried {
 /// - `tree`: Optional tree walker (Some if successful, None if failed)
 /// - `coord`: The coordinate position associated with this result
 /// - `__constraint`: PhantomData to maintain type parameter `N`
-pub struct WalkRslt<N: NodeValue, T: TreeWalk<N,>, C: Coordinate,> {
+pub struct WalkRslt<N: NodeValue, T: TreeWalker<N,>, C: Coordinate,> {
 	/// PhantomData to maintain the node value type parameter
 	__constraint: core::marker::PhantomData<N,>,
 	/// The tree walker result (None if operation failed)
@@ -103,7 +103,7 @@ pub struct WalkRslt<N: NodeValue, T: TreeWalk<N,>, C: Coordinate,> {
 	coord:        C,
 }
 
-impl<N: NodeValue, T: TreeWalk<N,>, C: Coordinate,> WalkTried for WalkRslt<N, T, C,> {
+impl<N: NodeValue, T: TreeWalker<N,>, C: Coordinate,> WalkTried for WalkRslt<N, T, C,> {
 	type C = C;
 	type N = N;
 	type T = T;
