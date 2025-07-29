@@ -1,3 +1,6 @@
+// #![feature(min_specialization)]
+// #![feature(specialization)]
+
 //! # OSO No-Std Shared Library
 //!
 //! This crate provides shared utilities and data structures for the OSO operating system
@@ -19,17 +22,18 @@
 //! ## Usage
 //!
 //! ```rust,no_run
-//! use oso_no_std_shared::bridge::graphic::{FrameBufConf, PixelFormatConf};
+//! use oso_no_std_shared::bridge::graphic::FrameBufConf;
+//! use oso_no_std_shared::bridge::graphic::PixelFormatConf;
 //! use oso_no_std_shared::wfi;
 //!
 //! // Configure graphics
 //! let framebuf = FrameBufConf::new(
-//!     PixelFormatConf::Rgb,
-//!     0x1000_0000 as *mut u8,
-//!     1024 * 768 * 4,
-//!     1024,
-//!     768,
-//!     1024 * 4,
+//! 	PixelFormatConf::Rgb,
+//! 	0x1000_0000 as *mut u8,
+//! 	1024 * 768 * 4,
+//! 	1024,
+//! 	768,
+//! 	1024 * 4,
 //! );
 //!
 //! // Enter low-power state
@@ -79,9 +83,9 @@ pub fn wfi() -> ! {
 		unsafe {
 			// Platform-specific wait-for-interrupt implementation
 			#[cfg(target_arch = "aarch64")]
-			asm!("wfi");  // ARM64: Wait For Interrupt
+			asm!("wfi"); // ARM64: Wait For Interrupt
 			#[cfg(target_arch = "x86_64")]
-			asm!("hlt");  // x86_64: Halt until interrupt
+			asm!("hlt"); // x86_64: Halt until interrupt
 		}
 	}
 }
@@ -115,9 +119,9 @@ pub fn wfe() -> ! {
 		unsafe {
 			// Platform-specific wait-for-event implementation
 			#[cfg(target_arch = "aarch64")]
-			asm!("wfe");  // ARM64: Wait For Event
+			asm!("wfe"); // ARM64: Wait For Event
 			#[cfg(target_arch = "x86_64")]
-			asm!("hlt");  // x86_64: Halt (no direct WFE equivalent)
+			asm!("hlt"); // x86_64: Halt (no direct WFE equivalent)
 		}
 	}
 }
@@ -151,9 +155,9 @@ pub fn nop() -> ! {
 		unsafe {
 			// Platform-specific no-operation implementation
 			#[cfg(target_arch = "aarch64")]
-			asm!("nop");  // ARM64: No Operation
+			asm!("nop"); // ARM64: No Operation
 			#[cfg(target_arch = "x86_64")]
-			asm!("hlt");  // x86_64: Halt (alternative to spinning NOP)
+			asm!("hlt"); // x86_64: Halt (alternative to spinning NOP)
 		}
 	}
 }
