@@ -76,6 +76,8 @@ pub trait WalkTried {
 	fn from(tn: Self::T, coord: Self::C,) -> Self;
 }
 
+//  TODO: replace `WalkRslt` with `oso_error::Rslt`
+
 /// Concrete implementation of the `WalkTried` trait.
 ///
 /// This struct represents the result of a tree walk operation, containing
