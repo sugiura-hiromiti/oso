@@ -21,7 +21,6 @@
 //! type safety.
 
 use crate::data::node::NodeValue;
-use crate::data::tree::coord::Coordinate;
 
 pub mod coord;
 pub mod walk_rslt;
@@ -31,10 +30,8 @@ pub mod walker;
 // - refactor codebase to use `TreePart` object as an atomic unit in `TreeWalk` and `TreeWindow`
 pub trait TreePart {
 	type N: NodeValue;
-	type C: Coordinate;
 
 	fn node(&self,) -> Self::N;
-	fn coord(&self,) -> Self::C;
 }
 
 /// A generic tree data structure with lifetime-managed references.
@@ -61,12 +58,11 @@ pub trait TreePart {
 ///     parent: None,
 /// };
 /// ```
-pub struct Tree<'a, N: NodeValue, C: Coordinate,> {
+pub struct Tree<'a, N: NodeValue,> {
 	/// The value stored in this node
 	value:    N,
-	coord:    C,
 	/// Array of child trees (slice to avoid heap allocation)
-	children: &'a [Tree<'a, N, C,>],
+	children: &'a [Tree<'a, N,>],
 	/// Optional reference to the parent tree node
-	parent:   Option<&'a Tree<'a, N, C,>,>,
+	parent:   Option<&'a Tree<'a, N,>,>,
 }
