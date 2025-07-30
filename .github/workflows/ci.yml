@@ -31,7 +31,7 @@ jobs:
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
     
-    - name: Check formatting
+    - name: Check code format
       run: cargo fmt --all -- --check
     
     - name: Run clippy
