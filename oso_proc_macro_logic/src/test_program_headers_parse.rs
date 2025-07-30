@@ -10,7 +10,6 @@
 use crate::check_oso_kernel;
 use anyhow::Result as Rslt;
 use anyhow::anyhow;
-use anyhow::bail;
 use std::process::Command;
 
 /// Trait for parsing hexadecimal string representations into integer types
@@ -137,14 +136,14 @@ fn program_headers_fields(
 /// ```compile_fail
 /// use anyhow::Result as Rslt;
 /// fn test_error_propagation() {
-/// 	fn test_chain() -> Rslt<(),> {
-/// 		let invalid_hex = "invalid_hex";
-/// 		parse_str_hex_repr(invalid_hex,)?;
-/// 		Ok((),)
-/// 	}
+///     fn test_chain() -> Rslt<(),> {
+/// 	    let invalid_hex = "invalid_hex";
+/// 	    parse_str_hex_repr(invalid_hex,)?;
+/// 	    Ok((),)
+///     }
 ///
-/// 	let result = test_chain();
-/// 	assert!(result.is_err());
+///     let result = test_chain();
+///     assert!(result.is_err());
 /// }
 ///
 /// test_error_propagation()

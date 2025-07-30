@@ -9,7 +9,7 @@ use syn::Signature;
 /// Extracts method arguments from a function signature, excluding the receiver (`self`)
 ///
 /// This function analyzes a function signature and returns an iterator over all
-/// the argument patterns, filtering out any receiver arguments (like `self`, `&self`, 
+/// the argument patterns, filtering out any receiver arguments (like `self`, `&self`,
 /// `&mut self`, etc.). This is useful when generating wrapper functions or when you
 /// need to forward arguments to another function.
 ///
@@ -26,11 +26,11 @@ use syn::Signature;
 ///
 /// ```ignore
 /// use syn::{parse_quote, Signature};
-/// 
+///
 /// let sig: Signature = parse_quote! {
 ///     fn example(&self, arg1: i32, arg2: String) -> bool
 /// };
-/// 
+///
 /// let args: Vec<_> = method_args(&sig).collect();
 /// assert_eq!(args.len(), 2); // Only arg1 and arg2, self is filtered out
 /// ```
@@ -45,7 +45,7 @@ pub fn method_args(sig: &Signature,) -> impl Iterator<Item = std::boxed::Box<syn
 	sig.inputs.iter().filter_map(|a| match a {
 		// Skip receiver arguments (self, &self, &mut self, etc.)
 		syn::FnArg::Receiver(_,) => None,
-		
+
 		// Extract the pattern from typed arguments
 		syn::FnArg::Typed(pty,) => Some(pty.pat.clone(),),
 	},)
@@ -53,15 +53,16 @@ pub fn method_args(sig: &Signature,) -> impl Iterator<Item = std::boxed::Box<syn
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use syn::{parse_quote, Signature};
+	use syn::Signature;
+	use syn::parse_quote;
 
 	#[test]
 	fn test_method_args_no_receiver() {
 		let sig: Signature = parse_quote! {
 			fn test_function(arg1: i32, arg2: String, arg3: bool) -> i32
 		};
-		
-		let args: Vec<_> = method_args(&sig).collect();
+
+		let args: Vec<_,> = method_args(&sig,).collect();
 		assert_eq!(args.len(), 3);
 	}
 
@@ -70,8 +71,8 @@ mod tests {
 		let sig: Signature = parse_quote! {
 			fn test_method(&self, arg1: i32, arg2: String) -> bool
 		};
-		
-		let args: Vec<_> = method_args(&sig).collect();
+
+		let args: Vec<_,> = method_args(&sig,).collect();
 		// Should exclude &self, only return the 2 typed arguments
 		assert_eq!(args.len(), 2);
 	}
@@ -81,8 +82,8 @@ mod tests {
 		let sig: Signature = parse_quote! {
 			fn test_method(&mut self, arg1: i32) -> ()
 		};
-		
-		let args: Vec<_> = method_args(&sig).collect();
+
+		let args: Vec<_,> = method_args(&sig,).collect();
 		// Should exclude &mut self, only return the 1 typed argument
 		assert_eq!(args.len(), 1);
 	}
@@ -92,8 +93,8 @@ mod tests {
 		let sig: Signature = parse_quote! {
 			fn test_method(self, arg1: String, arg2: Vec<i32>) -> String
 		};
-		
-		let args: Vec<_> = method_args(&sig).collect();
+
+		let args: Vec<_,> = method_args(&sig,).collect();
 		// Should exclude self, only return the 2 typed arguments
 		assert_eq!(args.len(), 2);
 	}
@@ -103,8 +104,8 @@ mod tests {
 		let sig: Signature = parse_quote! {
 			fn test_function() -> ()
 		};
-		
-		let args: Vec<_> = method_args(&sig).collect();
+
+		let args: Vec<_,> = method_args(&sig,).collect();
 		assert_eq!(args.len(), 0);
 	}
 
@@ -113,8 +114,8 @@ mod tests {
 		let sig: Signature = parse_quote! {
 			fn test_method(&self) -> i32
 		};
-		
-		let args: Vec<_> = method_args(&sig).collect();
+
+		let args: Vec<_,> = method_args(&sig,).collect();
 		// Should exclude &self, return empty
 		assert_eq!(args.len(), 0);
 	}
@@ -130,8 +131,8 @@ mod tests {
 				arg4: &mut [u8]
 			) -> Result<(), Error>
 		};
-		
-		let args: Vec<_> = method_args(&sig).collect();
+
+		let args: Vec<_,> = method_args(&sig,).collect();
 		// Should exclude &self, return 4 typed arguments
 		assert_eq!(args.len(), 4);
 	}
@@ -141,8 +142,8 @@ mod tests {
 		let sig: Signature = parse_quote! {
 			fn pattern_method(&self, (x, y): (i32, i32), [a, b, c]: [u8; 3]) -> ()
 		};
-		
-		let args: Vec<_> = method_args(&sig).collect();
+
+		let args: Vec<_,> = method_args(&sig,).collect();
 		// Should exclude &self, return 2 pattern arguments
 		assert_eq!(args.len(), 2);
 	}
@@ -152,8 +153,8 @@ mod tests {
 		let sig: Signature = parse_quote! {
 			fn lifetime_method<'a>(&self, arg1: &'a str, arg2: &'a mut Vec<i32>) -> &'a str
 		};
-		
-		let args: Vec<_> = method_args(&sig).collect();
+
+		let args: Vec<_,> = method_args(&sig,).collect();
 		// Should exclude &self, return 2 typed arguments with lifetimes
 		assert_eq!(args.len(), 2);
 	}
@@ -166,8 +167,8 @@ mod tests {
 				T: Clone,
 				U: Debug
 		};
-		
-		let args: Vec<_> = method_args(&sig).collect();
+
+		let args: Vec<_,> = method_args(&sig,).collect();
 		// Should exclude &mut self, return 2 generic typed arguments
 		assert_eq!(args.len(), 2);
 	}
@@ -177,10 +178,10 @@ mod tests {
 		let sig: Signature = parse_quote! {
 			fn destructure_method(&self, Point { x, y }: Point, mut z: i32) -> ()
 		};
-		
-		let args: Vec<_> = method_args(&sig).collect();
+
+		let args: Vec<_,> = method_args(&sig,).collect();
 		assert_eq!(args.len(), 2);
-		
+
 		// The patterns should be preserved as-is for code generation
 		// This test ensures we don't lose the destructuring information
 	}

@@ -10,13 +10,13 @@ html5ever = "0.27"
 itertools = "*"
 markup5ever = "*"
 markup5ever_rcdom = "*"
+oso_dev_util = { path = "../oso_dev_util" }
 proc-macro2 = "*"
 quote = "*"
 string_cache = "*"
 syn = { version = "*", features = ["full", "extra-traits"] }
 tendril = "*"
 ureq = "*"
-util_common_code = { path = "../util_common_code" }
 
 [dev-dependencies]
 tempfile = "3.0"
