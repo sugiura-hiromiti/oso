@@ -17,3 +17,10 @@ syn = { version = "*", features = ["full", "extra-traits"] }
 tendril = "*"
 ureq = "*"
 util_common_code = { path = "../util_common_code" }
+
+[dev-dependencies]
+tempfile = "3.0"
+
+[[bench]]
+name = "benchmarks"
+harness = false
