@@ -92,9 +92,9 @@ jobs:
     - name: Run tests for std crates
       run: |
         # Test crates that can run in std environment
-        cargo test -p oso_proc_macro_logic
-        cargo test -p oso_error
-        cargo test -p xtask
+        (cd oso_proc_macro_logic && cargo t)
+        (cd oso_error && cargo t)
+        (cd xtask && cargo t)
 
   integration:
     name: Integration Test
