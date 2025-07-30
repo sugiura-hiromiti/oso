@@ -7,7 +7,12 @@ edition = "2024"
 anyhow = "*"
 colored = "*"
 fs-err = "*"
+oso_dev_util = { path = "../oso_dev_util" }
 ovmf-prebuilt = "*"
 serde_json = "*"
 toml = "*"
-util_common_code = { path = "../util_common_code" }
+
+[dev-dependencies]
+assert_cmd = "2.0"
+predicates = "3.0"
+tempfile = "3.0"
