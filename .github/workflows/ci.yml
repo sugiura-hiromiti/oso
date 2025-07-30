@@ -70,7 +70,7 @@ jobs:
       run: |
         # The loader needs the kernel ELF file for its proc macros
         mkdir -p target/
-        cp target/aarch64-unknown-none-elf/release/oso_kernel target/oso_kernel.elf
+        cp target/oso_kernel.elf
     
     - name: Build loader for aarch64
       run: |
