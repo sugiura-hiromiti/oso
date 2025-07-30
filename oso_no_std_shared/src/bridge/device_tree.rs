@@ -16,16 +16,16 @@
 /// # Examples
 ///
 /// ```rust,no_run
-/// use oso_bridge::device_tree::DeviceTreeAddress;
+/// use oso_no_std_shared::bridge::device_tree::DeviceTreeAddress;
 ///
-/// fn process_device_tree(dtb_addr: DeviceTreeAddress) {
-///     // Parse and process the device tree at the given address
-///     // ...
+/// fn process_device_tree(dtb_addr: DeviceTreeAddress,) {
+/// 	// Parse and process the device tree at the given address
+/// 	// ...
 /// }
 ///
 /// // In kernel entry point:
 /// let dtb_addr: DeviceTreeAddress = 0x4000_0000 as *const u8;
-/// process_device_tree(dtb_addr);
+/// process_device_tree(dtb_addr,);
 /// ```
 ///
 /// # Safety
