@@ -6,3 +6,4 @@ mnt/
 *.img
 *.elf
 *.sh
+**/tmp/
