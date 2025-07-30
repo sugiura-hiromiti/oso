@@ -66,12 +66,6 @@ jobs:
         cd oso_kernel
         cargo build --target aarch64-unknown-none-elf.json --release
     
-    - name: Copy kernel binary for loader
-      run: |
-        # The loader needs the kernel ELF file for its proc macros
-        mkdir -p target/
-        cp target/oso_kernel.elf
-    
     - name: Build loader for aarch64
       run: |
         cd oso_loader
