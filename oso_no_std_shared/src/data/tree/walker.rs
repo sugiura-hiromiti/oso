@@ -234,7 +234,7 @@ pub trait TreeWalk<N: NodeValue,>: Sized + Iterator {
 	/// A walk result indicating success or failure of the operation
 	fn nth_child<WT: WalkTried,>(&mut self, n: usize,) -> WT {
 		let mut coord = self.get_pos();
-		coord.add_dimention(n,);
+		coord.add_dim(n,);
 		self.set_pos(coord,)
 	}
 
