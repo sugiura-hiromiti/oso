@@ -23,7 +23,7 @@
 //! use oso_error::Rslt;
 //! use oso_error::oso_err;
 //!
-//! fn divide(a: i32, b: i32,) -> Rslt<i32,> {
+//! fn divide(a: i32, b: i32,) -> Rslt<i32, &'static str,> {
 //! 	if b == 0 {
 //! 		// Create a basic error with just the module path
 //! 		return Err(oso_err!("Division by zero"),);
@@ -35,6 +35,7 @@
 //! ### With Custom Error Description
 //!
 //! ```rust
+//! extern crate alloc;
 //! use alloc::string::String;
 //! use oso_error::OsoError;
 //! use oso_error::Rslt;
@@ -58,12 +59,12 @@
 //!
 //! ### Error Handling
 //!
-//! ```rust
+//! ```should_panic
 //! use oso_error::OsoError;
 //! use oso_error::Rslt;
 //! use oso_error::oso_err;
 //!
-//! fn process_value(val: i32,) -> Rslt<i32,> {
+//! fn process_value(val: i32,) -> Rslt<i32, &'static str,> {
 //! 	// Some processing that might fail
 //! 	if val < 0 {
 //! 		return Err(oso_err!("Negative value"),);
@@ -71,7 +72,7 @@
 //! 	Ok(val * 2,)
 //! }
 //!
-//! fn main() -> Rslt<(),> {
+//! fn main() -> Rslt<(), &'static str,> {
 //! 	let result = process_value(-5,)?; // This will return early with the error
 //! 	// This won't be reached if process_value returns an error
 //! 	Ok((),)
@@ -110,7 +111,7 @@ pub mod parser;
 /// use oso_error::Rslt;
 /// use oso_error::oso_err;
 ///
-/// fn might_fail() -> Rslt<i32,> {
+/// fn might_fail() -> Rslt<i32, &'static str,> {
 /// 	// Some operation that might fail
 /// 	if true { Ok(42,) } else { Err(oso_err!("Operation failed"),) }
 /// }
@@ -143,7 +144,7 @@ pub type Rslt<T = (), V = (),> = Result<T, OsoError<V,>,>;
 /// let error = oso_err!("Something went wrong");
 ///
 /// // Create an error manually
-/// let manual_error = OsoError { from: module_path!(), desc: None, };
+/// let manual_error = OsoError { from: module_path!(), desc: None::<(),>, };
 /// ```
 ///
 /// With custom description:
@@ -189,7 +190,7 @@ where V: Debug
 /// use oso_error::Rslt;
 /// use oso_error::oso_err;
 ///
-/// fn validate_input(input: i32,) -> Rslt<(),> {
+/// fn validate_input(input: i32,) -> Rslt<(), &'static str,> {
 /// 	if input < 0 {
 /// 		return Err(oso_err!("Negative input not allowed"),);
 /// 	}
@@ -222,6 +223,7 @@ impl<V: Debug + Default,> OsoError<V,> {
 	/// # Examples
 	///
 	/// ```rust
+	/// extern crate alloc;
 	/// use alloc::string::String;
 	/// use oso_error::OsoError;
 	/// use oso_error::Rslt;

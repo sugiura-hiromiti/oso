@@ -18,9 +18,9 @@
 //! code:
 //!
 //! ```rust,no_run
-//! use oso_bridge::graphic::FrameBufConf;
-//! use oso_bridge::graphic::PixelFormatConf;
-//! use oso_bridge::wfi;
+//! use oso_no_std_shared::bridge::graphic::FrameBufConf;
+//! use oso_no_std_shared::bridge::graphic::PixelFormatConf;
+//! use oso_no_std_shared::wfi;
 //!
 //! // Configure a framebuffer
 //! let framebuf = FrameBufConf::new(
@@ -36,7 +36,5 @@
 //! wfi(); // This function never returns
 //! ```
 
-
 pub mod device_tree;
 pub mod graphic;
-

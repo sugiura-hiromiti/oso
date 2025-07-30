@@ -26,7 +26,7 @@
 /// # Examples
 ///
 /// ```rust
-/// use oso_bridge::graphic::PixelFormatConf;
+/// use oso_no_std_shared::bridge::graphic::PixelFormatConf;
 ///
 /// // Configure a framebuffer with RGB pixel format
 /// let pixel_format = PixelFormatConf::Rgb;
@@ -55,7 +55,6 @@ pub enum PixelFormatConf {
 // 		}
 // 	}
 // }
-
 /// Configuration structure for a framebuffer.
 ///
 /// This structure contains all the necessary information to configure and use
@@ -78,8 +77,8 @@ pub enum PixelFormatConf {
 /// # Examples
 ///
 /// ```rust,no_run
-/// use oso_bridge::graphic::FrameBufConf;
-/// use oso_bridge::graphic::PixelFormatConf;
+/// use oso_no_std_shared::bridge::graphic::FrameBufConf;
+/// use oso_no_std_shared::bridge::graphic::PixelFormatConf;
 ///
 /// // Create a new framebuffer configuration for a 1024x768 display with RGB format
 /// let framebuf = FrameBufConf::new(
@@ -137,8 +136,8 @@ impl FrameBufConf {
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use oso_bridge::graphic::FrameBufConf;
-	/// use oso_bridge::graphic::PixelFormatConf;
+	/// use oso_no_std_shared::bridge::graphic::FrameBufConf;
+	/// use oso_no_std_shared::bridge::graphic::PixelFormatConf;
 	///
 	/// // Create a new framebuffer configuration for a 1920x1080 display with RGB format
 	/// let framebuf = FrameBufConf::new(

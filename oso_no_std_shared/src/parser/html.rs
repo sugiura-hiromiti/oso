@@ -28,7 +28,7 @@
 //! such as documentation processing or configuration file parsing.
 
 // TODO: Implement HTML parsing functionality
-// 
+//
 // Example future structure:
 //
 // use crate::parser::generator::{Parser, Context};

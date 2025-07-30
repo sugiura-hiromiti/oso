@@ -51,7 +51,7 @@ pub trait ParserGenerator<C: Context,> {
 	// Future expansion possibilities:
 	// fn parser_lists(&self,) -> &[impl Parser<C,>];
 	// fn parser<F: Fn(&Self,) -> Rslt<R, ParserError,>, R,>(&self,) -> F;
-	
+
 	/// Generate a parser for the specified context type.
 	///
 	/// This method creates a parser that can operate on the given context type.
@@ -85,13 +85,13 @@ pub trait ParserGenerator<C: Context,> {
 pub trait Context {
 	/// The type that will be produced by successful parsing
 	type Output;
-	
+
 	/// The size in bytes of the output type
-	/// 
+	///
 	/// This constant provides compile-time size information that can be used
 	/// for buffer allocation and bounds checking during parsing.
 	const SIZE: usize = size_of::<Self::Output,>();
-	
+
 	/// Get the current position in the parsing context.
 	///
 	/// This method returns the current byte offset or position within the
@@ -101,7 +101,7 @@ pub trait Context {
 	///
 	/// The current position as a byte offset
 	fn pos(&self,) -> usize;
-	
+
 	/// Get the number of fields in the target data structure.
 	///
 	/// This method is currently a placeholder for future functionality
