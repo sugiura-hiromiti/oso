@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-release:
+    name: Build Release Artifacts
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust nightly
+      uses: dtolnay/rust-toolchain@nightly
+      with:
+        components: rust-src
+        targets: aarch64-unknown-uefi
+    
+    - name: Install QEMU
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y qemu-system-aarch64
+    
+    - name: Build kernel
+      run: |
+        cd oso_kernel
+        cargo build --target aarch64-unknown-none-elf.json --release
+    
+    - name: Copy kernel binary for loader
+      run: |
+        # The loader needs the kernel ELF file for its proc macros
+        mkdir -p target/
+        cp target/aarch64-unknown-none-elf/release/oso_kernel target/oso_kernel.elf
+    
+    - name: Build loader
+      run: |
+        cd oso_loader
+        cargo build --target aarch64-unknown-uefi --release
+    
+    - name: Build xtask
+      run: cargo build -p xtask --release
+    
+    - name: Create release artifacts
+      run: |
+        mkdir -p release-artifacts
+        cp target/aarch64-unknown-none-elf/release/oso_kernel release-artifacts/
+        cp target/aarch64-unknown-uefi/release/oso_loader.efi release-artifacts/
+        cp target/release/xtask release-artifacts/
+        tar -czf oso-${{ github.ref_name }}-aarch64.tar.gz -C release-artifacts .
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: oso-release-${{ github.ref_name }}
+        path: oso-${{ github.ref_name }}-aarch64.tar.gz
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: oso-${{ github.ref_name }}-aarch64.tar.gz
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
