@@ -570,13 +570,13 @@ mod tests {
 	fn test_table_data_extraction() {
 		// Create a table row with paragraph elements
 		let row_html = r#"
-<p>
+<table>
 	<tr>
 		<td><p>EFI_SUCCESS</p></td>
 		<td><p>0x00000000</p></td>
 		<td><p>The operation completed successfully.</p></td>
 	</tr>
-<p/>"#;
+<table/>"#;
 
 		let node = parse_text(row_html,);
 		let row_node = get_elements_by_name(node, "tr",)[0].clone();
