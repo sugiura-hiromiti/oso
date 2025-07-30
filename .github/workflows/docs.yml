@@ -42,9 +42,6 @@ jobs:
         cd oso_kernel
         cargo build --target aarch64-unknown-none-elf.json --release
         cd ..
-        # Copy kernel binary for loader proc macros
-        mkdir -p target/
-        cp target/aarch64-unknown-none-elf/release/oso_kernel target/oso_kernel.elf
         # Now build documentation
         cargo doc --workspace --no-deps --document-private-items
         echo '<meta http-equiv="refresh" content="0; url=oso_kernel">' > target/doc/index.html
