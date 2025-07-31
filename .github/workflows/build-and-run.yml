@@ -72,11 +72,13 @@ jobs:
           
           # Build kernel
           cd oso_kernel
-          cargo build --target aarch64-unknown-none-elf.json --release
+          cargo build --release
+          cd ..
+          ls ./target -al
           
           # Build loader
-          cd ../oso_loader
-          cargo build --target aarch64-unknown-uefi --release
+          cd oso_loader
+          cargo build --release
           cd ..
           
           # Build xtask
