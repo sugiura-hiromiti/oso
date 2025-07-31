@@ -906,3 +906,5 @@ of lldb
 -S <value>           Alias for --source-before-file
 -s <value>           Alias for --source
 ```
+
+github actions are free in public repository
