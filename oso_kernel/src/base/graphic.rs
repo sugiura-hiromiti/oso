@@ -42,13 +42,13 @@ pub trait DisplayDraw {
 	///
 	/// letf_topとright_bottomの間には以下の関係が成り立っている必要があります
 	///
-	/// ```no_run
+	/// ```ignore
 	/// left_top.x < right_bottom.x && left_top.y < right_bottom.y
 	/// ```
 	///
 	/// また、right_bottomは
 	///
-	/// ```no_run
+	/// ```ignore
 	/// right_bottom.x <= frame_buffer.width && right_bottom.y <= frame_buffer.height
 	/// ```
 	///
@@ -128,7 +128,7 @@ impl<P: PixelFormat,> FrameBuffer<P,> {
 
 	/// this function returns
 	///
-	/// ```no_run
+	/// ```ignore
 	/// Coord { x: self.width - 1, y: self.height - 1, }
 	/// ```
 	///

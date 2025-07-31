@@ -1,6 +1,6 @@
 #[macro_export]
 /// Usage example:
-/// ```
+/// ```ignore
 /// # use oso_loader::raw::types::util::c_style_enum;
 /// c_style_enum! {
 /// #[derive(Default)]

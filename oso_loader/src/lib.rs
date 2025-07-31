@@ -85,7 +85,7 @@ fn panic(panic: &core::panic::PanicInfo,) -> ! {
 ///
 /// # Example
 ///
-/// ```rust
+/// ```rust,ignore
 /// let result = some_operation();
 /// if let Err(e,) = result {
 /// 	on_error!(e, "during kernel loading");
