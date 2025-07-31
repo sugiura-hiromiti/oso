@@ -35,7 +35,7 @@ jobs:
           - os: macos-14
             platform: macos
             qemu_install: |
-              brew install qemu
+              brew install qemu binutils
             mount_test: |
               # Test macOS hdiutil functionality
               echo "Testing macOS hdiutil capabilities"
