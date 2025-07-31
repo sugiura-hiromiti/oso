@@ -88,7 +88,7 @@ fn panic(panic: &core::panic::PanicInfo,) -> ! {
 /// ```rust
 /// let result = some_operation();
 /// if let Err(e,) = result {
-/// 	on_error!(e, "during kernel loading");
+///     on_error!(e, "during kernel loading");
 /// }
 /// ```
 #[macro_export]
