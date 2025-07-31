@@ -36,7 +36,6 @@ jobs:
             platform: macos
             qemu_install: |
               brew install qemu
-            readelf_install: |
               brew install binutils
             mount_test: |
               # Test macOS hdiutil functionality
