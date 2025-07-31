@@ -73,11 +73,6 @@ jobs:
           # Build kernel
           cd oso_kernel
           cargo build --target aarch64-unknown-none-elf.json --release
-          cd ..
-          
-          # Copy kernel for loader
-          mkdir -p target/
-          cp target/aarch64-unknown-none-elf/release/oso_kernel target/oso_kernel.elf
           
           # Build loader
           cd oso_loader
