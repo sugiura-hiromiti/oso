@@ -75,7 +75,7 @@ jobs:
           cargo build --target aarch64-unknown-none-elf.json --release
           
           # Build loader
-          cd oso_loader
+          cd ../oso_loader
           cargo build --target aarch64-unknown-uefi --release
           cd ..
           
