@@ -1,7 +1,7 @@
 [日本語版](README.md)
 
 > This README contains AI-generated content that has been manually refined
-> Last updated: 250728
+> Last updated: 250731
 
 # `oso` — Experimental Pure Rust OS for aarch64
 
@@ -86,7 +86,7 @@ Developer auxiliary tool suite.
 | `oso_proc_macro_logic` | Internal logic implementation and testing for procedural macros               |
 | `oso_proc_macro`       | Macro suite supporting kernel struct, parser, and test generation             |
 | `oso_error`            | Common error types and error handling logic                                   |
-| `util_common_code`     | General-purpose code shared between development tools                         |
+| `oso_dev_util`         | General-purpose code shared between development tools                         |
 
 ## Build
 

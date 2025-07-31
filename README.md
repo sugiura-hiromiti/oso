@@ -1,7 +1,7 @@
 [english ver](README-en.md)
 
 > このREADMEはAIによって生成された文章に手直しを入れた物です
-> 最終更新日：250728
+> 最終更新日：250731
 
 # `oso` — 実験的aarch64向け純Rust製OS
 
@@ -88,7 +88,7 @@ cargo xt
 | `oso_proc_macro_logic` | 手続きマクロの実装内部ロジックとそのテスト                        |
 | `oso_proc_macro`       | カーネルの構造体やパーサ・テスト生成を支援するマクロ群            |
 | `oso_error`            | 共通エラー型とエラーハンドリングロジック                          |
-| `util_common_code`     | 開発ツール間で共有される汎用コード                                |
+| `oso_dev_util`         | 開発ツール間で共有される汎用コード                                |
 
 ## Build
 
