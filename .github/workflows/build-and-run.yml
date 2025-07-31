@@ -119,11 +119,11 @@ jobs:
           fi
 
       - name: Upload platform-specific artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: oso-full-build-${{ matrix.platform }}-${{ github.sha }}
           path: |
-            target/aarch64-unknown-none-elf/release/oso_kernel
+            target/oso_kernel
             target/aarch64-unknown-uefi/release/oso_loader.efi
             target/release/xtask
           retention-days: 3
