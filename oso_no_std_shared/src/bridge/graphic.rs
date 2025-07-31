@@ -82,12 +82,12 @@ pub enum PixelFormatConf {
 ///
 /// // Create a new framebuffer configuration for a 1024x768 display with RGB format
 /// let framebuf = FrameBufConf::new(
-///     PixelFormatConf::Rgb,
-///     0x1000_0000 as *mut u8, // Base address
-///     1024 * 768 * 4,         // Size (bytes)
-///     1024,                   // Width (pixels)
-///     768,                    // Height (pixels)
-///     1024 * 4,               // Stride (bytes per row)
+/// 	PixelFormatConf::Rgb,
+/// 	0x1000_0000 as *mut u8, // Base address
+/// 	1024 * 768 * 4,         // Size (bytes)
+/// 	1024,                   // Width (pixels)
+/// 	768,                    // Height (pixels)
+/// 	1024 * 4,               // Stride (bytes per row)
 /// );
 ///
 /// // Access framebuffer properties
@@ -141,12 +141,12 @@ impl FrameBufConf {
 	///
 	/// // Create a new framebuffer configuration for a 1920x1080 display with RGB format
 	/// let framebuf = FrameBufConf::new(
-	///     PixelFormatConf::Rgb,
-	///     0x1000_0000 as *mut u8, // Base address
-	///     1920 * 1080 * 4,        // Size (bytes)
-	///     1920,                   // Width (pixels)
-	///     1080,                   // Height (pixels)
-	///     1920 * 4,               // Stride (bytes per row)
+	/// 	PixelFormatConf::Rgb,
+	/// 	0x1000_0000 as *mut u8, // Base address
+	/// 	1920 * 1080 * 4,        // Size (bytes)
+	/// 	1920,                   // Width (pixels)
+	/// 	1080,                   // Height (pixels)
+	/// 	1920 * 4,               // Stride (bytes per row)
 	/// );
 	/// ```
 	pub fn new(
