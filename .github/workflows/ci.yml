@@ -38,7 +38,9 @@ jobs:
       #   run: cargo clippy --workspace --all-targets -- -D warnings
       #
       - name: Check documentation
-        run: cargo doc --workspace --no-deps --document-private-items
+        run: |
+          (cd oso_kernel && cargo build)
+          cargo doc --workspace --no-deps --document-private-items
 
   build:
     name: Build aarch64
@@ -64,12 +66,12 @@ jobs:
       - name: Build kernel for aarch64
         run: |
           cd oso_kernel
-          cargo build --target aarch64-unknown-none-elf.json --release
+          cargo build --release
 
       - name: Build loader for aarch64
         run: |
           cd oso_loader
-          cargo build --target aarch64-unknown-uefi --release
+          cargo build --release
 
   test:
     name: Test
