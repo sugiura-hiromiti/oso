@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 env:
   CARGO_TERM_COLOR: always
@@ -12,154 +12,154 @@ env:
 jobs:
   check:
     name: Check and Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install Rust nightly
-      uses: dtolnay/rust-toolchain@nightly
-      with:
-        components: rustfmt, clippy, rust-src
-        targets: aarch64-unknown-uefi
-    
-    - name: Cache cargo registry
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-    
-    - name: Check code format
-      run: cargo fmt --all -- --check
-    
-    - name: Run clippy
-      run: cargo clippy --workspace --all-targets -- -D warnings
-    
-    - name: Check documentation
-      run: cargo doc --workspace --no-deps --document-private-items
+      - uses: actions/checkout@v4
+
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt, clippy, rust-src
+          targets: aarch64-unknown-uefi
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check code format
+        run: cargo +nightly fmt --all -- --check
+
+      - name: Run clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Check documentation
+        run: cargo doc --workspace --no-deps --document-private-items
 
   build:
     name: Build aarch64
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install Rust nightly
-      uses: dtolnay/rust-toolchain@nightly
-      with:
-        components: rust-src
-        targets: aarch64-unknown-uefi
-    
-    - name: Cache cargo registry
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-aarch64-${{ hashFiles('**/Cargo.lock') }}
-    
-    - name: Build kernel for aarch64
-      run: |
-        cd oso_kernel
-        cargo build --target aarch64-unknown-none-elf.json --release
-    
-    - name: Build loader for aarch64
-      run: |
-        cd oso_loader
-        cargo build --target aarch64-unknown-uefi --release
+      - uses: actions/checkout@v4
+
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+          targets: aarch64-unknown-uefi
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-aarch64-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build kernel for aarch64
+        run: |
+          cd oso_kernel
+          cargo build --target aarch64-unknown-none-elf.json --release
+
+      - name: Build loader for aarch64
+        run: |
+          cd oso_loader
+          cargo build --target aarch64-unknown-uefi --release
 
   test:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install Rust nightly
-      uses: dtolnay/rust-toolchain@nightly
-    
-    - name: Cache cargo registry
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
-    
-    - name: Run tests for std crates
-      run: |
-        # Test crates that can run in std environment
-        (cd oso_proc_macro_logic && cargo t)
-        (cd oso_error && cargo t)
-        (cd xtask && cargo t)
+      - uses: actions/checkout@v4
+
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run tests for std crates
+        run: |
+          # Test crates that can run in std environment
+          (cd oso_proc_macro_logic && cargo t)
+          (cd oso_error && cargo t)
+          (cd xtask && cargo t)
 
   integration:
     name: Integration Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install QEMU
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y qemu-system-aarch64
-    
-    - name: Install Rust nightly
-      uses: dtolnay/rust-toolchain@nightly
-      with:
-        components: rust-src
-        targets: aarch64-unknown-uefi
-    
-    - name: Cache cargo registry
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-integration-${{ hashFiles('**/Cargo.lock') }}
-    
-    - name: Build xtask
-      run: cargo build -p xtask
-    
-    - name: Test build process (aarch64 only)
-      run: |
-        # Test that the build process works without actually running QEMU
-        timeout 30s cargo run -p xtask -- --dry-run || true
+      - uses: actions/checkout@v4
+
+      - name: Install QEMU
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-aarch64
+
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+          targets: aarch64-unknown-uefi
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-integration-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build xtask
+        run: cargo build -p xtask
+
+      - name: Test build process (aarch64 only)
+        run: |
+          # Test that the build process works without actually running QEMU
+          timeout 30s cargo run -p xtask -- --dry-run || true
 
   security:
     name: Security Audit
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install Rust nightly
-      uses: dtolnay/rust-toolchain@nightly
-    
-    - name: Install cargo-audit
-      run: cargo install cargo-audit
-    
-    - name: Run security audit
-      run: cargo audit
+      - uses: actions/checkout@v4
+
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Run security audit
+        run: cargo audit
 
   dependency-check:
     name: Dependency Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install Rust nightly
-      uses: dtolnay/rust-toolchain@nightly
-      with:
-        components: rust-src
-        targets: aarch64-unknown-uefi
-    
-    - name: Check for no_std compliance
-      run: |
-        # Verify that kernel and loader don't accidentally include std dependencies
-        cd oso_kernel && cargo tree --target aarch64-unknown-none-elf.json | grep -v "std" || echo "Kernel dependencies look good"
-        cd ../oso_loader && cargo tree --target aarch64-unknown-uefi | grep -v "std" || echo "Loader dependencies look good"
+      - uses: actions/checkout@v4
+
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+          targets: aarch64-unknown-uefi
+
+      - name: Check for no_std compliance
+        run: |
+          # Verify that kernel and loader don't accidentally include std dependencies
+          cd oso_kernel && cargo tree --target aarch64-unknown-none-elf.json | grep -v "std" || echo "Kernel dependencies look good"
+          cd ../oso_loader && cargo tree --target aarch64-unknown-uefi | grep -v "std" || echo "Loader depeandencies look good"
