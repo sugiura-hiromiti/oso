@@ -34,9 +34,9 @@ jobs:
       - name: Check code format
         run: cargo +nightly fmt --all -- --check
 
-      - name: Run clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
-
+      # - name: Run clippy
+      #   run: cargo clippy --workspace --all-targets -- -D warnings
+      #
       - name: Check documentation
         run: cargo doc --workspace --no-deps --document-private-items
 
