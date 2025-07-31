@@ -1,4 +1,4 @@
-name: CI
+name: CI (Quick Checks)
 
 on:
   push:
@@ -8,6 +8,10 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+
+# Note: For comprehensive multi-platform testing, see:
+# - .github/workflows/multi-platform-ci.yml
+# - .github/workflows/build-and-run.yml
 
 jobs:
   check:

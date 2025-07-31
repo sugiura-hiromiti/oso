@@ -1,109 +1,238 @@
 # CI/CD Setup for oso
 
-This document explains the CI/CD configuration for the oso OS project.
+This document explains the CI/CD configuration for the oso OS project, which now supports **multi-platform builds and testing**.
+
+## Overview
+
+The oso project now has comprehensive CI/CD with support for both **Linux (ARM64)** and **macOS** platforms, reflecting the project's use of platform-specific tools like `hdiutil` on macOS and `mount`/`losetup` on Linux.
 
 ## Workflows
 
-### 1. Main CI Pipeline (`.github/workflows/ci.yml`)
-
-Runs on every push and pull request to `main` and `develop` branches.
+### 1. Quick CI Pipeline (`.github/workflows/ci.yml`)
+**Purpose**: Fast feedback for basic checks
+**Triggers**: Every push/PR to `main` and `develop`
+**Platform**: Linux ARM64 only
+**Duration**: ~5-10 minutes
 
 **Jobs:**
-- **Check and Lint**: Code formatting, clippy linting, and documentation checks
-- **Build aarch64**: Builds kernel and loader for aarch64 target
-- **Test**: Runs unit tests for std-compatible crates
-- **Integration**: Tests the build process with QEMU (dry-run)
-- **Security**: Runs cargo audit for security vulnerabilities
-- **Dependency Check**: Verifies no_std compliance for kernel/loader
+- Code formatting and basic linting
+- Quick compilation checks
+- Unit tests for std-compatible crates
+- Security audit
+- Documentation generation
 
-**Key Features:**
-- Focuses on aarch64 architecture (as per project requirements)
-- Uses nightly Rust with proper target installation
-- Caches cargo registry for faster builds
-- Tests only crates that can run in std environment
+### 2. Multi-Platform CI (`.github/workflows/multi-platform-ci.yml`)
+**Purpose**: Comprehensive cross-platform testing
+**Triggers**: Every push/PR to `main` and `develop`
+**Platforms**: Linux ARM64 + macOS 14
+**Duration**: ~15-25 minutes
 
-### 2. Release Pipeline (`.github/workflows/release.yml`)
+**Jobs:**
+- **Check and Lint**: Code quality checks on both platforms
+- **Build**: Full aarch64 builds with artifact upload
+- **Test**: Unit tests across platforms
+- **Integration**: QEMU testing with platform-specific setup
+- **Security**: Security audits on both platforms
+- **Dependency Check**: Platform-specific dependency validation
 
-Triggered on git tags starting with `v*` (e.g., `v1.0.0`).
+### 3. Build and Run Tests (`.github/workflows/build-and-run.yml`)
+**Purpose**: Full integration testing with QEMU
+**Triggers**: Push to `main`, PR to `main`, manual dispatch
+**Platforms**: Linux ARM64 + macOS 14
+**Duration**: ~20-30 minutes
 
 **Features:**
-- Builds release artifacts for aarch64
-- Creates GitHub releases with binaries
-- Packages kernel, loader, and xtask binaries
+- Complete build process testing
+- Platform-specific mount tool testing (`hdiutil` vs `mount`)
+- QEMU boot testing with configurable timeouts
+- Cross-platform build artifact comparison
+- Optional extended boot testing
 
-### 3. Documentation Pipeline (`.github/workflows/docs.yml`)
-
-Builds and deploys documentation to GitHub Pages.
+### 4. Multi-Platform Release (`.github/workflows/multi-platform-release.yml`)
+**Purpose**: Create releases with platform-specific builds
+**Triggers**: Git tags (`v*`), manual dispatch
+**Platforms**: Linux ARM64 + macOS 14
+**Duration**: ~25-35 minutes
 
 **Features:**
-- Generates rustdoc for all workspace crates
-- Deploys to GitHub Pages automatically
-- Includes private items documentation
+- Platform-specific release artifacts
+- Comprehensive checksums and verification
+- Automated release notes generation
+- Cross-platform artifact integrity checks
+
+### 5. Documentation (`.github/workflows/docs.yml`)
+**Purpose**: Deploy rustdoc to GitHub Pages
+**Triggers**: Push to `main`
+**Platform**: Linux ARM64
+**Duration**: ~10-15 minutes
+
+## Platform Support
+
+### Linux (ubuntu-24.04-arm)
+- **Mount tools**: `sudo mount -o loop`, `sudo umount`, `losetup`
+- **QEMU**: `qemu-system-aarch64` via apt
+- **Checksums**: `sha256sum`
+- **Status**: Primary development platform
+
+### macOS (macos-14)
+- **Mount tools**: `hdiutil attach/detach`
+- **QEMU**: `qemu-system-aarch64` via Homebrew
+- **Checksums**: `shasum -a 256`
+- **Status**: Full feature parity with Linux
+
+## Key Features
+
+### Multi-Platform Build Matrix
+```yaml
+strategy:
+  matrix:
+    os: [ubuntu-24.04-arm, macos-14]
+    include:
+      - os: ubuntu-24.04-arm
+        platform: linux
+      - os: macos-14
+        platform: macos
+```
+
+### Platform-Specific Tool Testing
+- **Linux**: Tests `sudo`, `mount`, `umount`, `losetup` availability
+- **macOS**: Tests `hdiutil` functionality
+- **Both**: QEMU installation and basic functionality
+
+### Cross-Platform Artifact Comparison
+- Compares binary sizes between platforms
+- Verifies build reproducibility
+- Alerts on unexpected differences
+
+### Enhanced Caching Strategy
+- Platform-specific cache keys
+- Separate caches for different workflow types
+- Optimized for multi-platform builds
 
 ## Project-Specific Considerations
 
 ### aarch64 Focus
-- All builds target custom `aarch64-unknown-none-elf.json` for kernel
-- QEMU aarch64 system emulation for testing
-- No x86_64 builds (as requested)
+- All builds target `aarch64-unknown-none-elf.json` for kernel
+- UEFI target `aarch64-unknown-uefi` for loader
+- QEMU aarch64 system emulation on both platforms
 
 ### no_std Environment
-- Kernel and loader are no_std crates
-- Only std-compatible crates are unit tested
-- Dependency checks ensure no accidental std usage
+- Kernel and loader remain no_std
+- Cross-platform dependency validation
+- Platform-agnostic no_std compliance checks
 
-### Custom Build System
-- Uses the `xtask` pattern for build automation
-- Integration tests verify the custom build process
-- QEMU integration for system testing
+### Platform-Aware Build System
+- `xtask` automatically detects host platform
+- Platform-specific mount/unmount operations
+- Cross-platform QEMU integration
 
 ## Tested Crates
 
-The following crates are tested in the CI:
+**Cross-platform testing:**
 - `oso_proc_macro_logic`: Procedural macro logic
 - `oso_error`: Error handling
-- `xtask`: Build automation tools
+- `xtask`: Build automation (platform detection)
+
+**Platform-specific validation:**
+- Kernel and loader build consistency
+- Mount tool functionality
+- QEMU integration
 
 ## Setup Requirements
 
-To enable all CI features:
+### Repository Settings
+1. **GitHub Pages**: Enable for documentation deployment
+2. **Branch Protection**: Configure for `main` branch
+3. **Actions**: Ensure both Linux ARM64 and macOS runners are available
 
-1. **GitHub Pages**: Enable in repository settings for documentation
-2. **Branch Protection**: Set up branch protection rules for `main`
-3. **Secrets**: No additional secrets required (uses default GITHUB_TOKEN)
+### No Additional Secrets Required
+- Uses default `GITHUB_TOKEN`
+- No platform-specific credentials needed
 
 ## Local Testing
 
-To run similar checks locally:
-
+### Linux
 ```bash
-# Format check
+# Platform detection
+cargo run -p xtask -- --help
+
+# Full build and test
+cargo run -p xtask
+
+# Quick checks
 cargo fmt --all -- --check
-
-# Linting
-cargo clippy --workspace --all-targets -- -D warnings
-
-# Documentation
-cargo doc --workspace --no-deps --document-private-items
-
-# Build for aarch64
-cd oso_kernel && cargo build --target aarch64-unknown-none-elf.json --release
-cd ../oso_loader && cargo build --target aarch64-unknown-uefi --release
-
-# Run tests
-cargo test -p oso_proc_macro_logic
-cargo test -p oso_error
-cargo test -p xtask
-
-# Security audit
-cargo audit
+cargo test -p oso_proc_macro_logic oso_error xtask
 ```
 
-## Customization
+### macOS
+```bash
+# Verify hdiutil availability
+hdiutil version
 
-To modify the CI:
+# Platform detection
+cargo run -p xtask -- --help
 
-1. **Add new targets**: Update the `targets` field in workflow files
-2. **Add new test crates**: Update the test job in `ci.yml`
-3. **Change branches**: Modify the `on.push.branches` and `on.pull_request.branches`
-4. **Add integration tests**: Extend the integration job with more QEMU tests
+# Full build and test
+cargo run -p xtask
+
+# Install QEMU if needed
+brew install qemu
+```
+
+## Manual Workflow Triggers
+
+### Extended Boot Testing
+```bash
+gh workflow run build-and-run.yml -f run_full_test=true
+```
+
+### Manual Release
+```bash
+gh workflow run multi-platform-release.yml -f tag_name=v1.0.0-beta
+```
+
+## Monitoring and Status
+
+### Recommended Status Badges
+```markdown
+[![Quick CI](https://github.com/sugiura-hiromiti/oso/workflows/CI%20(Quick%20Checks)/badge.svg)](https://github.com/sugiura-hiromiti/oso/actions/workflows/ci.yml)
+[![Multi-Platform](https://github.com/sugiura-hiromiti/oso/workflows/Multi-Platform%20CI/badge.svg)](https://github.com/sugiura-hiromiti/oso/actions/workflows/multi-platform-ci.yml)
+```
+
+### Key Metrics
+- Cross-platform build time comparison
+- Binary size consistency
+- QEMU boot success rates
+- Platform-specific test coverage
+
+## Troubleshooting
+
+### Common Platform Issues
+- **macOS**: Ensure Xcode command line tools are installed
+- **Linux**: Verify sudo permissions for mount operations
+- **Both**: Check QEMU installation and PATH
+
+### Debug Commands
+```bash
+# Check platform detection
+uname -s
+
+# Verify QEMU
+qemu-system-aarch64 --version
+
+# Test mount tools
+# Linux: sudo mount --version
+# macOS: hdiutil version
+```
+
+## Migration from Single-Platform
+
+The new multi-platform setup is **backward compatible** with existing workflows. The original `ci.yml` now focuses on quick checks, while comprehensive testing moved to dedicated multi-platform workflows.
+
+### Benefits
+- **Broader compatibility**: Ensures oso works on both major development platforms
+- **Better testing**: Platform-specific tool validation
+- **Enhanced releases**: Platform-specific artifacts with verification
+- **Developer flexibility**: Contributors can use either Linux or macOS
+
+For detailed workflow information, see [WORKFLOWS.md](.github/WORKFLOWS.md).
