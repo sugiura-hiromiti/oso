@@ -112,8 +112,8 @@ pub mod parser;
 /// use oso_error::oso_err;
 ///
 /// fn might_fail() -> Rslt<i32, &'static str,> {
-/// 	// Some operation that might fail
-/// 	if true { Ok(42,) } else { Err(oso_err!("Operation failed"),) }
+///     // Some operation that might fail
+///     if true { Ok(42,) } else { Err(oso_err!("Operation failed"),) }
 /// }
 /// ```
 pub type Rslt<T = (), V = (),> = Result<T, OsoError<V,>,>;
@@ -154,8 +154,8 @@ pub type Rslt<T = (), V = (),> = Result<T, OsoError<V,>,>;
 ///
 /// #[derive(Debug, Default,)]
 /// struct NetworkError {
-/// 	status_code: u16,
-/// 	message:     String,
+///     status_code: u16,
+///     message:     String,
 /// }
 ///
 /// // Create an error with a custom description
@@ -191,10 +191,10 @@ where V: Debug
 /// use oso_error::oso_err;
 ///
 /// fn validate_input(input: i32,) -> Rslt<(), &'static str,> {
-/// 	if input < 0 {
-/// 		return Err(oso_err!("Negative input not allowed"),);
-/// 	}
-/// 	Ok((),)
+///     if input < 0 {
+///         return Err(oso_err!("Negative input not allowed"),);
+///     }
+///     Ok((),)
 /// }
 /// ```
 #[macro_export]
@@ -230,15 +230,15 @@ impl<V: Debug + Default,> OsoError<V,> {
 	///
 	/// #[derive(Debug, Default,)]
 	/// struct FileError {
-	/// 	path:      String,
-	/// 	operation: String,
+	///     path:      String,
+	///     operation: String,
 	/// }
 	///
 	/// fn read_file(path: &str,) -> Rslt<String, FileError,> {
-	/// 	// Simulate a file operation failure
-	/// 	let mut err = OsoError { from: module_path!(), desc: None, };
-	/// 	err.desc(FileError { path: path.into(), operation: "read".into(), },);
-	/// 	Err(err,)
+	///     // Simulate a file operation failure
+	///     let mut err = OsoError { from: module_path!(), desc: None, };
+	///     err.desc(FileError { path: path.into(), operation: "read".into(), },);
+	///     Err(err,)
 	/// }
 	/// ```
 	pub fn desc(&mut self, val: V,) -> &mut Self {

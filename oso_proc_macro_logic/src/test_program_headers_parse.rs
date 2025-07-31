@@ -137,9 +137,9 @@ fn program_headers_fields(
 /// use anyhow::Result as Rslt;
 /// fn test_error_propagation() {
 ///     fn test_chain() -> Rslt<(),> {
-/// 	    let invalid_hex = "invalid_hex";
-/// 	    parse_str_hex_repr(invalid_hex,)?;
-/// 	    Ok((),)
+///         let invalid_hex = "invalid_hex";
+///         parse_str_hex_repr(invalid_hex,)?;
+///         Ok((),)
 ///     }
 ///
 ///     let result = test_chain();
