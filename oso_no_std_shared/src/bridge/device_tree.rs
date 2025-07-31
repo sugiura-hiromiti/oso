@@ -19,8 +19,8 @@
 /// use oso_no_std_shared::bridge::device_tree::DeviceTreeAddress;
 ///
 /// fn process_device_tree(dtb_addr: DeviceTreeAddress,) {
-///     // Parse and process the device tree at the given address
-///     // ...
+/// 	// Parse and process the device tree at the given address
+/// 	// ...
 /// }
 ///
 /// // In kernel entry point:

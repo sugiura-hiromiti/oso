@@ -5,9 +5,9 @@
 /// c_style_enum! {
 /// #[derive(Default)]
 /// pub enum UnixBool: i32 => #[allow(missing_docs)] {
-///     FALSE          = 0,
-///     TRUE           = 1,
-///     FILE_NOT_FOUND = -1,
+/// 	FALSE          = 0,
+/// 	TRUE           = 1,
+/// 	FILE_NOT_FOUND = -1,
 /// }}
 /// ```
 macro_rules! c_style_enum {
