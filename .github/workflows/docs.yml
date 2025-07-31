@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build-docs:
     name: Build Documentation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     steps:
     - uses: actions/checkout@v4
     
@@ -59,7 +59,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     needs: build-docs
     steps:
     - name: Deploy to GitHub Pages
