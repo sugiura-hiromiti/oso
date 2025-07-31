@@ -71,6 +71,7 @@ jobs:
           echo "Building on ${{ matrix.platform }}"
           
           # Build kernel
+          which readelf
           cd oso_kernel
           cargo build --release
           cd ..
