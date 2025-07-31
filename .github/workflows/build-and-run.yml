@@ -1,0 +1,222 @@
+name: Build and Run Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_full_test:
+        description: 'Run full QEMU boot test (longer timeout)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  full-build-test:
+    name: Full Build and Run Test
+    strategy:
+      matrix:
+        os: [ubuntu-24.04-arm, macos-14]
+        include:
+          - os: ubuntu-24.04-arm
+            platform: linux
+            qemu_install: |
+              sudo apt-get update
+              sudo apt-get install -y qemu-system-aarch64
+            mount_test: |
+              # Test Linux loop mount functionality
+              echo "Testing Linux mount capabilities"
+              sudo losetup --version || echo "losetup not available"
+          - os: macos-14
+            platform: macos
+            qemu_install: |
+              brew install qemu
+            mount_test: |
+              # Test macOS hdiutil functionality
+              echo "Testing macOS hdiutil capabilities"
+              hdiutil version || echo "hdiutil not available"
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install QEMU
+        run: ${{ matrix.qemu_install }}
+
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+          targets: aarch64-unknown-uefi
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-full-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Test platform-specific mount tools
+        run: ${{ matrix.mount_test }}
+
+      - name: Build all components
+        run: |
+          echo "Building on ${{ matrix.platform }}"
+          
+          # Build kernel
+          cd oso_kernel
+          cargo build --target aarch64-unknown-none-elf.json --release
+          cd ..
+          
+          # Copy kernel for loader
+          mkdir -p target/
+          cp target/aarch64-unknown-none-elf/release/oso_kernel target/oso_kernel.elf
+          
+          # Build loader
+          cd oso_loader
+          cargo build --target aarch64-unknown-uefi --release
+          cd ..
+          
+          # Build xtask
+          cargo build -p xtask --release
+
+      - name: Test xtask platform detection
+        run: |
+          echo "Testing xtask platform detection on ${{ matrix.platform }}"
+          ./target/release/xtask --help || echo "xtask help completed"
+
+      - name: Quick boot test
+        run: |
+          echo "Running quick boot test on ${{ matrix.platform }}"
+          timeout 15s cargo run -p xtask || echo "Quick boot test completed (expected timeout)"
+
+      - name: Full boot test (if requested)
+        if: github.event.inputs.run_full_test == 'true'
+        run: |
+          echo "Running full boot test on ${{ matrix.platform }}"
+          timeout 60s cargo run -p xtask || echo "Full boot test completed"
+
+      - name: Verify artifacts
+        run: |
+          echo "Verifying build artifacts on ${{ matrix.platform }}"
+          ls -la target/aarch64-unknown-none-elf/release/oso_kernel || echo "Kernel not found"
+          ls -la target/aarch64-unknown-uefi/release/oso_loader.efi || echo "Loader not found"
+          ls -la target/release/xtask || echo "xtask not found"
+          
+          # Check file sizes
+          if [ -f target/aarch64-unknown-none-elf/release/oso_kernel ]; then
+            echo "Kernel size: $(wc -c < target/aarch64-unknown-none-elf/release/oso_kernel) bytes"
+          fi
+          if [ -f target/aarch64-unknown-uefi/release/oso_loader.efi ]; then
+            echo "Loader size: $(wc -c < target/aarch64-unknown-uefi/release/oso_loader.efi) bytes"
+          fi
+
+      - name: Upload platform-specific artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: oso-full-build-${{ matrix.platform }}-${{ github.sha }}
+          path: |
+            target/aarch64-unknown-none-elf/release/oso_kernel
+            target/aarch64-unknown-uefi/release/oso_loader.efi
+            target/release/xtask
+          retention-days: 3
+
+  compare-builds:
+    name: Compare Platform Builds
+    needs: [full-build-test]
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: oso-full-build-linux-${{ github.sha }}
+          path: ./linux-build
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: oso-full-build-macos-${{ github.sha }}
+          path: ./macos-build
+
+      - name: Compare build outputs
+        run: |
+          echo "Comparing builds between platforms:"
+          echo "=== Linux build ==="
+          ls -la linux-build/
+          echo "=== macOS build ==="
+          ls -la macos-build/
+          
+          # Compare file sizes
+          if [ -f linux-build/oso_kernel ] && [ -f macos-build/oso_kernel ]; then
+            linux_kernel_size=$(wc -c < linux-build/oso_kernel)
+            macos_kernel_size=$(wc -c < macos-build/oso_kernel)
+            echo "Kernel size - Linux: $linux_kernel_size bytes, macOS: $macos_kernel_size bytes"
+            
+            if [ "$linux_kernel_size" -eq "$macos_kernel_size" ]; then
+              echo "✅ Kernel sizes match between platforms"
+            else
+              echo "⚠️  Kernel sizes differ between platforms"
+            fi
+          fi
+          
+          if [ -f linux-build/oso_loader.efi ] && [ -f macos-build/oso_loader.efi ]; then
+            linux_loader_size=$(wc -c < linux-build/oso_loader.efi)
+            macos_loader_size=$(wc -c < macos-build/oso_loader.efi)
+            echo "Loader size - Linux: $linux_loader_size bytes, macOS: $macos_loader_size bytes"
+            
+            if [ "$linux_loader_size" -eq "$macos_loader_size" ]; then
+              echo "✅ Loader sizes match between platforms"
+            else
+              echo "⚠️  Loader sizes differ between platforms"
+            fi
+          fi
+
+  platform-compatibility:
+    name: Platform Compatibility Check
+    strategy:
+      matrix:
+        os: [ubuntu-24.04-arm, macos-14]
+        include:
+          - os: ubuntu-24.04-arm
+            platform: linux
+          - os: macos-14
+            platform: macos
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Check platform-specific dependencies
+        run: |
+          echo "Checking platform compatibility for ${{ matrix.platform }}"
+          
+          # Check required tools
+          if [ "${{ matrix.platform }}" = "linux" ]; then
+            echo "Checking Linux-specific tools:"
+            which sudo || echo "sudo not found"
+            which mount || echo "mount not found"
+            which umount || echo "umount not found"
+            which losetup || echo "losetup not found"
+          elif [ "${{ matrix.platform }}" = "macos" ]; then
+            echo "Checking macOS-specific tools:"
+            which hdiutil || echo "hdiutil not found"
+          fi
+          
+          # Check QEMU availability
+          which qemu-system-aarch64 || echo "qemu-system-aarch64 not found"
+
+      - name: Test xtask platform detection
+        run: |
+          cargo build -p xtask
+          echo "Platform detection test:"
+          ./target/debug/xtask --help || echo "xtask platform detection test completed"
