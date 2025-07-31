@@ -74,7 +74,7 @@ jobs:
           cd oso_kernel
           cargo build --release
           cd ..
-          ls ./target -al
+          ls ./target
           
           # Build loader
           cd oso_loader
