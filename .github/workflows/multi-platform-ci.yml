@@ -98,7 +98,7 @@ jobs:
         run: nix develop --command cargo build -p xtask --release
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: oso-build-${{ matrix.platform }}-${{ github.sha }}
           path: |

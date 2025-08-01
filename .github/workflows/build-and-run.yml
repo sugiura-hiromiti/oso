@@ -36,7 +36,7 @@ jobs:
               echo "Testing macOS hdiutil capabilities"
               hdiutil version || echo "hdiutil not available"
     runs-on: ${{ matrix.os }}
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -78,12 +78,12 @@ jobs:
           nix develop --command cargo build --release
           cd ..
           ls ./target
-          
+
           # Build loader
           cd oso_loader
           nix develop --command cargo build --release
           cd ..
-          
+
           # Build xtask
           nix develop --command cargo build -p xtask --release
 
@@ -109,7 +109,7 @@ jobs:
           ls -la target/aarch64-unknown-none-elf/release/oso_kernel || echo "Kernel not found"
           ls -la target/aarch64-unknown-uefi/release/oso_loader.efi || echo "Loader not found"
           ls -la target/release/xtask || echo "xtask not found"
-          
+
           # Check file sizes
           if [ -f target/aarch64-unknown-none-elf/release/oso_kernel ]; then
             echo "Kernel size: $(wc -c < target/aarch64-unknown-none-elf/release/oso_kernel) bytes"
@@ -134,7 +134,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Download Linux artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: oso-full-build-linux-${{ github.sha }}
           path: ./linux-build
@@ -152,25 +152,25 @@ jobs:
           ls -la linux-build/
           echo "=== macOS build ==="
           ls -la macos-build/
-          
+
           # Compare file sizes
           if [ -f linux-build/oso_kernel ] && [ -f macos-build/oso_kernel ]; then
             linux_kernel_size=$(wc -c < linux-build/oso_kernel)
             macos_kernel_size=$(wc -c < macos-build/oso_kernel)
             echo "Kernel size - Linux: $linux_kernel_size bytes, macOS: $macos_kernel_size bytes"
-            
+
             if [ "$linux_kernel_size" -eq "$macos_kernel_size" ]; then
               echo "✅ Kernel sizes match between platforms"
             else
               echo "⚠️  Kernel sizes differ between platforms"
             fi
           fi
-          
+
           if [ -f linux-build/oso_loader.efi ] && [ -f macos-build/oso_loader.efi ]; then
             linux_loader_size=$(wc -c < linux-build/oso_loader.efi)
             macos_loader_size=$(wc -c < macos-build/oso_loader.efi)
             echo "Loader size - Linux: $linux_loader_size bytes, macOS: $macos_loader_size bytes"
-            
+
             if [ "$linux_loader_size" -eq "$macos_loader_size" ]; then
               echo "✅ Loader sizes match between platforms"
             else
@@ -189,7 +189,7 @@ jobs:
           - os: macos-14
             platform: macos
     runs-on: ${{ matrix.os }}
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -204,7 +204,7 @@ jobs:
       - name: Check platform-specific dependencies
         run: |
           echo "Checking platform compatibility for ${{ matrix.platform }}"
-          
+
           # Check required tools via Nix
           if [ "${{ matrix.platform }}" = "linux" ]; then
             echo "Checking Linux-specific tools:"
@@ -216,7 +216,7 @@ jobs:
             echo "Checking macOS-specific tools:"
             which hdiutil || echo "hdiutil not found"
           fi
-          
+
           # Check QEMU availability via Nix
           nix develop --command qemu-system-aarch64 --version
 
