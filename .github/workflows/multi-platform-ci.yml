@@ -47,9 +47,8 @@ jobs:
 
       - name: Check documentation
         run: |
-          which readelf
           (cd oso_kernel && cargo build)
-          cargo doc --workspace --no-deps --document-private-items
+          nix develop --command cargo doc --workspace --no-deps --document-private-items
 
   build:
     name: Build aarch64
