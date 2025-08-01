@@ -1,12 +1,14 @@
 //! # OSO Development Utilities
 //!
 //! A collection of development utilities and helper functions for the OSO operating system project.
-//! This crate provides tools for workspace management, command execution, and development workflow automation.
+//! This crate provides tools for workspace management, command execution, and development workflow
+//! automation.
 //!
 //! ## Features
 //!
 //! - **Workspace Management**: Tools for managing multi-crate workspaces
-//! - **Command Execution**: Enhanced command execution with better error handling and output formatting
+//! - **Command Execution**: Enhanced command execution with better error handling and output
+//!   formatting
 //! - **Development Workflow**: Utilities to streamline the development process
 //! - **Cross-platform Support**: Works across different operating systems
 //!
@@ -32,13 +34,13 @@
 //! ### Basic Command Execution
 //!
 //! ```rust,no_run
-//! use std::process::Command;
 //! use oso_dev_util::Run;
+//! use std::process::Command;
 //!
 //! // Execute a command with enhanced output
-//! let mut cmd = Command::new("cargo");
-//! cmd.args(&["build", "--release"]);
-//! cmd.run().expect("Build failed");
+//! let mut cmd = Command::new("cargo",);
+//! cmd.args(&["build", "--release",],);
+//! cmd.run().expect("Build failed",);
 //! ```
 //!
 //! ### Workspace Operations
@@ -248,15 +250,15 @@ impl<'a,> OsoWorkspace<'a,> for OsoWorkspaceManager<'a,> {
 /// # Examples
 ///
 /// ```rust,no_run
-/// use std::process::Command;
 /// use oso_dev_util::Run;
+/// use std::process::Command;
 ///
-/// let mut cmd = Command::new("ls");
-/// cmd.args(&["-la", "/tmp"]);
-/// 
+/// let mut cmd = Command::new("ls",);
+/// cmd.args(&["-la", "/tmp",],);
+///
 /// match cmd.run() {
-///     Ok(()) => println!("Command executed successfully"),
-///     Err(e) => eprintln!("Command failed: {}", e),
+/// 	Ok((),) => println!("Command executed successfully"),
+/// 	Err(e,) => eprintln!("Command failed: {}", e),
 /// }
 /// ```
 pub trait Run {
@@ -283,18 +285,18 @@ pub trait Run {
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use std::process::Command;
 	/// use oso_dev_util::Run;
+	/// use std::process::Command;
 	///
 	/// // Execute a simple command
-	/// let mut cmd = Command::new("echo");
-	/// cmd.arg("Hello, World!");
-	/// cmd.run().expect("Echo command failed");
+	/// let mut cmd = Command::new("echo",);
+	/// cmd.arg("Hello, World!",);
+	/// cmd.run().expect("Echo command failed",);
 	///
 	/// // Execute a build command
-	/// let mut build_cmd = Command::new("cargo");
-	/// build_cmd.args(&["build", "--release"]);
-	/// build_cmd.run().expect("Build failed");
+	/// let mut build_cmd = Command::new("cargo",);
+	/// build_cmd.args(&["build", "--release",],);
+	/// build_cmd.run().expect("Build failed",);
 	/// ```
 	///
 	/// # Output Format
@@ -323,15 +325,15 @@ impl Run for Command {
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use std::process::Command;
 	/// use oso_dev_util::Run;
+	/// use std::process::Command;
 	///
-	/// let mut cmd = Command::new("git");
-	/// cmd.args(&["status", "--porcelain"]);
-	/// 
+	/// let mut cmd = Command::new("git",);
+	/// cmd.args(&["status", "--porcelain",],);
+	///
 	/// // This will display: git status --porcelain
 	/// // in bold blue, then execute the command
-	/// cmd.run().expect("Git command failed");
+	/// cmd.run().expect("Git command failed",);
 	/// ```
 	fn run(&mut self,) -> Rslt<(),> {
 		// Format the command display string with program and arguments
@@ -340,19 +342,19 @@ impl Run for Command {
 			self.get_program().display(),
 			self.get_args().collect::<Vec<&OsStr,>>().join(OsStr::new(" ")).display()
 		);
-		
+
 		// Display the command in bold blue for visibility
 		println!("\n{}", cmd_dsply.bold().blue());
-		
+
 		// Configure stdio inheritance and execute the command
 		let out = self
 			.stdout(Stdio::inherit(),)  // Inherit stdout for real-time output
 			.stderr(Stdio::inherit(),)  // Inherit stderr for error messages
 			.stdin(Stdio::inherit(),)   // Inherit stdin for interactive commands
-			.status()?;                 // Execute and get exit status
-		
+			.status()?; // Execute and get exit status
+
 		// Check exit status and convert to Result
-		out.exit_ok()?;  // This will return an error if exit code != 0
+		out.exit_ok()?; // This will return an error if exit code != 0
 		Ok((),)
 	}
 }
