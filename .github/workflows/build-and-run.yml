@@ -37,6 +37,7 @@ jobs:
             qemu_install: |
               brew install qemu
               brew install binutils
+               export PATH="/opt/homebrew/opt/binutils/bin:$PATH"
             mount_test: |
               # Test macOS hdiutil functionality
               echo "Testing macOS hdiutil capabilities"
