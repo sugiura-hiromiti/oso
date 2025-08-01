@@ -29,6 +29,8 @@ jobs:
         with:
           components: rustfmt, clippy, rust-src
           targets: aarch64-unknown-uefi
+      - name: Start Nix devShell
+        run: nix develop
 
       - name: Cache cargo registry
         uses: actions/cache@v3
