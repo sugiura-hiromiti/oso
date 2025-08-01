@@ -47,6 +47,7 @@ jobs:
 
       - name: Check documentation
         run: |
+          which readelf
           (cd oso_kernel && cargo build)
           cargo doc --workspace --no-deps --document-private-items
 
