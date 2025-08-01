@@ -7,3 +7,4 @@ mnt/
 *.elf
 *.sh
 **/tmp/
+.direnv/
