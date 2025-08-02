@@ -26,6 +26,11 @@ jobs:
           components: rustfmt, clippy, rust-src
           targets: aarch64-unknown-uefi
 
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Cache cargo registry
         uses: actions/cache@v3
         with:
@@ -58,6 +63,11 @@ jobs:
           components: rust-src
           targets: aarch64-unknown-uefi
 
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Cache cargo registry
         uses: actions/cache@v3
         with:
@@ -86,6 +96,11 @@ jobs:
       - name: Install Rust nightly
         uses: dtolnay/rust-toolchain@nightly
 
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Cache cargo registry
         uses: actions/cache@v3
         with:
@@ -98,9 +113,10 @@ jobs:
       - name: Run tests for std crates
         run: |
           # Test crates that can run in std environment
-          (cd oso_proc_macro_logic && cargo t)
+          (cd oso_kernel && cargo b)
+          (cd oso_proc_macro_logic && nix develop --command cargo t)
           (cd oso_error && cargo t)
-          (cd xtask && cargo t)
+          (cd xtask && nix develop --command cargo t)
 
   integration:
     name: Integration Test

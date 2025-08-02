@@ -92,12 +92,12 @@ jobs:
       - name: Build kernel for aarch64
         run: |
           cd oso_kernel
-          cargo build --release
+          nix develop --command cargo build --release
 
       - name: Build loader for aarch64
         run: |
           cd oso_loader
-          cargo build --release
+          nix develop --command cargo build --release
 
       - name: Build xtask
         run: nix develop --command cargo build -p xtask --release
@@ -141,9 +141,9 @@ jobs:
       - name: Run tests for std crates
         run: |
           # Test crates that can run in std environment
-          (cd oso_proc_macro_logic && cargo test)
-          (cd oso_error && cargo test)
-          (cd xtask && cargo test)
+          (cd oso_proc_macro_logic && nix develop --command cargo test)
+          (cd oso_error && nix develop --command cargo test)
+          (cd xtask && nix develop --command cargo test)
 
   integration:
     name: Integration Test
