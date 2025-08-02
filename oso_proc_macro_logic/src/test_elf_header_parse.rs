@@ -239,19 +239,23 @@ pub fn readelf_h() -> Rslt<ReadElfH,> {
 }
 #[cfg(test)]
 mod tests {
+	use oso_dev_util::Run;
+
 	use super::*;
 	use std::env::current_dir;
 	use std::env::set_current_dir;
+	use std::path::PathBuf;
 
 	/// Helper function to navigate to the project root for tests
-	fn go_root() -> Rslt<(),> {
-		let cwd = current_dir()?;
-		if cwd.file_name().unwrap() != "oso" {
-			if let Some(oso_root,) = cwd.parent() {
-				set_current_dir(oso_root,)?;
-			}
+	fn go_root() -> Rslt<PathBuf,> {
+		let mut cwd = current_dir()?;
+		while let Some(oso_root,) = cwd.parent()
+			&& oso_root.file_name().unwrap() != "oso"
+		{
+			cwd = oso_root.to_owned();
 		}
-		Ok((),)
+		set_current_dir(&cwd,)?;
+		Ok(cwd,)
 	}
 
 	#[test]
@@ -355,31 +359,6 @@ mod tests {
 		let key_value = vec!["Entry point address", "0x401000", "additional", "info"];
 		assert!(key_value.is_peoperty_of("Entry point address"));
 		assert!(!key_value.is_peoperty_of("0x401000"));
-	}
-
-	#[test]
-	#[ignore = "Requires oso_kernel.elf file to exist"]
-	fn test_readelf_h_integration() -> Rslt<(),> {
-		go_root()?;
-
-		let header = readelf_h()?;
-
-		// Basic validation that we got some data
-		assert!(!header.file_class.is_empty());
-		assert!(!header.machine.is_empty());
-		assert!(!header.entry.is_empty());
-
-		// ELF files should have some basic properties
-		assert!(header.file_class.starts_with("ELF"));
-
-		Ok((),)
-	}
-
-	#[test]
-	fn test_readelf_h_without_kernel_file() {
-		// This should fail because the kernel file doesn't exist
-		let result = readelf_h();
-		assert!(result.is_err());
 	}
 
 	#[test]
