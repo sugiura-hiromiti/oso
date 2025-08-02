@@ -21,20 +21,20 @@ jobs:
     name: Full Build and Run Test
     strategy:
       matrix:
-        os: [macos-latest, macos-latest]
+        os: [macos-latest, ubuntu-24.04-arm]
         include:
-          - os: macos-latest
-            platform: linux
-            mount_test: |
-              # Test Linux loop mount functionality
-              echo "Testing Linux mount capabilities"
-              nix develop --command bash -c "losetup --version || echo 'losetup not available'"
           - os: macos-latest
             platform: macos
             mount_test: |
               # Test macOS hdiutil functionality
               echo "Testing macOS hdiutil capabilities"
               hdiutil version || echo "hdiutil not available"
+          - os: ubuntu-24.04-arm
+            platform: linux
+            mount_test: |
+              # Test Linux loop mount functionality
+              echo "Testing Linux mount capabilities"
+              nix develop --command bash -c "losetup --version || echo 'losetup not available'"
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -206,15 +206,15 @@ jobs:
           echo "Checking platform compatibility for ${{ matrix.platform }}"
 
           # Check required tools via Nix
-          if [ "${{ matrix.platform }}" = "linux" ]; then
+          if [ "${{ matrix.platform }}" = "macos" ]; then
+            echo "Checking macOS-specific tools:"
+            which hdiutil || echo "hdiutil not found"
+          elif [ "${{ matrix.platform }}" = "linux" ]; then
             echo "Checking Linux-specific tools:"
             which sudo || echo "sudo not found"
             which mount || echo "mount not found"
             which umount || echo "umount not found"
             nix develop --command bash -c "which losetup || echo 'losetup not found'"
-          elif [ "${{ matrix.platform }}" = "macos" ]; then
-            echo "Checking macOS-specific tools:"
-            which hdiutil || echo "hdiutil not found"
           fi
 
           # Check QEMU availability via Nix
