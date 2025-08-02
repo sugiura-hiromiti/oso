@@ -56,6 +56,7 @@ pub fn fonts(specified_path: &LitStr,) -> Vec<String,> {
 		.emit();
 		env!("CARGO_MANIFEST_DIR").to_string()
 	},);
+	#[cfg(test)]
 	let project_root = "".to_string();
 
 	// Construct the full path to the font file
