@@ -123,7 +123,7 @@ jobs:
         with:
           name: oso-full-build-${{ matrix.platform }}-${{ github.sha }}
           path: |
-            target/oso_kernel
+            target/oso_kernel.elf
             target/aarch64-unknown-uefi/release/oso_loader.efi
             target/release/xtask
           retention-days: 3
@@ -133,45 +133,45 @@ jobs:
     needs: [full-build-test]
     runs-on: macos-latest
     steps:
-      - name: Download Linux artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: oso-full-build-linux-${{ github.sha }}
-          path: ./linux-build
-
       - name: Download macOS artifacts
         uses: actions/download-artifact@v4
         with:
           name: oso-full-build-macos-${{ github.sha }}
           path: ./macos-build
 
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: oso-full-build-linux-${{ github.sha }}
+          path: ./linux-build
+
       - name: Compare build outputs
         run: |
           echo "Comparing builds between platforms:"
-          echo "=== Linux build ==="
-          ls -la linux-build/
           echo "=== macOS build ==="
           ls -la macos-build/
+          echo "=== Linux build ==="
+          ls -la linux-build/
 
           # Compare file sizes
-          if [ -f linux-build/oso_kernel ] && [ -f macos-build/oso_kernel ]; then
-            linux_kernel_size=$(wc -c < linux-build/oso_kernel)
+          if [ -f macos-build/oso_kernel ] && [ -f linux-build/oso_kernel ]; then
             macos_kernel_size=$(wc -c < macos-build/oso_kernel)
-            echo "Kernel size - Linux: $linux_kernel_size bytes, macOS: $macos_kernel_size bytes"
+            linux_kernel_size=$(wc -c < linux-build/oso_kernel)
+            echo "Kernel size - macOS: $macos_kernel_size bytes, Linux: $linux_kernel_size bytes"
 
-            if [ "$linux_kernel_size" -eq "$macos_kernel_size" ]; then
+            if [ "$macos_kernel_size" -eq "$linux_kernel_size" ]; then
               echo "✅ Kernel sizes match between platforms"
             else
               echo "⚠️  Kernel sizes differ between platforms"
             fi
           fi
 
-          if [ -f linux-build/oso_loader.efi ] && [ -f macos-build/oso_loader.efi ]; then
-            linux_loader_size=$(wc -c < linux-build/oso_loader.efi)
+          if [ -f macos-build/oso_loader.efi ] && [ -f linux-build/oso_loader.efi ]; then
             macos_loader_size=$(wc -c < macos-build/oso_loader.efi)
-            echo "Loader size - Linux: $linux_loader_size bytes, macOS: $macos_loader_size bytes"
+            linux_loader_size=$(wc -c < linux-build/oso_loader.efi)
+            echo "Loader size - macOS: $macos_loader_size bytes, Linux: $linux_loader_size bytes"
 
-            if [ "$linux_loader_size" -eq "$macos_loader_size" ]; then
+            if [ "$macos_loader_size" -eq "$linux_loader_size" ]; then
               echo "✅ Loader sizes match between platforms"
             else
               echo "⚠️  Loader sizes differ between platforms"
@@ -182,12 +182,12 @@ jobs:
     name: Platform Compatibility Check
     strategy:
       matrix:
-        os: [macos-latest, macos-latest]
+        os: [macos-latest, ubuntu-24.04-arm]
         include:
           - os: macos-latest
-            platform: linux
-          - os: macos-latest
             platform: macos
+          - os: ubuntu-24.04-arm
+            platform: linux
     runs-on: ${{ matrix.os }}
 
     steps:
