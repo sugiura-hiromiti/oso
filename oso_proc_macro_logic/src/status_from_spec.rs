@@ -22,6 +22,8 @@ use markup5ever_rcdom::NodeData;
 use markup5ever_rcdom::RcDom;
 use proc_macro::Diagnostic;
 use proc_macro::Level;
+use std::cell::Cell;
+use std::cell::RefCell;
 use std::rc::Rc;
 
 /// HTML element ID of the main status codes section in the UEFI specification
@@ -255,7 +257,10 @@ fn get_elements_by_attribute(node: Rc<Node,>, attr: &str, value: &str,) -> Vec<R
 /// # Returns
 ///
 /// A vector of all matching elements
-//  FIX: some test cases are failed
+///
+/// # Caution
+///
+/// clone argument passed to `node` every time
 fn get_elements_by_name(node: Rc<Node,>, tag_name: &str,) -> Vec<Rc<Node,>,> {
 	let mut rslt = vec![];
 
@@ -273,7 +278,7 @@ fn get_elements_by_name(node: Rc<Node,>, tag_name: &str,) -> Vec<Rc<Node,>,> {
 	}
 
 	// Recursively search child nodes
-	node.children.borrow().iter().for_each(|n| {
+	node.children.borrow().clone().into_iter().for_each(|n| {
 		let mut child_matches = get_elements_by_name(n.clone(), tag_name,);
 		rslt.append(&mut child_matches,);
 	},);
@@ -498,6 +503,7 @@ mod tests {
 		let h1 = get_elements_by_name(node.clone(), "h1",);
 		assert_eq!(h1.len(), 1);
 	}
+
 	#[test]
 	fn test_status_code_info_error_bit() {
 		// Test the ERROR_BIT constant
@@ -559,7 +565,7 @@ mod tests {
 </table>"#;
 
 		let node = parse_text(table_html,);
-		let table_node = get_elements_by_name(node, "table",)[0].clone();
+		let table_node = get_elements_by_name(node.clone(), "table",)[0].clone();
 		let rows = table_rows(table_node,);
 
 		// Should return 2 rows (excluding header)
@@ -579,8 +585,9 @@ mod tests {
 <table/>"#;
 
 		let node = parse_text(row_html,);
-		let row_node = get_elements_by_name(node, "tr",)[0].clone();
-		let data = table_data(row_node,);
+		let row_node = get_elements_by_name(node.clone(), "tr",);
+		assert_eq!(row_node.len(), 1, "{row_node:#?}");
+		let data = table_data(row_node[0].clone(),);
 
 		assert_eq!(data.len(), 3);
 		assert_eq!(data[0], "EFI_SUCCESS");

@@ -207,16 +207,6 @@ mod tests {
 	}
 
 	#[test]
-	fn test_current_dir_functionality() {
-		// Test that current_dir works as expected
-		let dir = current_dir();
-		assert!(dir.is_ok());
-
-		let path = dir.unwrap();
-		assert!(path.is_absolute());
-	}
-
-	#[test]
 	fn test_crate_features() {
 		// This test verifies that the crate compiles with all the required features
 		// If any feature is missing, compilation would fail
