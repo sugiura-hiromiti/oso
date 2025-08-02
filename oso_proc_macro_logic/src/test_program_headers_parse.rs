@@ -125,7 +125,6 @@ fn program_headers_count(info: &String,) -> Rslt<usize,> {
 	Ok(program_header_count,)
 }
 
-//  FIX: some test cases are failed
 fn program_headers_fields(
 	infos: &Vec<String,>,
 	count: usize,

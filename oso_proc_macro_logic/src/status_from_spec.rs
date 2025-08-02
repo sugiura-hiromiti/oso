@@ -255,7 +255,6 @@ fn get_elements_by_attribute(node: Rc<Node,>, attr: &str, value: &str,) -> Vec<R
 /// # Returns
 ///
 /// A vector of all matching elements
-//  FIX: some test cases are failed
 fn get_elements_by_name(node: Rc<Node,>, tag_name: &str,) -> Vec<Rc<Node,>,> {
 	let mut rslt = vec![];
 
@@ -559,7 +558,7 @@ mod tests {
 </table>"#;
 
 		let node = parse_text(table_html,);
-		let table_node = get_elements_by_name(node, "table",)[0].clone();
+		let table_node = get_elements_by_name(node.clone(), "table",)[0].clone();
 		let rows = table_rows(table_node,);
 
 		// Should return 2 rows (excluding header)
@@ -579,7 +578,7 @@ mod tests {
 <table/>"#;
 
 		let node = parse_text(row_html,);
-		let row_node = get_elements_by_name(node, "tr",)[0].clone();
+		let row_node = get_elements_by_name(node.clone(), "tr",)[0].clone();
 		let data = table_data(row_node,);
 
 		assert_eq!(data.len(), 3);
