@@ -197,16 +197,32 @@ fn parse_flags_and_align(fields_info: &Vec<&str,>,) -> Rslt<(u32, u64,),> {
 mod tests {
 	use std::env::current_dir;
 	use std::env::set_current_dir;
+	use std::path::PathBuf;
 
 	use super::*;
 
-	fn go_crate_root() -> Rslt<(),> {
-		let cwd = current_dir()?;
-		if cwd.file_name().unwrap() != "oso" {
-			let oso_root = cwd.parent().unwrap();
-			set_current_dir(oso_root,)?;
+	fn go_crate_root() -> Rslt<PathBuf,> {
+		let mut cwd = current_dir()?;
+		while let Some(parent_path,) = cwd.parent()
+			&& parent_path.file_name().unwrap() != "oso"
+			&& parent_path.file_name().unwrap().to_str().unwrap().contains("oso",)
+		{
+			cwd = parent_path.to_owned();
 		}
-		Ok((),)
+		set_current_dir(&cwd,)?;
+		Ok(cwd,)
+	}
+
+	fn go_workspace_root() -> Rslt<PathBuf,> {
+		let cwd = go_crate_root()?;
+		if let Some(crate_name,) = cwd.file_name()
+			&& crate_name == "oso"
+		{
+			Ok(cwd,)
+		} else {
+			set_current_dir(cwd.parent().unwrap(),)?;
+			Ok(cwd.parent().unwrap().to_owned(),)
+		}
 	}
 
 	#[test]
@@ -217,37 +233,44 @@ mod tests {
 
 	#[test]
 	fn test_readelf_l() -> Rslt<(),> {
-		go_crate_root()?;
+		let cwd = current_dir()?;
+		go_workspace_root()?;
 
 		let phs = readelf_l()?;
 		assert_eq!(phs.len(), 4, "{phs:#?}");
+		set_current_dir(cwd,)?;
 		Ok((),)
 	}
 
 	#[test]
 	fn test_program_headers_info() -> Rslt<(),> {
-		go_crate_root()?;
+		let cwd = current_dir()?;
+		go_workspace_root()?;
 
 		let program_headers_info = readelf_l_out()?;
 
 		assert_eq!(program_headers_info.len(), 2);
+		set_current_dir(cwd,)?;
 		Ok((),)
 	}
 
 	#[test]
 	fn test_program_headers_count() -> Rslt<(),> {
-		go_crate_root()?;
+		let cwd = current_dir()?;
+		go_workspace_root()?;
 
 		let program_headers_info = readelf_l_out()?;
 		let program_header_count = program_headers_count(&program_headers_info[0],)?;
 
 		assert_eq!(program_header_count, 4);
+		set_current_dir(cwd,)?;
 		Ok((),)
 	}
 
 	#[test]
 	fn test_program_headers_fields() -> Rslt<(),> {
-		go_crate_root()?;
+		let cwd = current_dir()?;
+		go_workspace_root()?;
 
 		let program_headers_info = readelf_l_out()?;
 		let program_header_count = program_headers_count(&program_headers_info[0],)?;
@@ -255,6 +278,7 @@ mod tests {
 			program_headers_fields(&program_headers_info, program_header_count,);
 
 		assert_eq!(program_header_count, program_headers_info.count());
+		set_current_dir(cwd,)?;
 		Ok((),)
 	}
 
