@@ -146,6 +146,7 @@ jobs:
       - name: Run tests for std crates
         run: |
           # Test crates that can run in std environment
+          (cd oso_kernel && nix develop --command cargo b)
           (cd oso_proc_macro_logic && nix develop --command cargo test)
           (cd oso_error && nix develop --command cargo test)
           (cd xtask && nix develop --command cargo test)
