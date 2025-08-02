@@ -5,6 +5,7 @@
   };
 
   outputs = {
+    self,
     nixpkgs,
     flake-utils,
     ...
@@ -14,7 +15,8 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in {
         devShells.default = pkgs.mkShell {
-          packages = with pkgs;
+          buildInputs =
+            with pkgs;
             [
               # Core build tools
               binutils
@@ -27,6 +29,9 @@
               gnugrep
               gnutar
               gzip
+              (writeShellScriptBin "x" ''
+                cargo xt $1 $2 $3
+              '')
 
               # Platform-specific tools
               util-linux # for losetup on Linux (no-op on macOS)
@@ -36,6 +41,7 @@
             ]
             ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
               # Linux-specific tools
+              util-linux # for losetup on Linux (no-op on macOS)
               mount
               umount
             ];
