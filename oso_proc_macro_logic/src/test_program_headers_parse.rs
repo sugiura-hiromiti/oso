@@ -200,7 +200,7 @@ mod tests {
 
 	use super::*;
 
-	fn go_root() -> Rslt<(),> {
+	fn go_crate_root() -> Rslt<(),> {
 		let cwd = current_dir()?;
 		if cwd.file_name().unwrap() != "oso" {
 			let oso_root = cwd.parent().unwrap();
@@ -217,7 +217,7 @@ mod tests {
 
 	#[test]
 	fn test_readelf_l() -> Rslt<(),> {
-		go_root()?;
+		go_crate_root()?;
 
 		let phs = readelf_l()?;
 		assert_eq!(phs.len(), 4, "{phs:#?}");
@@ -226,7 +226,7 @@ mod tests {
 
 	#[test]
 	fn test_program_headers_info() -> Rslt<(),> {
-		go_root()?;
+		go_crate_root()?;
 
 		let program_headers_info = readelf_l_out()?;
 
@@ -236,7 +236,7 @@ mod tests {
 
 	#[test]
 	fn test_program_headers_count() -> Rslt<(),> {
-		go_root()?;
+		go_crate_root()?;
 
 		let program_headers_info = readelf_l_out()?;
 		let program_header_count = program_headers_count(&program_headers_info[0],)?;
@@ -247,7 +247,7 @@ mod tests {
 
 	#[test]
 	fn test_program_headers_fields() -> Rslt<(),> {
-		go_root()?;
+		go_crate_root()?;
 
 		let program_headers_info = readelf_l_out()?;
 		let program_header_count = program_headers_count(&program_headers_info[0],)?;
