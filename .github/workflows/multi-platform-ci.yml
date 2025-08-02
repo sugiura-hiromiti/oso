@@ -128,6 +128,8 @@ jobs:
 
       - name: Install Rust nightly
         uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
 
       - name: Install Nix
         uses: cachix/install-nix-action@v24
@@ -145,7 +147,6 @@ jobs:
 
       - name: Run tests for std crates
         run: |
-          rustup component add rust-src --toolchain nightly-aarch64-unknown-linux-gnu
           # Test crates that can run in std environment
           (cd oso_kernel && nix develop --command cargo b)
           (cd oso_proc_macro_logic && nix develop --command cargo test)
