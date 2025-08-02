@@ -14,11 +14,11 @@ jobs:
     name: Check and Lint
     strategy:
       matrix:
-        os: [ubuntu-24.04-arm, macos-14]
+        os: [ubuntu-24.04-arm, macos-latest]
         include:
           - os: ubuntu-24.04-arm
             platform: linux
-          - os: macos-14
+          - os: macos-latest
             platform: macos
     runs-on: ${{ matrix.os }}
     steps:
@@ -59,11 +59,11 @@ jobs:
     name: Build aarch64
     strategy:
       matrix:
-        os: [ubuntu-24.04-arm, macos-14]
+        os: [ubuntu-24.04-arm, macos-latest]
         include:
           - os: ubuntu-24.04-arm
             platform: linux
-          - os: macos-14
+          - os: macos-latest
             platform: macos
     runs-on: ${{ matrix.os }}
     steps:
@@ -116,11 +116,11 @@ jobs:
     name: Test
     strategy:
       matrix:
-        os: [ubuntu-24.04-arm, macos-14]
+        os: [ubuntu-24.04-arm, macos-latest]
         include:
           - os: ubuntu-24.04-arm
             platform: linux
-          - os: macos-14
+          - os: macos-latest
             platform: macos
     runs-on: ${{ matrix.os }}
     steps:
@@ -154,11 +154,11 @@ jobs:
     name: Integration Test
     strategy:
       matrix:
-        os: [ubuntu-24.04-arm, macos-14]
+        os: [ubuntu-24.04-arm, macos-latest]
         include:
           - os: ubuntu-24.04-arm
             platform: linux
-          - os: macos-14
+          - os: macos-latest
             platform: macos
     runs-on: ${{ matrix.os }}
     needs: [build]
@@ -211,7 +211,7 @@ jobs:
     name: Security Audit
     strategy:
       matrix:
-        os: [ubuntu-24.04-arm, macos-14]
+        os: [ubuntu-24.04-arm, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -229,11 +229,11 @@ jobs:
     name: Dependency Check
     strategy:
       matrix:
-        os: [ubuntu-24.04-arm, macos-14]
+        os: [ubuntu-24.04-arm, macos-latest]
         include:
           - os: ubuntu-24.04-arm
             platform: linux
-          - os: macos-14
+          - os: macos-latest
             platform: macos
     runs-on: ${{ matrix.os }}
     steps:
