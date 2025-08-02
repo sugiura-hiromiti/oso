@@ -21,15 +21,15 @@ jobs:
     name: Full Build and Run Test
     strategy:
       matrix:
-        os: [ubuntu-24.04-arm, macos-14]
+        os: [macos-latest, macos-latest]
         include:
-          - os: ubuntu-24.04-arm
+          - os: macos-latest
             platform: linux
             mount_test: |
               # Test Linux loop mount functionality
               echo "Testing Linux mount capabilities"
               nix develop --command bash -c "losetup --version || echo 'losetup not available'"
-          - os: macos-14
+          - os: macos-latest
             platform: macos
             mount_test: |
               # Test macOS hdiutil functionality
@@ -131,7 +131,7 @@ jobs:
   compare-builds:
     name: Compare Platform Builds
     needs: [full-build-test]
-    runs-on: ubuntu-24.04-arm
+    runs-on: macos-latest
     steps:
       - name: Download Linux artifacts
         uses: actions/download-artifact@v4
@@ -182,11 +182,11 @@ jobs:
     name: Platform Compatibility Check
     strategy:
       matrix:
-        os: [ubuntu-24.04-arm, macos-14]
+        os: [macos-latest, macos-latest]
         include:
-          - os: ubuntu-24.04-arm
+          - os: macos-latest
             platform: linux
-          - os: macos-14
+          - os: macos-latest
             platform: macos
     runs-on: ${{ matrix.os }}
 
