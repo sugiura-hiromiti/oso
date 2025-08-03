@@ -8,8 +8,10 @@
 //! - **Pure Rust Implementation**: Written entirely in Rust with no external dependencies
 //! - **AArch64 Focus**: Primarily targets ARM64 architecture with partial x86_64 support
 //! - **No Standard Library**: Operates in a `no_std` environment for bare-metal execution
-//! - **Advanced Rust Features**: Leverages cutting-edge Rust language features for zero-cost abstractions
-//! - **Modular Architecture**: Organized into distinct modules for applications, base functionality, and drivers
+//! - **Advanced Rust Features**: Leverages cutting-edge Rust language features for zero-cost
+//!   abstractions
+//! - **Modular Architecture**: Organized into distinct modules for applications, base
+//!   functionality, and drivers
 //!
 //! ## Architecture
 //!
@@ -24,7 +26,7 @@
 //! The kernel supports multiple pixel formats through feature flags:
 //!
 //! - `rgb`: Red-Green-Blue pixel format
-//! - `bgr`: Blue-Green-Red pixel format  
+//! - `bgr`: Blue-Green-Red pixel format
 //! - `bitmask`: Custom bitmask pixel format
 //! - `bltonly`: Block Transfer Only mode (default)
 //!
