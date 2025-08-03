@@ -68,7 +68,7 @@
 
 use anyhow::Result as Rslt;
 
-// pub mod cli; // Will be added in feat/add-cli-module branch
+pub mod cli;
 #[cfg_attr(doc, aquamarine::aquamarine)]
 /// ```mermaid
 /// flowchart TD
@@ -78,7 +78,7 @@ use anyhow::Result as Rslt;
 /// C --> D
 /// ```
 pub mod decl_manage;
-// pub mod fs; // Will be added in feat/add-cli-module branch
+pub mod fs;
 
 /// The path to the oso_dev_util crate manifest, set at compile time
 const OSO_DEV_UTIL_PATH: &'static str = std::env!("CARGO_MANIFEST_PATH");
