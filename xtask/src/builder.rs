@@ -31,26 +31,97 @@ const BOOT_DIR: &str = "efi/boot";
 const KERNEL_FILE: &str = "oso_kernel.elf";
 
 /// Main builder struct that orchestrates the build and run process
+///
+/// The `Builder` struct is the central component of the OSO build system. It manages
+/// the entire workflow from building the kernel and loader to creating disk images
+/// and running QEMU. It encapsulates all the necessary configuration and state
+/// needed for the build process.
+///
+/// # Architecture Support
+///
+/// The builder supports multiple target architectures:
+/// - **AArch64**: ARM 64-bit architecture (primary target)
+/// - **x86_64**: Intel/AMD 64-bit architecture (partial support)
+/// - **RISC-V 64**: RISC-V 64-bit architecture (planned)
+///
+/// # Build Process
+///
+/// The typical build process involves:
+/// 1. **Initialization**: Set up workspace, firmware, and host OS detection
+/// 2. **Building**: Compile the kernel and loader for the target architecture
+/// 3. **Disk Image Creation**: Create and format a FAT32 disk image
+/// 4. **File Deployment**: Mount the disk image and copy built artifacts
+/// 5. **QEMU Execution**: Launch QEMU with appropriate firmware and configuration
+/// 6. **Cleanup**: Unmount disk images and clean up temporary files
+///
+/// # Examples
+///
+/// ```rust,ignore
+/// use xtask::builder::Builder;
+///
+/// // Create a new builder with default options
+/// let builder = Builder::new()?;
+///
+/// // Build the kernel and loader
+/// builder.build()?;
+///
+/// // Run in QEMU
+/// builder.run()?;
+/// ```
 #[derive(Debug,)]
 pub struct Builder {
-	/// Command-line options
+	/// Command-line options and build configuration
 	opts:      Opts,
-	/// OSO workspace information
+	/// OSO workspace information and paths
 	workspace: OsoWorkSpace,
-	/// OVMF firmware information
+	/// OVMF firmware configuration for UEFI boot
 	firmware:  Firmware,
-	/// current host os
+	/// Host operating system detection for platform-specific operations
 	host_os:   HostOs,
 }
 
 impl Builder {
 	/// Creates a new Builder instance with the specified options
 	///
-	/// Initializes the workspace and firmware based on the command-line options.
+	/// This constructor initializes all the necessary components for the build process:
+	/// - Parses command-line options and build configuration
+	/// - Sets up the OSO workspace with project paths
+	/// - Downloads and configures OVMF firmware for the target architecture
+	/// - Detects the host operating system for platform-specific operations
+	///
+	/// # Initialization Process
+	///
+	/// 1. **Options Parsing**: Reads command-line arguments for architecture, build mode, etc.
+	/// 2. **Workspace Setup**: Locates project root and validates workspace structure
+	/// 3. **Firmware Download**: Fetches appropriate OVMF firmware files for UEFI boot
+	/// 4. **Host Detection**: Identifies the host OS (macOS, Linux) for mount operations
 	///
 	/// # Returns
 	///
-	/// A new Builder instance or an error if initialization fails
+	/// * `Ok(Builder)` - A fully initialized Builder instance ready for use
+	/// * `Err(anyhow::Error)` - If initialization fails due to:
+	///   - Invalid workspace structure
+	///   - Firmware download failure
+	///   - Unsupported host operating system
+	///   - Network connectivity issues
+	///
+	/// # Examples
+	///
+	/// ```rust,ignore
+	/// use xtask::builder::Builder;
+	///
+	/// // Create a builder with default configuration
+	/// let builder = Builder::new()?;
+	/// println!("Building for architecture: {:?}", builder.arch());
+	/// ```
+	///
+	/// # Errors
+	///
+	/// This method can fail in several scenarios:
+	/// - **Workspace Error**: If the OSO project structure is invalid or incomplete
+	/// - **Firmware Error**: If OVMF firmware files cannot be downloaded or accessed
+	/// - **Host OS Error**: If the host operating system is not supported (Windows)
+	/// - **Network Error**: If firmware download requires internet access and fails
 	pub fn new() -> Rslt<Self,> {
 		let opts = Opts::new();
 		let workspace = OsoWorkSpace::new()?;
@@ -59,29 +130,92 @@ impl Builder {
 		Ok(Self { opts, workspace, firmware: ovmf, host_os, },)
 	}
 
-	/// Builds the OSO loader and kernel
+	/// Builds the OSO loader and kernel for the target architecture
+	///
+	/// This method orchestrates the complete build process for both the UEFI loader
+	/// and the kernel. It ensures proper build order and handles architecture-specific
+	/// compilation requirements.
+	///
+	/// # Build Order
+	///
+	/// The build order is critical due to dependencies:
+	/// 1. **Kernel First**: The kernel must be built before the loader because the loader uses
+	///    procedural macros that depend on kernel artifacts
+	/// 2. **Loader Second**: The loader is built as a UEFI application that will load and execute
+	///    the kernel
+	///
+	/// # Architecture-Specific Builds
+	///
+	/// - **AArch64**: Uses custom target specification for bare-metal ARM64
+	/// - **x86_64**: Uses custom target specification for bare-metal x86_64
+	/// - **RISC-V**: Planned support with custom target specification
+	///
+	/// # Build Artifacts
+	///
+	/// After successful completion, the following artifacts are created:
+	/// - `target/{arch}/debug|release/oso_kernel.elf` - The kernel binary
+	/// - `target/{loader_triple}/debug|release/oso_loader.efi` - The UEFI loader
 	///
 	/// # Returns
 	///
-	/// Ok(()) if the build succeeds, or an error if it fails
+	/// * `Ok(())` - If both kernel and loader build successfully
+	/// * `Err(anyhow::Error)` - If any build step fails due to:
+	///   - Compilation errors in kernel or loader code
+	///   - Missing dependencies or tools
+	///   - Invalid target specifications
+	///   - Workspace or file system issues
+	///
+	/// # Examples
+	///
+	/// ```rust,ignore
+	/// let builder = Builder::new()?;
+	///
+	/// // Build both kernel and loader
+	/// builder.build()?;
+	/// println!("Build completed successfully!");
+	/// ```
+	///
+	/// # Dependencies
+	///
+	/// This method requires:
+	/// - Rust nightly toolchain with the target architecture support
+	/// - Custom target specification files in the workspace
+	/// - All source dependencies and procedural macros
 	pub fn build(&self,) -> Rslt<(),> {
 		set_current_dir(&self.workspace.root,)?;
 
-		// self.create_boot_dir()?;
-		// println!("{}", "mount path successfully created".blue().bold(),);
-		// print_workspace()?;
-
-		// order should not be loader -> kernel.
-		// because loader is depending kernel by proc macro
+		// Build order is critical: kernel -> loader
+		// The loader depends on kernel artifacts through procedural macros
 		self.build_kernel()?;
 		self.build_loader()
 	}
 
 	/// Builds the OSO loader (UEFI application)
 	///
+	/// This method compiles the OSO loader as a UEFI application that can be executed
+	/// by UEFI firmware. The loader is responsible for initializing the system,
+	/// loading the kernel from disk, and transferring control to the kernel.
+	///
+	/// # Build Process
+	///
+	/// 1. Changes to the loader workspace directory
+	/// 2. Executes `cargo build` with the appropriate loader target triple
+	/// 3. Returns to the workspace root directory
+	///
+	/// # Target Specifications
+	///
+	/// The loader uses architecture-specific UEFI target triples:
+	/// - **AArch64**: `aarch64-unknown-uefi`
+	/// - **x86_64**: `x86_64-unknown-uefi`
+	///
+	/// # Output
+	///
+	/// Produces a `.efi` file that can be executed by UEFI firmware.
+	///
 	/// # Returns
 	///
-	/// Ok(()) if the build succeeds, or an error if it fails
+	/// * `Ok(())` - If the loader builds successfully
+	/// * `Err(anyhow::Error)` - If the build fails
 	fn build_loader(&self,) -> Rslt<(),> {
 		set_current_dir(&self.workspace.loader.root,)?;
 		cargo_build(&self.opts,)?.arg("--target",).arg(self.opts.arch.loader_tuple(),).run()?;
@@ -91,9 +225,36 @@ impl Builder {
 
 	/// Builds the OSO kernel
 	///
+	/// This method compiles the OSO kernel as a bare-metal ELF binary that can be
+	/// loaded and executed by the OSO loader. The kernel is built with custom
+	/// target specifications for bare-metal execution.
+	///
+	/// # Build Process
+	///
+	/// 1. Changes to the kernel workspace directory
+	/// 2. Executes `cargo build` with a custom target specification JSON file
+	/// 3. Returns to the workspace root directory
+	///
+	/// # Target Specifications
+	///
+	/// The kernel uses custom JSON target specifications for bare-metal execution:
+	/// - **AArch64**: `aarch64-oso.json` - ARM64 bare-metal configuration
+	/// - **x86_64**: `x86_64-oso.json` - x86_64 bare-metal configuration
+	///
+	/// These target files define:
+	/// - CPU features and instruction sets
+	/// - Memory layout and linking requirements
+	/// - ABI and calling conventions
+	/// - Panic and exception handling behavior
+	///
+	/// # Output
+	///
+	/// Produces an ELF binary that can be loaded by the OSO loader.
+	///
 	/// # Returns
 	///
-	/// Ok(()) if the build succeeds, or an error if it fails
+	/// * `Ok(())` - If the kernel builds successfully
+	/// * `Err(anyhow::Error)` - If the build fails
 	fn build_kernel(&self,) -> Rslt<(),> {
 		set_current_dir(&self.workspace.kernel.root,)?;
 		cargo_build(&self.opts,)?
@@ -459,13 +620,86 @@ impl Drop for Builder {
 	}
 }
 
+/// Represents the host operating system for platform-specific operations
+///
+/// The OSO build system needs to perform different operations depending on the
+/// host operating system, particularly for disk image mounting and unmounting.
+/// This enum encapsulates the supported host platforms and their specific behaviors.
+///
+/// # Supported Platforms
+///
+/// - **Mac (macOS)**: Uses `hdiutil` for disk image operations
+/// - **Linux**: Uses `mount`/`umount` with `sudo` for disk operations
+///
+/// # Platform-Specific Operations
+///
+/// ## macOS (`hdiutil`)
+/// - Mounting: `hdiutil attach -imagekey diskimage-class=CRawDiskImage -nomount <image>`
+/// - Unmounting: `hdiutil detach <device>`
+/// - File system mounting: `mount -t msdos <device> <mountpoint>`
+///
+/// ## Linux (`mount`/`umount`)
+/// - Mounting: `sudo mount -o loop <image> <mountpoint>`
+/// - Unmounting: `sudo umount <mountpoint>`
+///
+/// # Examples
+///
+/// ```rust,ignore
+/// let host_os = HostOs::new()?;
+/// match host_os {
+///     HostOs::Mac => println!("Running on macOS"),
+///     HostOs::Linux => println!("Running on Linux"),
+/// }
+/// ```
 #[derive(Debug,)]
 pub enum HostOs {
+	/// macOS (Darwin) operating system
 	Mac,
+	/// Linux operating system
 	Linux,
 }
 
 impl HostOs {
+	/// Detects the current host operating system
+	///
+	/// This method uses the `uname -s` command to identify the host operating system
+	/// and returns the appropriate `HostOs` variant. It's used to determine which
+	/// platform-specific commands to use for disk operations.
+	///
+	/// # Detection Method
+	///
+	/// The detection is performed by:
+	/// 1. Executing `uname -s` to get the system name
+	/// 2. Parsing the output to identify the OS
+	/// 3. Mapping known system names to `HostOs` variants
+	///
+	/// # Supported Systems
+	///
+	/// - **"Darwin"** → `HostOs::Mac` (macOS)
+	/// - **"Linux"** → `HostOs::Linux` (Linux distributions)
+	///
+	/// # Returns
+	///
+	/// * `Ok(HostOs)` - The detected host operating system
+	/// * `Err(anyhow::Error)` - If detection fails due to:
+	///   - `uname` command not available
+	///   - Unsupported operating system (e.g., Windows, FreeBSD)
+	///   - Command execution failure
+	///   - Invalid UTF-8 in command output
+	///
+	/// # Examples
+	///
+	/// ```rust,ignore
+	/// let host_os = HostOs::new()?;
+	/// println!("Detected host OS: {:?}", host_os);
+	/// ```
+	///
+	/// # Errors
+	///
+	/// This method will return an error for unsupported operating systems:
+	/// - Windows (not supported due to different disk mounting mechanisms)
+	/// - FreeBSD, OpenBSD, NetBSD (not currently supported)
+	/// - Other Unix-like systems not explicitly handled
 	pub fn new() -> Rslt<Self,> {
 		let a = Command::new("uname",).arg("-s",).output()?;
 		let os_name = String::from_utf8(a.stdout,)?;
@@ -480,20 +714,76 @@ impl HostOs {
 
 /// Creates a cargo build command with the specified options
 ///
+/// This function constructs a `cargo build` command with the appropriate flags
+/// and options based on the build configuration. It handles feature flags,
+/// build modes, and other cargo-specific settings.
+///
+/// # Build Configuration
+///
+/// The function configures the cargo command based on the provided options:
+/// - **Build Mode**: Adds `-r` flag for release builds
+/// - **Features**: Adds `--features` flag with specified feature list
+/// - **Command**: Uses `cargo b` (short form of `cargo build`)
+///
 /// # Parameters
 ///
-/// * `opts` - The command-line options
+/// * `opts` - The command-line options containing build configuration
 ///
 /// # Returns
 ///
-/// A Command object configured for building with cargo or an error if it fails
+/// * `Ok(Command)` - A configured cargo build command ready for execution
+/// * `Err(anyhow::Error)` - If command creation fails (rare)
+///
+/// # Generated Commands
+///
+/// ## Debug Build (default)
+/// ```bash
+/// cargo b --target <target-triple>
+/// ```
+///
+/// ## Release Build
+/// ```bash
+/// cargo b -r --target <target-triple>
+/// ```
+///
+/// ## With Features
+/// ```bash
+/// cargo b --features rgb,bltonly --target <target-triple>
+/// ```
+///
+/// # Examples
+///
+/// ```rust,ignore
+/// use xtask::shell::Opts;
+///
+/// let opts = Opts::new();
+/// let mut cmd = cargo_build(&opts)?;
+/// cmd.arg("--target").arg("aarch64-unknown-uefi");
+/// cmd.run()?;
+/// ```
+///
+/// # Feature Handling
+///
+/// If the options specify features, they are added as a space-separated list:
+/// - Single feature: `--features rgb`
+/// - Multiple features: `--features "rgb bltonly"`
+///
+/// # Build Mode Handling
+///
+/// The build mode is determined by the `opts.build_mode` field:
+/// - `BuildMode::Debug` - No additional flags (default)
+/// - `BuildMode::Release` - Adds the `-r` flag for optimized builds
 fn cargo_build(opts: &Opts,) -> Rslt<Command,> {
 	let mut cmd = Command::new("cargo",);
-	cmd.arg("b",);
+	cmd.arg("b",); // Short form of "build"
+
+	// Add feature flags if specified
 	if opts.features.len() != 0 {
 		cmd.arg("--features",);
 		cmd.args(&opts.features,);
 	}
+
+	// Add release flag if building in release mode
 	if opts.build_mode.is_release() {
 		cmd.arg("-r",);
 	}
