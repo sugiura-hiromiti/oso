@@ -1,0 +1,10 @@
+[package]
+name = "oso_proc_macro_logic_2"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "*"
+colored = "*"
+proc-macro2 = "*"
+syn = { version = "*", features = ["full", "extra-traits"] }

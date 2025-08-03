@@ -12,6 +12,8 @@
 //! and handle the complex logic of parsing external data sources (like UEFI specs and
 //! ELF binaries) and converting them into appropriate Rust code structures.
 
+use oso_proc_macro_logic::derive_from_pathbuf::derive_for_enum;
+use oso_proc_macro_logic::derive_from_pathbuf::derive_for_struct;
 use oso_proc_macro_logic::status_from_spec::StatusCode;
 use oso_proc_macro_logic::status_from_spec::StatusCodeInfo;
 use oso_proc_macro_logic::test_elf_header_parse::ReadElfH;

@@ -22,8 +22,6 @@ use markup5ever_rcdom::NodeData;
 use markup5ever_rcdom::RcDom;
 use proc_macro::Diagnostic;
 use proc_macro::Level;
-use std::cell::Cell;
-use std::cell::RefCell;
 use std::rc::Rc;
 
 /// HTML element ID of the main status codes section in the UEFI specification
