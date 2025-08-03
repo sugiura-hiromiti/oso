@@ -15,12 +15,12 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in {
         devShells.default = pkgs.mkShell {
-          buildInputs =
-            with pkgs;
+          buildInputs = with pkgs;
             [
               # Core build tools
               binutils
               qemu
+              amazon-q-cli
 
               # Additional tools that might be needed
               coreutils

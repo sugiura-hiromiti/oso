@@ -1,10 +1,10 @@
-use crate::OsStr;
 use crate::decl_manage::crate_::Crate;
 use crate::decl_manage::crate_::CrateAction;
 use crate::decl_manage::crate_::CrateCalled;
 use crate::decl_manage::crate_::CrateInfo;
 use crate::decl_manage::crate_::CrateSurvey;
 use anyhow::Result as Rslt;
+use std::ffi::OsStr;
 
 pub trait Workspace: WorkspaceAction + WorkspaceSurvey {
 	fn as_action(&self,) -> &impl WorkspaceAction {
