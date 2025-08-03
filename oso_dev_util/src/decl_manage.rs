@@ -1,3 +1,3 @@
-// pub mod crate_; // Will be added in feat/add-cli-module branch
+pub mod crate_;
 pub mod package;
 pub mod workspace;
