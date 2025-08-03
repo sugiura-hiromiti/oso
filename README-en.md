@@ -80,20 +80,22 @@ Developer auxiliary tool suite.
 
 ### Auxiliary Crates List
 
-| Crate Name             | Description                                                                    |
-| ---------------------- | ------------------------------------------------------------------------------ |
-| `oso_no_std_shared`    | Provides basic data structures and utilities shared in no_std environment     |
-| `oso_proc_macro_logic` | Internal logic implementation and testing for procedural macros               |
-| `oso_proc_macro`       | Macro suite supporting kernel struct, parser, and test generation             |
-| `oso_error`            | Common error types and error handling logic                                   |
-| `oso_dev_util`         | General-purpose code shared between development tools                         |
+| Crate Name                 | Description                                                                    | Status |
+| -------------------------- | ------------------------------------------------------------------------------ | ------ |
+| `oso_no_std_shared`        | Provides basic data structures and utilities shared in no_std environment     | Complete |
+| `oso_proc_macro_logic_2`   | Internal logic implementation and testing for procedural macros (latest)      | Almost Complete |
+| `oso_proc_macro`           | Macro suite supporting kernel struct, parser, and test generation             | Almost Complete |
+| `oso_error`                | Common error types and error handling logic                                   | Complete |
+| `oso_dev_util`             | General-purpose code shared between development tools                         | In Development |
+| `oso_proc_macro_2`         | Procedural macro system (2nd generation)                                     | In Development |
+| `oso_proc_macro_logic`     | Internal logic implementation for procedural macros (legacy)                 | Maintenance |
 
 ## Build
 
 **Prerequisites**:
 
-- nightly Rust
-- QEMU
+- nightly Rust (1.90.0 or later)
+- QEMU (version 10 or later)
 - macOS (uses `hdiutil` command, multi-platform support planned)
 
 **Usage examples**:
