@@ -492,6 +492,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "colored",
+ "oso_proc_macro_2",
  "toml",
 ]
 
@@ -537,6 +538,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "oso_proc_macro_2"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "colored",
+ "oso_proc_macro_logic_2",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "oso_proc_macro_logic"
 version = "0.1.0"
 dependencies = [
@@ -554,6 +567,16 @@ dependencies = [
  "tempfile",
  "tendril",
  "ureq",
+]
+
+[[package]]
+name = "oso_proc_macro_logic_2"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "colored",
+ "proc-macro2",
+ "syn",
 ]
 
 [[package]]
