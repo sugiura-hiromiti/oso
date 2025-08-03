@@ -1,16 +1,20 @@
-use anyhow::Result as Rslt;
-use std::path::PathBuf;
+use crate::decl_manage::crate_::CrateAction;
+use crate::decl_manage::crate_::CrateInfo;
+use crate::decl_manage::crate_::CrateSurvey;
 
-pub trait Package: PackageAction + PackageSurvey {}
+pub trait Package: PackageAction + PackageSurvey {
+	fn as_action(&self,) -> &impl PackageAction {
+		self
+	}
 
-pub trait PackageAction: PackageInfo {}
-pub trait PackageSurvey: PackageInfo {}
-
-pub trait PackageInfo: Sized {
-	fn path(&self,) -> Rslt<PathBuf,>;
-	fn toml(&self,) -> Rslt<toml::Table,>;
-	fn target(&self,) -> Rslt<impl Into<String,>,>;
+	fn as_survey(&self,) -> &impl PackageSurvey {
+		self
+	}
 }
 
-pub struct OsoPackage;
-pub enum OsoPackageCalled {}
+pub trait PackageAction: PackageInfo + CrateAction {}
+pub trait PackageSurvey: PackageInfo + CrateSurvey {
+	fn target(&self,) -> impl Into<String,>;
+}
+
+pub trait PackageInfo: Sized + CrateInfo {}

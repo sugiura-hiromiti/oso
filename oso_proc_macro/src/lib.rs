@@ -24,6 +24,8 @@ extern crate proc_macro;
 
 use colored::Colorize;
 use oso_proc_macro_logic as macro_logic;
+use proc_macro::Diagnostic;
+use proc_macro::Level;
 use proc_macro::TokenStream;
 use syn::parse_macro_input;
 
@@ -252,13 +254,13 @@ pub fn gen_wrapper_fn(attr: TokenStream, item: TokenStream,) -> TokenStream {
 /// impl Status {
 ///     // Success status codes
 ///     pub const SUCCESS: Self = Self(0x0);
-///     
-///     // Warning status codes  
+///
+///     // Warning status codes
 ///     pub const WARN_UNKNOWN_GLYPH: Self = Self(0x1);
-///     
+///
 ///     // Error status codes
 ///     pub const LOAD_ERROR: Self = Self(0x8000000000000001);
-///     
+///
 ///     // Error handling methods
 ///     pub fn ok_or(self) -> Result<Self, UefiError> { ... }
 ///     pub fn ok_or_with<T>(self, with: impl FnOnce(Self) -> T) -> Result<T, UefiError> { ... }

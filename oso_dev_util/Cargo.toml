@@ -6,4 +6,5 @@ edition = "2024"
 [dependencies]
 anyhow = "*"
 colored = "*"
-toml = "*"
+oso_proc_macro_2 = { path = "../oso_proc_macro_2" }
+toml = { version = "*", features = ["parse"] }
