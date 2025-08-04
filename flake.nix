@@ -24,19 +24,9 @@
               binutils
               qemu
 
-              # Additional tools that might be needed
-              coreutils
-              findutils
-              gnused
-              gnugrep
-              gnutar
-              gzip
               (writeShellScriptBin "x" ''
                 cargo xt $1 $2 $3 $4
               '')
-
-              # Platform-specific tools
-              util-linux # for losetup on Linux (no-op on macOS)
             ]
             ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
               # macOS-specific tools (hdiutil is built-in, no need to add)
