@@ -20,7 +20,6 @@
               # Core build tools
               binutils
               qemu
-              amazon-q-cli
 
               # Additional tools that might be needed
               coreutils
