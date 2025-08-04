@@ -11,6 +11,7 @@ use anyhow::Result as Rslt;
 const CWD: &str = std::env!("CARGO_MANIFEST_DIR");
 
 pub fn derive_for_enum(item: syn::ItemEnum,) -> proc_macro2::TokenStream {
+	let crate_list = all_crates();
 	let ident = item.ident;
 	todo!()
 }
@@ -18,7 +19,11 @@ pub fn derive_for_struct(item: syn::ItemStruct,) -> proc_macro2::TokenStream {
 	todo!()
 }
 
-fn all_crates(path: PathBuf,) -> Vec<PathBuf,> {
+pub fn all_crates() -> Vec<PathBuf,> {
+	all_crates_inner(project_root(),)
+}
+
+fn all_crates_inner(path: PathBuf,) -> Vec<PathBuf,> {
 	path.read_dir()
 		.expect(&format!("failed to read {}", path.display()),)
 		.filter_map(|entry| {
@@ -36,10 +41,11 @@ fn all_crates(path: PathBuf,) -> Vec<PathBuf,> {
 		},)
 		.map(|p| {
 			let mut paths = if search_cargo_toml(&p,).is_some() { vec![p.clone()] } else { vec![] };
-			paths.append(&mut all_crates(p,),);
-		},);
-
-	todo!()
+			paths.append(&mut all_crates_inner(p,),);
+			paths
+		},)
+		.flatten()
+		.collect()
 }
 
 fn project_root() -> PathBuf {
@@ -66,4 +72,15 @@ fn search_cargo_toml(path: impl AsRef<Path,>,) -> Option<PathBuf,> {
 				== "Cargo.toml"
 		},)
 		.map(|entry| entry.unwrap().path(),)
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn test_search_cargo_toml() {
+		let cargo_toml = search_cargo_toml(CWD,).expect("failed to find Cargo.toml",);
+		assert_eq!(cargo_toml.to_str().unwrap(), std::env!("CARGO_MANIFEST_PATH"));
+	}
 }

@@ -27,8 +27,6 @@
               (writeShellScriptBin "x" ''
                 cargo xt $1 $2 $3 $4
               '')
-
-              # Platform-specific tools
             ]
             ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
               # macOS-specific tools (hdiutil is built-in, no need to add)
