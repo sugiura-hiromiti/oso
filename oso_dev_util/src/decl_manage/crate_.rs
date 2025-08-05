@@ -1,5 +1,3 @@
-use oso_proc_macro_2::FromPathBuf;
-
 use crate::Rslt;
 use crate::decl_manage::package::Package;
 use crate::decl_manage::package::PackageAction;
@@ -118,6 +116,7 @@ fn read_toml(path: impl AsRef<Path,>,) -> Rslt<toml::Table,> {
 }
 
 #[derive(PartialEq, Eq, Clone,)]
+#[oso_proc_macro::from_pathbuf]
 pub struct OsoCrate {
 	path: PathBuf,
 	i_am: OsoCrateCalled,
@@ -192,5 +191,6 @@ pub trait CrateCalled: Eq + Sized + Clone + From<Self::F,> {
 }
 
 //  TODO: implement proc macro to fill enum variants
-#[derive(Eq, PartialEq, Clone, FromPathBuf,)]
+#[derive(Eq, PartialEq, Clone,)]
+#[oso_proc_macro::from_pathbuf]
 pub enum OsoCrateCalled {}
