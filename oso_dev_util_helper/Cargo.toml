@@ -1,0 +1,8 @@
+[package]
+name = "oso_dev_util_helper"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "*"
+colored = "*"

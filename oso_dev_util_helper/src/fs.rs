@@ -1,29 +1,14 @@
-#![feature(exit_status_error)]
-
-pub mod cli; // Will be added in feat/add-cli-module branch
-
 use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use anyhow::Result as Rslt;
-
 const CWD: &str = std::env!("CARGO_MANIFEST_DIR");
 
-pub fn derive_for_enum(item: syn::ItemEnum,) -> proc_macro2::TokenStream {
-	let crate_list = all_crates();
-	let ident = item.ident;
-	todo!()
-}
-pub fn derive_for_struct(item: syn::ItemStruct,) -> proc_macro2::TokenStream {
-	todo!()
-}
-
 pub fn all_crates() -> Vec<PathBuf,> {
-	all_crates_inner(project_root(),)
+	all_crates_in(project_root(),)
 }
 
-fn all_crates_inner(path: PathBuf,) -> Vec<PathBuf,> {
+pub fn all_crates_in(path: PathBuf,) -> Vec<PathBuf,> {
 	path.read_dir()
 		.expect(&format!("failed to read {}", path.display()),)
 		.filter_map(|entry| {
@@ -41,14 +26,14 @@ fn all_crates_inner(path: PathBuf,) -> Vec<PathBuf,> {
 		},)
 		.map(|p| {
 			let mut paths = if search_cargo_toml(&p,).is_some() { vec![p.clone()] } else { vec![] };
-			paths.append(&mut all_crates_inner(p,),);
+			paths.append(&mut all_crates_in(p,),);
 			paths
 		},)
 		.flatten()
 		.collect()
 }
 
-fn project_root() -> PathBuf {
+pub fn project_root() -> PathBuf {
 	let mut p = PathBuf::from_str(CWD,).expect("failed to create PathBuf value",);
 	let mut last_cargo_toml = None;
 
@@ -63,7 +48,7 @@ fn project_root() -> PathBuf {
 }
 
 /// depth 1 file search
-fn search_cargo_toml(path: impl AsRef<Path,>,) -> Option<PathBuf,> {
+pub fn search_cargo_toml(path: impl AsRef<Path,>,) -> Option<PathBuf,> {
 	path.as_ref()
 		.read_dir()
 		.expect("failed to read dir",)
