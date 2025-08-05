@@ -48,32 +48,6 @@ pub mod test_elf_header_parse;
 pub mod test_program_headers_parse;
 
 pub mod derive_from_pathbuf_for_crate;
-
-/// Checks if the OSO kernel ELF file exists in the target directory
-///
-/// This function verifies that `target/oso_kernel.elf` exists relative to the current
-/// working directory. This is typically used as a prerequisite check before performing
-/// ELF analysis operations.
-///
-/// # Returns
-///
-/// - `Ok(())` if the kernel file exists
-/// - `Err(anyhow::Error)` if the file doesn't exist or if there's an error accessing the current
-///   directory
-///
-/// # Errors
-///
-/// This function will return an error if:
-/// - The current directory cannot be determined
-/// - The `oso_kernel.elf` file doesn't exist in the target directory
-/// TODO: move to oso_dev_util_helper
-pub fn check_oso_kernel() -> Rslt<(),> {
-	// Construct the expected path to the kernel ELF file
-	let target_path = current_dir()?.join("target/oso_kernel.elf",);
-
-	// Check if the file exists and return appropriate result
-	if target_path.exists() { Ok((),) } else { Err(anyhow!("oso_kernel.elf not exist"),) }
-}
 #[cfg(test)]
 mod tests {
 	use super::*;
