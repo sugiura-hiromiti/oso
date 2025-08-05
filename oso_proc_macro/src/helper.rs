@@ -12,8 +12,8 @@
 //! and handle the complex logic of parsing external data sources (like UEFI specs and
 //! ELF binaries) and converting them into appropriate Rust code structures.
 
-use oso_proc_macro_logic::derive_from_pathbuf::derive_for_enum;
-use oso_proc_macro_logic::derive_from_pathbuf::derive_for_struct;
+use oso_proc_macro_logic::derive_from_pathbuf_for_crate::derive_for_enum;
+use oso_proc_macro_logic::derive_from_pathbuf_for_crate::derive_for_struct;
 use oso_proc_macro_logic::status_from_spec::StatusCode;
 use oso_proc_macro_logic::status_from_spec::StatusCodeInfo;
 use oso_proc_macro_logic::test_elf_header_parse::ReadElfH;
@@ -888,5 +888,13 @@ fn parse_program_header_type(program_header: &ReadElfL,) -> proc_macro2::TokenSt
 
 	quote::quote! {
 		ProgramHeaderType::#ident
+	}
+}
+
+pub fn derive_from_pathbuf_for_crate_xxx_helper(item: syn::Item,) -> proc_macro2::TokenStream {
+	match item {
+		syn::Item::Enum(item_enum,) => derive_for_enum(item_enum,),
+		syn::Item::Struct(item_struct,) => derive_for_struct(item_struct,),
+		_ => unreachable!(),
 	}
 }

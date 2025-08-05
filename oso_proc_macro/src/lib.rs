@@ -465,3 +465,12 @@ pub fn test_program_headers_parse(program_headers: TokenStream,) -> TokenStream 
 	}
 	.into()
 }
+
+#[proc_macro_derive(FromPathBuf)]
+pub fn derive_from_pathbuf_for_crate_xxx(item: TokenStream,) -> TokenStream {
+	let item = syn::parse_macro_input!(item as syn::Item);
+	let rslt = helper::derive_from_pathbuf_for_crate_xxx_helper(item,);
+	Diagnostic::new(Level::Error, rslt.to_string(),).emit();
+	rslt.into()
+}
+

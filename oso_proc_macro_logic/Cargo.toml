@@ -10,7 +10,7 @@ html5ever = "0.27"
 itertools = "*"
 markup5ever = "*"
 markup5ever_rcdom = "*"
-oso_dev_util = { path = "../oso_dev_util" }
+oso_dev_util_helper = { path = "../oso_dev_util_helper" }
 proc-macro2 = "*"
 quote = "*"
 string_cache = "*"

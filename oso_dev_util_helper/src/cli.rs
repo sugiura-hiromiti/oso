@@ -1,6 +1,4 @@
 // NOTE:  this file must be copied to oso_proc_macro_logic_2/src/lib.rs on every build
-
-
 use anyhow::Result as Rslt;
 use colored::Colorize;
 use std::ffi::OsStr;

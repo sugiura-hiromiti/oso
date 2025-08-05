@@ -47,6 +47,8 @@ pub mod test_elf_header_parse;
 /// ELF program header parsing utilities
 pub mod test_program_headers_parse;
 
+pub mod derive_from_pathbuf_for_crate;
+
 /// Checks if the OSO kernel ELF file exists in the target directory
 ///
 /// This function verifies that `target/oso_kernel.elf` exists relative to the current
@@ -64,6 +66,7 @@ pub mod test_program_headers_parse;
 /// This function will return an error if:
 /// - The current directory cannot be determined
 /// - The `oso_kernel.elf` file doesn't exist in the target directory
+/// TODO: move to oso_dev_util_helper
 pub fn check_oso_kernel() -> Rslt<(),> {
 	// Construct the expected path to the kernel ELF file
 	let target_path = current_dir()?.join("target/oso_kernel.elf",);
