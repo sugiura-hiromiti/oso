@@ -12,6 +12,13 @@ use syn::LitStr;
 /// Number of ASCII characters supported (0-255)
 const CHARACTER_COUNT: usize = 256;
 
+pub fn fonts_data_body(path: &syn::LitStr,) -> proc_macro2::TokenStream {
+	let fonts = convert_bitfield(&fonts(path,),);
+	quote::quote! {
+		&[#(#fonts),*]
+	}
+}
+
 /// Loads and processes ASCII font data from a specified file path
 ///
 /// This function reads a font data file containing ASCII character bitmaps
@@ -42,7 +49,7 @@ const CHARACTER_COUNT: usize = 256;
 /// let font_data = fonts(&path);
 /// assert_eq!(font_data.len(), 256);
 /// ```
-pub fn fonts(specified_path: &LitStr,) -> Vec<String,> {
+fn fonts(specified_path: &LitStr,) -> Vec<String,> {
 	// Get the project root directory, falling back to compile-time directory if needed
 	#[cfg(not(test))]
 	let project_root = std::env::var("CARGO_MANIFEST_DIR",).unwrap_or_else(|e| {
@@ -122,7 +129,7 @@ pub fn fonts(specified_path: &LitStr,) -> Vec<String,> {
 /// let bitfields = convert_bitfield(&fonts);
 /// assert_eq!(bitfields.len(), 256);
 /// ```
-pub fn convert_bitfield(fonts: &Vec<String,>,) -> Vec<u128,> {
+fn convert_bitfield(fonts: &Vec<String,>,) -> Vec<u128,> {
 	let fonts: Vec<u128,> = fonts
 		.into_iter()
 		.map(|s| {
