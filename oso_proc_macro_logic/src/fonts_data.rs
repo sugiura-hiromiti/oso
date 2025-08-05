@@ -4,19 +4,17 @@
 //! for use in the OSO operating system. It handles bitmap font conversion from
 //! text-based representations to binary formats suitable for rendering.
 
-use colored::Colorize;
-use proc_macro::Diagnostic;
-use proc_macro::Level;
+use crate::Rslt;
 use syn::LitStr;
 
 /// Number of ASCII characters supported (0-255)
 const CHARACTER_COUNT: usize = 256;
 
-pub fn fonts_data_body(path: &syn::LitStr,) -> proc_macro2::TokenStream {
-	let fonts = convert_bitfield(&fonts(path,),);
-	quote::quote! {
+pub fn fonts_data_body(path: &syn::LitStr,) -> Rslt<proc_macro2::TokenStream,> {
+	let fonts = convert_bitfield(&fonts(path,)?,);
+	Ok(quote::quote! {
 		&[#(#fonts),*]
-	}
+	},)
 }
 
 /// Loads and processes ASCII font data from a specified file path
@@ -49,34 +47,15 @@ pub fn fonts_data_body(path: &syn::LitStr,) -> proc_macro2::TokenStream {
 /// let font_data = fonts(&path);
 /// assert_eq!(font_data.len(), 256);
 /// ```
-fn fonts(specified_path: &LitStr,) -> Vec<String,> {
+fn fonts(specified_path: &LitStr,) -> Rslt<Vec<String,>,> {
 	// Get the project root directory, falling back to compile-time directory if needed
-	#[cfg(not(test))]
-	let project_root = std::env::var("CARGO_MANIFEST_DIR",).unwrap_or_else(|e| {
-		Diagnostic::new(
-			Level::Warning,
-			format!(
-				"failed to get `CARGO_MANIFEST_DIR`:\n{e}\nenvironment variable root dir of \
-				 oso_proc_macro is used instead"
-			),
-		)
-		.emit();
-		env!("CARGO_MANIFEST_DIR").to_string()
-	},);
-	#[cfg(test)]
-	let project_root = "".to_string();
+	let project_root = std::env::var("CARGO_MANIFEST_DIR",)?;
 
 	// Construct the full path to the font file
 	let path = format!("{project_root}/{}", specified_path.value());
-	#[cfg(not(test))]
-	Diagnostic::new(Level::Help, format!("path is {path}"),).emit();
 
 	// Read the font data file
-	let font_data = std::fs::read_to_string(&path,).expect(&format!(
-		"{}: {}\n",
-		"failed to open font file".bold().red(),
-		path
-	),);
+	let font_data = std::fs::read_to_string(&path,)?;
 
 	// Split the file into lines and filter out empty lines and hex values
 	let fonts_data_lines: Vec<&str,> = font_data
@@ -95,7 +74,7 @@ fn fonts(specified_path: &LitStr,) -> Vec<String,> {
 
 	// Verify that each character has exactly 128 characters (16 lines × 8 chars)
 	fonts.iter().for_each(|s| assert_eq!(s.len(), 128),);
-	fonts
+	Ok(fonts,)
 }
 
 /// Converts text-based font bitmaps to binary bitfield representation
