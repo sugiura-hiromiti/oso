@@ -62,22 +62,9 @@ mod helper;
 /// - The path parameter is not a valid string literal
 #[proc_macro]
 pub fn fonts_data(path: TokenStream,) -> TokenStream {
-	use macro_logic::fonts_data::convert_bitfield;
-	use macro_logic::fonts_data::fonts;
-
 	// Parse the input path as a string literal
 	let specified_path = &syn::parse_macro_input!(path as syn::LitStr);
-
-	// Load and process font files from the specified path
-	let fonts = fonts(specified_path,);
-
-	// Convert font data to bitfield representation for efficient storage
-	let fonts = convert_bitfield(&fonts,);
-
-	// Generate the final token stream as an array slice
-	TokenStream::from(quote::quote! {
-		&[#(#fonts),*]
-	},)
+	helper::fonts_data(specified_path,).into()
 }
 
 /// Generates implementations for integer types.
@@ -466,11 +453,11 @@ pub fn test_program_headers_parse(program_headers: TokenStream,) -> TokenStream 
 	.into()
 }
 
-#[proc_macro_derive(FromPathBuf)]
-pub fn derive_from_pathbuf_for_crate_xxx(item: TokenStream,) -> TokenStream {
+#[proc_macro_attribute]
+pub fn from_pathbuf(attr: TokenStream, item: TokenStream,) -> TokenStream {
+	let attr = proc_macro2::TokenStream::from(attr,);
 	let item = syn::parse_macro_input!(item as syn::Item);
-	let rslt = helper::derive_from_pathbuf_for_crate_xxx_helper(item,);
+	let rslt = helper::from_pathbuf_helper(attr, item,);
 	Diagnostic::new(Level::Error, rslt.to_string(),).emit();
 	rslt.into()
 }
-
