@@ -63,7 +63,7 @@ mod helper;
 #[proc_macro]
 pub fn fonts_data(path: TokenStream,) -> TokenStream {
 	// Parse the input path as a string literal
-	let specified_path = &syn::parse_macro_input!(path as syn::LitStr);
+	let specified_path = syn::parse_macro_input!(path as &syn::LitStr);
 	helper::fonts_data(specified_path,).into()
 }
 

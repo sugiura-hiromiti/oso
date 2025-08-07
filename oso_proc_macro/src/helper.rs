@@ -1,8 +1,6 @@
 //! this module is intended to handle error. separated from macro's main function makes codebase and
 //! responsibility division clear.
 
-//  TODO: use decl macro for error handling
-
 use oso_proc_macro_logic::derive_from_pathbuf_for_crate::enum_impl;
 use oso_proc_macro_logic::derive_from_pathbuf_for_crate::struct_impl;
 use oso_proc_macro_logic::status_from_spec::StatusCode;
@@ -14,6 +12,35 @@ use oso_proc_macro_logic::test_program_headers_parse::readelf_l;
 use proc_macro::Diagnostic;
 use proc_macro::Level;
 use proc_macro2::Span;
+
+macro_rules! call_helper {
+	($fn_name:ident, $($args:expr: $type:ident),*) => {
+		use crate::helper::ErrorDiagnose;
+		$(
+			let $args = syn::parse_macro_input($args as $type);
+		)*
+		oso_proc_macro_logic::$fn_name($($args,)*).unwrap_or_emit()
+	};
+}
+
+pub trait ErrorDiagnose {
+	type T;
+	fn unwrap_or_emit(self,) -> Self::T;
+}
+
+impl<T,> ErrorDiagnose for anyhow::Result<T,> {
+	type T = T;
+
+	fn unwrap_or_emit(self,) -> Self::T {
+		match self {
+			Self::Ok(o,) => o,
+			Self::Err(e,) => {
+				Diagnostic::new(Level::Error, e,).emit();
+				panic!()
+			},
+		}
+	}
+}
 
 pub fn fonts_data(specified_path: &syn::LitStr,) -> proc_macro2::TokenStream {
 	use oso_proc_macro_logic::fonts_data::fonts_data_body;
