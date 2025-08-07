@@ -13,15 +13,6 @@ use proc_macro::Diagnostic;
 use proc_macro::Level;
 use proc_macro2::Span;
 
-macro_rules! call_helper {
-	($fn_name:ident, $($args:expr: $type:ident),*) => {
-		use crate::helper::ErrorDiagnose;
-		$(
-			let $args = syn::parse_macro_input($args as $type);
-		)*
-		oso_proc_macro_logic::$fn_name($($args,)*).unwrap_or_emit()
-	};
-}
 
 pub trait ErrorDiagnose {
 	type T;
@@ -35,22 +26,16 @@ impl<T,> ErrorDiagnose for anyhow::Result<T,> {
 		match self {
 			Self::Ok(o,) => o,
 			Self::Err(e,) => {
-				Diagnostic::new(Level::Error, e,).emit();
+				Diagnostic::new(Level::Error, format!("{e}"),).emit();
 				panic!()
 			},
 		}
 	}
 }
 
-pub fn fonts_data(specified_path: &syn::LitStr,) -> proc_macro2::TokenStream {
+pub fn fonts_data(specified_path: syn::LitStr,) -> proc_macro2::TokenStream {
 	use oso_proc_macro_logic::fonts_data::fonts_data_body;
-	match fonts_data_body(specified_path,) {
-		Ok(ts,) => ts,
-		Err(e,) => {
-			Diagnostic::new(Level::Error, e,).emit();
-			panic!()
-		},
-	}
+	fonts_data_body(&specified_path,).unwrap_or_emit()
 }
 
 /// Generates the implementation block for the UEFI Status struct.
