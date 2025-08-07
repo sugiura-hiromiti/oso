@@ -13,7 +13,6 @@ use proc_macro::Diagnostic;
 use proc_macro::Level;
 use proc_macro2::Span;
 
-
 pub trait ErrorDiagnose {
 	type T;
 	fn unwrap_or_emit(self,) -> Self::T;
