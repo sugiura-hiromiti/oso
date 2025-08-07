@@ -1,3 +1,5 @@
+// # NOTE: this is todo line comment
+
 //! # OSO Procedural Macro Logic
 //!
 //! This crate provides procedural macro logic and utilities for the OSO operating system project.
@@ -7,8 +9,6 @@
 //! - ELF file parsing and analysis
 //! - UEFI status code generation from specifications
 //! - Code generation utilities for wrapper functions and trait implementations
-//!
-//! # NOTE:
 //!
 //!
 //! ## Features
