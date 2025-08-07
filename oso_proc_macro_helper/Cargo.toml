@@ -1,0 +1,17 @@
+[package]
+name = "oso_proc_macro_helper"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+anyhow = "*"
+bon = "*"
+colored = "*"
+proc-macro2 = "*"
+quote = "*"
+syn = { version = "*", features = ["full", "extra-traits"] }
