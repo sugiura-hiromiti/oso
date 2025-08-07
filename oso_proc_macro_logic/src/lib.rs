@@ -8,6 +8,9 @@
 //! - UEFI status code generation from specifications
 //! - Code generation utilities for wrapper functions and trait implementations
 //!
+//! # NOTE:
+//!
+//!
 //! ## Features
 //!
 //! The crate uses several unstable Rust features:
