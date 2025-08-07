@@ -31,7 +31,9 @@ jobs:
             return prs.data.map(pr => pr.number);
 
       - name: Save PR list
-        run: echo '${{ steps.list_prs.outputs.result }}' > pr_list.json
+        run: |
+          echo '${{ steps.list_prs.outputs.result }}'
+          echo '${{ steps.list_prs.outputs.result }}' > pr_list.json
 
       - name: Set output
         id: set
