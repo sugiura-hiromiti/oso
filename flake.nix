@@ -4,17 +4,21 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = {
-    nixpkgs,
-    flake-utils,
-    ...
-  }:
+  outputs =
+    {
+      nixpkgs,
+      flake-utils,
+      ...
+    }:
     flake-utils.lib.eachDefaultSystem (
-      system: let
+      system:
+      let
         pkgs = nixpkgs.legacyPackages.${system};
-      in {
+      in
+      {
         devShells.default = pkgs.mkShell {
-          buildInputs = with pkgs;
+          buildInputs =
+            with pkgs;
             [
               # Core build tools
               binutils
@@ -40,11 +44,7 @@
             echo -e "Available tools:"
             echo -e "  - qemu-system-aarch64: $(which qemu-system-aarch64 2>/dev/null || echo 'not found')"
             echo -e "  - binutils: $(which readelf 2>/dev/null || echo 'not found')"
-            echo -e "Platform: ${
-              if pkgs.stdenv.isDarwin
-              then "macOS"
-              else "Linux"
-            }\033[0m"
+            echo -e "Platform: ${if pkgs.stdenv.isDarwin then "macOS" else "Linux"}\033[0m"
           '';
         };
       }
