@@ -1,4 +1,4 @@
-// # NOTE: this is todo line comment
+//  NOTE: - [ ] this is todo line comment
 
 //! # OSO Procedural Macro Logic
 //!
@@ -27,8 +27,7 @@
 #![feature(iterator_try_collect)]
 
 use anyhow::Result as Rslt;
-use anyhow::anyhow;
-use std::env::current_dir;
+use oso_dev_util_helper::fs::check_oso_kernel;
 
 extern crate proc_macro;
 
@@ -51,9 +50,22 @@ pub mod test_elf_header_parse;
 pub mod test_program_headers_parse;
 
 pub mod derive_from_pathbuf_for_crate;
+
+#[macro_export]
+macro_rules! call_helper {
+	($fn_name:ident, $($args:ident => $type:ty),*) => {
+		use crate::helper::ErrorDiagnose;
+		$(
+			let $args = syn::parse_macro_input!($args as $type);
+		)*
+		oso_proc_macro_logic::$fn_name::$fn_name($($args,)*).unwrap_or_emit().into()
+	};
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use anyhow::anyhow;
 	use std::env::current_dir;
 	use std::env::set_current_dir;
 	use std::fs::File;

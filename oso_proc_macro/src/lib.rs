@@ -22,14 +22,14 @@
 
 extern crate proc_macro;
 
+mod helper;
+
 use colored::Colorize;
 use oso_proc_macro_logic as macro_logic;
 use proc_macro::Diagnostic;
 use proc_macro::Level;
 use proc_macro::TokenStream;
 use syn::parse_macro_input;
-
-mod helper;
 
 /// Generates embedded font data from font files at compile time.
 ///
@@ -62,9 +62,10 @@ mod helper;
 /// - The path parameter is not a valid string literal
 #[proc_macro]
 pub fn fonts_data(path: TokenStream,) -> TokenStream {
+	call_helper!(fonts_data, path => syn::LitStr);
 	// Parse the input path as a string literal
-	let specified_path = syn::parse_macro_input!(path as &syn::LitStr);
-	helper::fonts_data(specified_path,).into()
+	// let specified_path = syn::parse_macro_input!(path as syn::LitStr);
+	// helper::fonts_data(specified_path,).into()
 }
 
 /// Generates implementations for integer types.
