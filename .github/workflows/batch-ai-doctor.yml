@@ -89,7 +89,7 @@ jobs:
         if: ${{ steps.status.outputs.result == 'failure' }}
         uses: github/interactive-action@v1
         with:
-          model: openai/gpt-4o
+          model: openai/gpt-5
           messages: |
             [
               {"role":"system","content":"You are an expert reviewer. Classify CI failure severity (critical/moderate/minor/none) and summarize issues. Return JSON: {\"severity\":...,\"summary\":...}."},
