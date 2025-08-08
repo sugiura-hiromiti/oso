@@ -15,39 +15,42 @@ permissions:
 jobs:
   scan-prs:
     runs-on: ubuntu-latest
+    outputs:
+      pr_list: ${{ steps.set.outputs.pr_list }}
     steps:
-      # Step 1: Get open PR numbers
-      - name: List open PRs
+      - name: Get today's date in UTC
+        id: date
+        run: echo "utc_today=$(date -u +%Y-%m-%dT00:00:00Z)" >> $GITHUB_OUTPUT
+
+      - name: List today’s PRs
         id: list_prs
         uses: actions/github-script@v7
         with:
           script: |
-            const prs = await github.rest.pulls.list({
+            const since = process.env.UTC_TODAY;
+            const prs = await github.paginate(github.rest.pulls.list, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: "open",
-              per_page: 50
+              per_page: 100
             });
-            return prs.data.map(pr => pr.number);
+            const todayPRs = prs.filter(pr => new Date(pr.created_at) >= new Date(since));
+            return todayPRs.map(pr => pr.number);
+        env:
+          UTC_TODAY: ${{ steps.date.outputs.utc_today }}
 
-      - name: Save PR list
-        run: |
-          echo '${{ steps.list_prs.outputs.result }}'
-          echo '${{ steps.list_prs.outputs.result }}' > pr_list.json
-
-      - name: Set output
+      - name: Set PR list output
         id: set
-        run: echo "pr_list=$(cat pr_list.json)" >> $GITHUB_OUTPUT
+        run: echo "pr_list=${{ steps.list_prs.outputs.result }}" >> $GITHUB_OUTPUT
 
   analyze-prs:
     needs: scan-prs
     runs-on: ubuntu-latest
+    if: ${{ needs.scan-prs.outputs.pr_list != '[]' }}
     strategy:
       matrix:
         pr: ${{ fromJSON(needs.scan-prs.outputs.pr_list) }}
-
     steps:
-      # Fetch PR details
       - name: Get PR details
         id: details
         uses: actions/github-script@v7
@@ -60,7 +63,6 @@ jobs:
             });
             return pr.data;
 
-      # Get latest CI run conclusion
       - name: Get last CI status
         id: status
         uses: actions/github-script@v7
@@ -77,13 +79,11 @@ jobs:
             }
             return "no-run";
 
-      # Fetch logs if failure
       - name: Fetch logs
         if: ${{ steps.status.outputs.result == 'failure' }}
         run: |
           gh run view $(gh run list --branch "${{ fromJSON(steps.details.outputs.result).head.ref }}" --json databaseId --jq '.[0].databaseId') --log > ci_logs.txt
 
-      # AI severity analysis
       - name: AI severity + summary
         id: ai
         if: ${{ steps.status.outputs.result == 'failure' }}
@@ -103,7 +103,6 @@ jobs:
           echo '${{ steps.ai.outputs.message }}' | jq -r '.severity,.summary' \
             | awk 'NR==1{print "severity="$0} NR==2{print "summary="$0}' >> $GITHUB_OUTPUT
 
-      # Search for existing per-PR issue
       - name: Search existing issue
         id: search
         uses: actions/github-script@v7
@@ -115,7 +114,6 @@ jobs:
             });
             return issues.data.items.length ? issues.data.items[0] : null;
 
-      # Close if fixed
       - name: Close and comment on fix
         if: ${{ steps.status.outputs.result == 'success' && steps.search.outputs.result != 'null' }}
         uses: actions/github-script@v7
@@ -136,7 +134,6 @@ jobs:
               state: "closed"
             });
 
-      # Create or comment on failure
       - name: Create or comment on failure
         if: ${{ steps.status.outputs.result == 'failure' && steps.parse.outputs.severity != 'none' }}
         uses: actions/github-script@v7
@@ -207,7 +204,6 @@ jobs:
             const summary = `Daily CI report generated at ${now} (JST midnight).\n- Failed PRs: listed above in their issues.\n- Passed PRs: auto-closed issues.\n\n(See individual AI Review issues for details.)`;
 
             if (digestIssues.data.items.length) {
-              // Update comment
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -215,7 +211,6 @@ jobs:
                 body: summary
               });
             } else {
-              // Create new digest issue
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
