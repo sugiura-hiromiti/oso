@@ -51,16 +51,18 @@ pub mod test_program_headers_parse;
 
 pub mod derive_from_pathbuf_for_crate;
 
-#[macro_export]
-macro_rules! call_helper {
-	($fn_name:ident, $($args:ident => $type:ty),*) => {
-		use crate::helper::ErrorDiagnose;
-		$(
-			let $args = syn::parse_macro_input!($args as $type);
-		)*
-		oso_proc_macro_logic::$fn_name::$fn_name($($args,)*).unwrap_or_emit().into()
-	};
-}
+pub mod oso_proc_macro_helper;
+
+// #[macro_export]
+// macro_rules! call_helper {
+// 	($fn_name:ident, $($args:ident => $type:ty),*) => {
+// 		use crate::helper::ErrorDiagnose;
+// 		$(
+// 			let $args = syn::parse_macro_input!($args as $type);
+// 		)*
+// 		oso_proc_macro_logic::$fn_name::$fn_name($($args,)*).unwrap_or_emit().into()
+// 	};
+// }
 
 #[cfg(test)]
 mod tests {

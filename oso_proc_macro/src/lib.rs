@@ -26,6 +26,7 @@ mod helper;
 
 use colored::Colorize;
 use oso_proc_macro_logic as macro_logic;
+use oso_proc_macro_logic::oso_proc_macro_helper::def;
 use proc_macro::Diagnostic;
 use proc_macro::Level;
 use proc_macro::TokenStream;
@@ -60,13 +61,13 @@ use syn::parse_macro_input;
 /// - The specified path does not exist
 /// - Font files in the path cannot be processed
 /// - The path parameter is not a valid string literal
-#[proc_macro]
-pub fn fonts_data(path: TokenStream,) -> TokenStream {
-	call_helper!(fonts_data, path => syn::LitStr);
-	// Parse the input path as a string literal
-	// let specified_path = syn::parse_macro_input!(path as syn::LitStr);
-	// helper::fonts_data(specified_path,).into()
-}
+def!(fn_style, font, syn::LitStr);
+//#[proc_macro]
+// pub fn fonts_data(path: TokenStream,) -> TokenStream {
+// 	// Parse the input path as a string literal
+// 	let specified_path = syn::parse_macro_input!(path as syn::LitStr);
+// 	helper::fonts_data(specified_path,).into()
+// }
 
 /// Generates implementations for integer types.
 ///
