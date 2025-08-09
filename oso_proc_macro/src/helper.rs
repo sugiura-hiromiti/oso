@@ -13,30 +13,6 @@ use proc_macro::Diagnostic;
 use proc_macro::Level;
 use proc_macro2::Span;
 
-pub trait ErrorDiagnose {
-	type T;
-	fn unwrap_or_emit(self,) -> Self::T;
-}
-
-impl<T,> ErrorDiagnose for anyhow::Result<T,> {
-	type T = T;
-
-	fn unwrap_or_emit(self,) -> Self::T {
-		match self {
-			Self::Ok(o,) => o,
-			Self::Err(e,) => {
-				Diagnostic::new(Level::Error, format!("{e}"),).emit();
-				panic!()
-			},
-		}
-	}
-}
-
-pub fn fonts_data(specified_path: syn::LitStr,) -> proc_macro2::TokenStream {
-	use oso_proc_macro_logic::fonts_data::fonts_data_body;
-	fonts_data_body(&specified_path,).unwrap_or_emit()
-}
-
 /// Generates the implementation block for the UEFI Status struct.
 ///
 /// This function takes parsed status code information from the UEFI specification
