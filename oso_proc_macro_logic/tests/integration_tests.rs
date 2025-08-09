@@ -76,11 +76,11 @@ fn test_fonts_data_integration() {
 	let lit_str = syn::LitStr::new(path_str, proc_macro2::Span::call_site(),);
 
 	// Test fonts function
-	let fonts = fonts_data::fonts(&lit_str,);
+	let fonts = font::fonts(&lit_str,);
 	assert_eq!(fonts.len(), 256);
 
 	// Test convert_bitfield function
-	let bitfields = fonts_data::convert_bitfield(&fonts,);
+	let bitfields = font::convert_bitfield(&fonts,);
 	assert_eq!(bitfields.len(), 256);
 
 	// Verify that the conversion produces different values for different patterns
@@ -88,7 +88,7 @@ fn test_fonts_data_integration() {
 	let all_filled = "@@@@@@@@".repeat(16,);
 
 	let test_fonts = vec![all_empty, all_filled];
-	let test_bitfields = fonts_data::convert_bitfield(&test_fonts,);
+	let test_bitfields = font::convert_bitfield(&test_fonts,);
 
 	assert_ne!(test_bitfields[0], test_bitfields[1]);
 }

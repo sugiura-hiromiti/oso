@@ -28,7 +28,7 @@ where F: FnMut() -> R {
 
 #[test]
 fn benchmark_fonts_data_processing() {
-	use oso_proc_macro_logic::fonts_data;
+	use oso_proc_macro_logic::font;
 	use std::fs;
 	use tempfile::NamedTempFile;
 
@@ -44,12 +44,12 @@ fn benchmark_fonts_data_processing() {
 	let lit_str = syn::LitStr::new(path_str, proc_macro2::Span::call_site(),);
 
 	// Benchmark font loading
-	let _duration = benchmark("Font loading", 100, || fonts_data::fonts(&lit_str,),);
+	let _duration = benchmark("Font loading", 100, || font::fonts(&lit_str,),);
 
 	// Benchmark bitfield conversion
-	let fonts = fonts_data::fonts(&lit_str,);
+	let fonts = font::fonts(&lit_str,);
 	let _duration =
-		benchmark("Bitfield conversion", 1000, || fonts_data::convert_bitfield(&fonts,),);
+		benchmark("Bitfield conversion", 1000, || font::convert_bitfield(&fonts,),);
 }
 
 #[test]
