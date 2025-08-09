@@ -10,8 +10,8 @@ use syn::LitStr;
 /// Number of ASCII characters supported (0-255)
 const CHARACTER_COUNT: usize = 256;
 
-pub fn fonts_data_body(path: &syn::LitStr,) -> Rslt<proc_macro2::TokenStream,> {
-	let fonts = convert_bitfield(&fonts(path,)?,);
+pub fn font(path: syn::LitStr,) -> Rslt<proc_macro2::TokenStream,> {
+	let fonts = convert_bitfield(&font_data(path,)?,);
 	Ok(quote::quote! {
 		&[#(#fonts),*]
 	},)
@@ -47,7 +47,7 @@ pub fn fonts_data_body(path: &syn::LitStr,) -> Rslt<proc_macro2::TokenStream,> {
 /// let font_data = fonts(&path);
 /// assert_eq!(font_data.len(), 256);
 /// ```
-fn fonts(specified_path: &LitStr,) -> Rslt<Vec<String,>,> {
+fn font_data(specified_path: LitStr,) -> Rslt<Vec<String,>,> {
 	// Get the project root directory, falling back to compile-time directory if needed
 	let project_root = std::env::var("CARGO_MANIFEST_DIR",)?;
 
@@ -148,7 +148,7 @@ mod tests {
 
 	/// Creates a temporary font file for testing
 	fn create_test_font_file() -> NamedTempFile {
-		let mut temp_file = NamedTempFile::new().expect("Failed to create temp file",);
+		let temp_file = NamedTempFile::new().expect("Failed to create temp file",);
 
 		// Create sample font data for character 'A' (ASCII 65)
 		// 16 lines of 8 characters each, representing a simple 'A' pattern
@@ -182,24 +182,25 @@ mod tests {
 	}
 
 	#[test]
-	fn test_fonts_loads_correct_number_of_characters() {
+	fn test_fonts_loads_correct_number_of_characters() -> Rslt<(),> {
 		let temp_file = create_test_font_file();
 		let path_str = temp_file.path().to_str().unwrap();
 		let lit_str = syn::LitStr::new(path_str, proc_macro2::Span::call_site(),);
 
-		let fonts = fonts(&lit_str,);
+		let fonts = font_data(lit_str,)?;
 
 		// Should load exactly 256 characters
 		assert_eq!(fonts.len(), 256);
+		Ok((),)
 	}
 
 	#[test]
-	fn test_fonts_each_character_has_correct_length() {
+	fn test_fonts_each_character_has_correct_length() -> Rslt<(),> {
 		let temp_file = create_test_font_file();
 		let path_str = temp_file.path().to_str().unwrap();
 		let lit_str = syn::LitStr::new(path_str, proc_macro2::Span::call_site(),);
 
-		let fonts = fonts(&lit_str,);
+		let fonts = font_data(lit_str,)?;
 
 		// Each character should have exactly 128 characters (16 lines × 8 chars)
 		for (i, font_char,) in fonts.iter().enumerate() {
@@ -211,6 +212,8 @@ mod tests {
 				font_char.len()
 			);
 		}
+
+		Ok((),)
 	}
 
 	#[test]
@@ -296,12 +299,12 @@ mod tests {
 	fn test_fonts_nonexistent_file() {
 		let lit_str =
 			syn::LitStr::new("/nonexistent/path/font.txt", proc_macro2::Span::call_site(),);
-		fonts(&lit_str,);
+		font_data(lit_str,);
 	}
 
 	#[test]
-	fn test_fonts_with_hex_values_filtered() {
-		let mut temp_file = NamedTempFile::new().expect("Failed to create temp file",);
+	fn test_fonts_with_hex_values_filtered() -> Rslt<(),> {
+		let temp_file = NamedTempFile::new().expect("Failed to create temp file",);
 
 		// Create font data with hex values that should be filtered out
 		let font_data_with_hex = r#"
@@ -335,7 +338,7 @@ mod tests {
 		let path_str = temp_file.path().to_str().unwrap();
 		let lit_str = syn::LitStr::new(path_str, proc_macro2::Span::call_site(),);
 
-		let fonts = fonts(&lit_str,);
+		let fonts = font_data(lit_str,)?;
 
 		// Should still load 256 characters, with hex lines filtered out
 		assert_eq!(fonts.len(), 256);
@@ -344,5 +347,6 @@ mod tests {
 		for font_char in &fonts {
 			assert_eq!(font_char.len(), 128);
 		}
+		Ok((),)
 	}
 }

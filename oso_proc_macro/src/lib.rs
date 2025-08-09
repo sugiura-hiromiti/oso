@@ -25,76 +25,61 @@ extern crate proc_macro;
 mod helper;
 
 use colored::Colorize;
-use oso_proc_macro_logic as macro_logic;
-use oso_proc_macro_logic::oso_proc_macro_helper::def;
+use oso_proc_macro_logic::fnl;
 use proc_macro::Diagnostic;
 use proc_macro::Level;
 use proc_macro::TokenStream;
 use syn::parse_macro_input;
 
-macro_rules! def {
-	(fn_style: $name:ident => $ty:ty, $doc:literal)=>{
-		#[proc_macro]
-		#[doc = $doc]
-		pub fn $name(item: proc_macro::TokenStream,) -> proc_macro::TokenStream {
-			def!{ macro_impl: $name, item => $ty }
-		}
-	};
-	(derive: name: $derive:ident, $name:ident => $ty:ty, $(attributes: $($attributes:ident,)+)?) => {
-		#[proc_macro_derive($derive $($(, attributes($attributes))+)?)]
-		#[doc = $doc]
-		pub fn $name(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
-			def!(macro_impl: $name, item => $ty);
-
-		}
-	};
-	(attr: $name:ident => $ty:ty,)=>{
-		#[proc_macro_attribute]
-		#[doc = $doc]
-		pub fn $name(item: proc_macro::TokenStream,) -> proc_macro::TokenStream {
-			def!(macro_impl: $name, item, attr => $ty,);
-		}
-	};
-	(macro_impl: $name:ident, $param1:ident $(, $param2:ident)? => $ty:ty)=>{
-		let $param1 = syn::parse_macro_input!($param1 as $ty);
-		$(
-			let $param2 = syn::parse_macro_input!($param2 as proc_macro2::TokenStream);
-		)?
-
-		oso_proc_macro_logic::$name::$name($param1, $($param2,)?).unwrap_or_emit().into()
-	};
+pub trait ErrorDiagnose {
+	type T;
+	fn unwrap_or_emit(self,) -> Self::T;
 }
 
-def!(fn_style: font => syn::LitStr,
+impl<T,> ErrorDiagnose for anyhow::Result<T,> {
+	type T = T;
+
+	fn unwrap_or_emit(self,) -> Self::T {
+		match self {
+			Self::Ok(o,) => o,
+			Self::Err(e,) => {
+				Diagnostic::new(Level::Error, format!("{e}"),).emit();
+				panic!()
+			},
+		}
+	}
+}
+
+fnl!(font => syn::LitStr,
 r#"Generates embedded font data from font files at compile time.
 
-	This procedural macro takes a relative path to the project root and processes
-	font files to generate embedded data structures that can be used at runtime.
-	The macro converts font data into bitfield representations for efficient storage.
+This procedural macro takes a relative path to the project root and processes
+font files to generate embedded data structures that can be used at runtime.
+The macro converts font data into bitfield representations for efficient storage.
 
-	# Parameters
+# Parameters
 
-	* `path` - A string literal containing the relative path from the project root to the directory
-	  containing font data files
+* `path` - A string literal containing the relative path from the project root to the directory
+  containing font data files
 
-	# Returns
+# Returns
 
-	Returns a token stream representing an array slice of processed font data.
-	The generated code will be in the form `&[font_data_1, font_data_2, ...]`.
+Returns a token stream representing an array slice of processed font data.
+The generated code will be in the form `&[font_data_1, font_data_2, ...]`.
 
-	# Examples
+# Examples
 
-	```rust,ignore
-	// Generate font data from files in the "assets/fonts" directory
-	let fonts = fonts_data!("assets/fonts");
-	```
+```rust,ignore
+// Generate font data from files in the "assets/fonts" directory
+let fonts = fonts_data!("assets/fonts");
+```
 
-	# Panics
+# Panics
 
-	This macro will cause a compile-time error if:
-	- The specified path does not exist
-	- Font files in the path cannot be processed
-	- The path parameter is not a valid string literal"#);
+This macro will cause a compile-time error if:
+- The specified path does not exist
+- Font files in the path cannot be processed
+- The path parameter is not a valid string literal"#);
 //#[proc_macro]
 // pub fn fonts_data(path: TokenStream,) -> TokenStream {
 // 	// Parse the input path as a string literal

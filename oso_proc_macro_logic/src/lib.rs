@@ -32,7 +32,7 @@ use oso_dev_util_helper::fs::check_oso_kernel;
 extern crate proc_macro;
 
 /// Font data processing and bitmap conversion utilities
-pub mod fonts_data;
+pub mod font;
 
 /// Function wrapper generation utilities
 pub mod gen_wrapper_fn;
@@ -53,16 +53,51 @@ pub mod derive_from_pathbuf_for_crate;
 
 pub mod oso_proc_macro_helper;
 
-// #[macro_export]
-// macro_rules! call_helper {
-// 	($fn_name:ident, $($args:ident => $type:ty),*) => {
-// 		use crate::helper::ErrorDiagnose;
-// 		$(
-// 			let $args = syn::parse_macro_input!($args as $type);
-// 		)*
-// 		oso_proc_macro_logic::$fn_name::$fn_name($($args,)*).unwrap_or_emit().into()
-// 	};
-// }
+#[macro_export]
+macro_rules! fnl {
+	($name:ident => $ty:ty, $doc:literal) => {
+		#[proc_macro]
+		#[doc = $doc]
+		pub fn $name(item: proc_macro::TokenStream,) -> proc_macro::TokenStream {
+			$crate::def! { $name, item => $ty }
+		}
+	};
+}
+
+#[macro_export]
+macro_rules! drv {
+	(name: $derive:ident, $name:ident => $ty:ty, $(attributes: $($attributes:ident,)+)?, $doc:literal) => {
+		#[proc_macro_derive($derive $($(, attributes($attributes))+)?)]
+		#[doc = $doc]
+		pub fn $name(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+			$crate::def!{ $name, item => $ty }
+
+		}
+	};
+}
+
+#[macro_export]
+macro_rules! atr {
+	(attr: $name:ident => $ty:ty, $doc:literal) => {
+		#[proc_macro_attribute]
+		#[doc = $doc]
+		pub fn $name(item: proc_macro::TokenStream,) -> proc_macro::TokenStream {
+			$crate::def! { $name, item, attr => $ty, }
+		}
+	};
+}
+
+#[macro_export]
+macro_rules! def {
+	($name:ident, $param1:ident $(, $param2:ident)? => $ty:ty)=>{
+		let $param1 = syn::parse_macro_input!($param1 as $ty);
+		$(
+			let $param2 = syn::parse_macro_input!($param2 as proc_macro2::TokenStream);
+		)?
+
+		oso_proc_macro_logic::$name::$name($param1, $($param2,)?).unwrap_or_emit().into()
+	};
+}
 
 #[cfg(test)]
 mod tests {
@@ -169,7 +204,7 @@ mod tests {
 
 		// We can't directly test the module contents without using them,
 		// but we can verify they exist by referencing their types
-		use crate::fonts_data;
+		use crate::font;
 		use crate::gen_wrapper_fn;
 		use crate::impl_init;
 		use crate::status_from_spec;
