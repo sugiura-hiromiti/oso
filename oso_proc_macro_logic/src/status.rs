@@ -12,16 +12,18 @@
 //! This is particularly useful for generating constants and enums for UEFI status
 //! codes in operating system development.
 
+use crate::RsltP;
+use crate::oso_proc_macro_helper::Diag;
 use anyhow::Result as Rslt;
 use anyhow::anyhow;
+use anyhow::bail;
 use html5ever::local_name;
 use html5ever::tendril::TendrilSink;
 use markup5ever::LocalNameStaticSet;
 use markup5ever_rcdom::Node;
 use markup5ever_rcdom::NodeData;
 use markup5ever_rcdom::RcDom;
-use proc_macro::Diagnostic;
-use proc_macro::Level;
+use proc_macro2::Span;
 use std::rc::Rc;
 
 /// HTML element ID of the main status codes section in the UEFI specification
@@ -35,6 +37,60 @@ const ERROR_CODE_TABLE_ID: &str = "efi-status-error-codes-high-bit-set-apx-d-sta
 
 /// HTML element ID of the warning codes table in the UEFI specification
 const WARN_CODE_TABLE_ID: &str = "efi-status-warning-codes-high-bit-clear-apx-d-status-codes";
+
+/// Trait for converting status code information into token stream parts.
+///
+/// This trait provides a method to convert status code information into
+/// the token stream components needed for generating match arms and
+/// associated constants in the Status implementation.
+trait TokenParts {
+	/// Converts status code information into token stream parts.
+	///
+	/// # Parameters
+	///
+	/// * `is_err` - Whether these status codes represent error conditions
+	///
+	/// # Returns
+	///
+	/// Returns a vector of tuples where each tuple contains:
+	/// - Match arm token stream for the ok_or() method
+	/// - Associated constant token stream for the Status impl
+	fn token_parts(
+		&self,
+		is_err: bool,
+	) -> Vec<(proc_macro2::TokenStream, proc_macro2::TokenStream,),>;
+}
+
+/// Implementation of TokenParts for vectors of StatusCodeInfo.
+///
+/// This implementation processes each status code in the vector and generates
+/// the appropriate token streams for both match arms and associated constants.
+impl TokenParts for Vec<StatusCodeInfo,> {
+	fn token_parts(
+		&self,
+		is_err: bool,
+	) -> Vec<(proc_macro2::TokenStream, proc_macro2::TokenStream,),> {
+		self.iter()
+			.map(|sci| {
+				// Create identifier from the status code mnemonic
+				let mnemonic = syn::Ident::new(&sci.mnemonic, Span::call_site(),);
+
+				// Create literal from the status code value
+				let value =
+					syn::Lit::Int(syn::LitInt::new(&format!("{}", sci.value), Span::call_site(),),);
+
+				// Generate appropriate match arm based on error status
+				let match_arms =
+					if is_err { err_match(&mnemonic, &sci.desc,) } else { ok_match(&mnemonic,) };
+
+				// Generate associated constant with documentation
+				let assoc = assoc_const(&mnemonic, &value, &sci.desc,);
+
+				(match_arms, assoc,)
+			},)
+			.collect()
+	}
+}
 
 /// Container for all UEFI status codes organized by category
 ///
@@ -70,6 +126,31 @@ impl StatusCodeInfo {
 	/// UEFI error codes have the most significant bit set to 1,
 	/// distinguishing them from success and warning codes.
 	pub const ERROR_BIT: usize = 1 << (usize::BITS - 1);
+}
+
+pub fn status(version: syn::Lit,) -> RsltP {
+	let syn::Lit::Float(version,) = version else {
+		bail!("version is floating point literal. found {version:?}")
+	};
+
+	// Construct the URL for the UEFI specification page
+	let status_spec_url = format!("https://uefi.org/specs/UEFI/{version}/Apx_D_Status_Codes.html");
+
+	// Fetch and parse the specification page
+	let spec_page = status_spec_page(&status_spec_url,)?;
+	// Generate the Status struct implementation using the helper
+	let c_enum_impl = impl_status(&spec_page,);
+
+	// Generate the complete Status struct with all implementations
+	let enum_def = quote::quote! {
+			#[repr(transparent)]
+			#[derive(Eq, PartialEq, Clone, Debug,)]
+			pub struct Status(pub usize);
+
+			#c_enum_impl
+	};
+
+	Ok((enum_def, vec![],),)
 }
 
 /// Fetches and parses UEFI status codes from the official specification
@@ -149,6 +230,142 @@ pub fn status_spec_page(status_spec_url: impl Into<String,>,) -> Rslt<StatusCode
 	},);
 
 	Ok(StatusCode { success: success_codes, error: error_codes, warn: warn_codes, },)
+}
+
+/// Generates the implementation block for the UEFI Status struct.
+///
+/// This function takes parsed status code information from the UEFI specification
+/// and generates a complete implementation block including associated constants
+/// for all status codes and error handling methods.
+///
+/// # Parameters
+///
+/// * `spec_page` - Parsed status code information from the UEFI specification
+///
+/// # Returns
+///
+/// Returns a `proc_macro2::TokenStream` containing the complete implementation
+/// block for the Status struct, including:
+/// - Associated constants for success, warning, and error status codes
+/// - `ok_or()` method for converting status to Result
+/// - `ok_or_with()` method for custom error handling
+///
+/// # Generated Methods
+///
+/// - `ok_or()`: Converts the status to a Result, returning Ok for success/warning status codes and
+///   Err for error status codes
+/// - `ok_or_with()`: Similar to ok_or but allows custom transformation of success values
+pub fn impl_status(spec_page: &StatusCode,) -> proc_macro2::TokenStream {
+	// Generate token parts for success status codes (non-error)
+	let (success_match, success_assoc,): (Vec<_,>, Vec<_,>,) =
+		spec_page.success.token_parts(false,).into_iter().unzip();
+
+	// Generate token parts for warning status codes (non-error)
+	let (warn_match, warn_assoc,): (Vec<_,>, Vec<_,>,) =
+		spec_page.warn.token_parts(false,).into_iter().unzip();
+
+	// Generate token parts for error status codes (error)
+	let (error_match, error_assoc,): (Vec<_,>, Vec<_,>,) =
+		spec_page.error.token_parts(true,).into_iter().unzip();
+
+	quote::quote! {
+		impl Status {
+			// Associated constants for all status codes
+			#(#success_assoc)*
+			#(#warn_assoc)*
+			#(#error_assoc)*
+
+			/// Converts the status to a Result type.
+			///
+			/// Returns Ok(Self) for success and warning status codes,
+			/// and Err(UefiError) for error status codes.
+			pub fn ok_or(self) -> Rslt<Self, oso_error::loader::UefiError> {
+				use alloc::string::ToString;
+				match self {
+					// Success status codes return Ok
+					#(#success_match)*
+					// Warning status codes return Ok
+					#(#warn_match)*
+					// Error status codes return Err
+					#(#error_match)*
+					// Unknown status codes return custom error
+					Self(code) => Err(oso_error::oso_err!(oso_error::loader::UefiError::CustomStatus)),
+				}
+			}
+
+			/// Converts the status to a Result with custom transformation.
+			///
+			/// Similar to ok_or(), but allows applying a transformation function
+			/// to the success value before returning.
+			pub fn ok_or_with<T>(self, with: impl FnOnce(Self) -> T) -> Rslt<T, oso_error::loader::UefiError> {
+				let status = self.ok_or()?;
+				Ok(with(status))
+			}
+		}
+	}
+}
+
+/// Generates a match arm for successful (non-error) status codes.
+///
+/// Creates a match arm that returns `Ok(Self::MNEMONIC)` for the given status code.
+/// This is used for success and warning status codes in the `ok_or()` method.
+///
+/// # Parameters
+///
+/// * `mnemonic` - The identifier for the status code constant
+///
+/// # Returns
+///
+/// Returns a token stream representing a match arm that returns Ok
+fn ok_match(mnemonic: &syn::Ident,) -> proc_macro2::TokenStream {
+	quote::quote! {
+		Self::#mnemonic => Ok(Self::#mnemonic,),
+	}
+}
+
+/// Generates a match arm for error status codes.
+///
+/// Creates a match arm that returns an error with the status code description.
+/// This is used for error status codes in the `ok_or()` method.
+///
+/// # Parameters
+///
+/// * `mnemonic` - The identifier for the status code constant
+/// * `msg` - The description message for the error
+///
+/// # Returns
+///
+/// Returns a token stream representing a match arm that returns an error
+fn err_match(mnemonic: &syn::Ident, msg: &String,) -> proc_macro2::TokenStream {
+	let mnemonic_str = mnemonic.to_string();
+	quote::quote! {
+	Self::#mnemonic => {
+		let mut mnemonic = concat!(#mnemonic_str, ": ", #msg);
+		Err(oso_error::oso_err!(UefiError::ErrorStatus(mnemonic)))
+	},
+	}
+}
+
+/// Generates an associated constant for a status code.
+///
+/// Creates an associated constant with documentation derived from the status
+/// code description. The constant has the same name as the mnemonic and
+/// contains the numeric value of the status code.
+///
+/// # Parameters
+///
+/// * `mnemonic` - The identifier for the status code constant
+/// * `value` - The numeric value of the status code
+/// * `msg` - The description to use as documentation
+///
+/// # Returns
+///
+/// Returns a token stream representing an associated constant with documentation
+fn assoc_const(mnemonic: &syn::Ident, value: &syn::Lit, msg: &String,) -> proc_macro2::TokenStream {
+	quote::quote! {
+		#[doc = #msg]
+		pub const #mnemonic: Self = Self(#value);
+	}
 }
 
 /// Searches for an HTML element with a specific ID in the DOM tree
@@ -389,25 +606,26 @@ fn status_codes_info(rows: Vec<Vec<String,>,>,) -> Vec<StatusCodeInfo,> {
 ///
 /// This function is only used for debugging and emits procedural macro diagnostics.
 #[allow(dead_code)]
-fn inspect_children(node: Rc<Node,>,) {
-	Diagnostic::new(Level::Help, "start inspect_children --------------------------------",).emit();
-
+fn inspect_children(node: Rc<Node,>,) -> Vec<Diag,> {
 	// Iterate through all child nodes and emit diagnostic info
-	node.children.borrow().iter().enumerate().for_each(|(i, n,)| {
-		let name = match &n.data {
-			markup5ever_rcdom::NodeData::Document => todo!("inspect_children/Document"),
-			markup5ever_rcdom::NodeData::Doctype { .. } => todo!("inspect_children/Doctype"),
-			markup5ever_rcdom::NodeData::Text { contents, } => format!("text: {contents:?}"),
-			markup5ever_rcdom::NodeData::Comment { .. } => todo!("inspect_children/Comment"),
-			markup5ever_rcdom::NodeData::Element { name, .. } => format!("element: {name:?}"),
-			markup5ever_rcdom::NodeData::ProcessingInstruction { .. } => {
-				todo!("inspect_children/ProcessingInstruction")
-			},
-		};
-		Diagnostic::new(Level::Note, format!("{i}, {name}"),).emit();
-	},);
-
-	Diagnostic::new(Level::Help, "end inspect_children ----------------------------------",).emit();
+	node.children
+		.borrow()
+		.iter()
+		.enumerate()
+		.map(|(i, n,)| {
+			let name = match &n.data {
+				markup5ever_rcdom::NodeData::Document => todo!("inspect_children/Document"),
+				markup5ever_rcdom::NodeData::Doctype { .. } => todo!("inspect_children/Doctype"),
+				markup5ever_rcdom::NodeData::Text { contents, } => format!("text: {contents:?}"),
+				markup5ever_rcdom::NodeData::Comment { .. } => todo!("inspect_children/Comment"),
+				markup5ever_rcdom::NodeData::Element { name, .. } => format!("element: {name:?}"),
+				markup5ever_rcdom::NodeData::ProcessingInstruction { .. } => {
+					todo!("inspect_children/ProcessingInstruction")
+				},
+			};
+			Diag::Note(format!("{i}, {name}"),)
+		},)
+		.collect()
 }
 
 /// Debug utility function to inspect a single HTML node
@@ -423,8 +641,8 @@ fn inspect_children(node: Rc<Node,>,) {
 ///
 /// This function is only used for debugging and emits procedural macro diagnostics.
 #[allow(dead_code)]
-fn inspect_node(node: Rc<Node,>,) {
-	Diagnostic::new(Level::Note, format!("{node:#?}"),).emit();
+fn inspect_node(node: Rc<Node,>,) -> Diag {
+	Diag::Note(format!("{node:#?}"),)
 }
 
 #[cfg(test)]

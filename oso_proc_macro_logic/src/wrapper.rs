@@ -4,7 +4,51 @@
 //! method arguments from function signatures. It's primarily used in procedural
 //! macros that need to analyze and transform function definitions.
 
+use crate::RsltP;
 use syn::Signature;
+
+pub fn wrapper(static_frame_buffer: syn::Ident, trait_def: syn::ItemTrait,) -> RsltP {
+	// Generate wrapper functions for each trait method
+	let wrapper_fns = trait_def.items.clone().into_iter().filter_map(|i| {
+		if let syn::TraitItem::Fn(method,) = i {
+			let sig = method.sig;
+
+			// Extract function signature components
+			let constness = sig.constness;
+			let asyncness = sig.asyncness;
+			let unsafety = sig.unsafety;
+			let abi = &sig.abi;
+			let fn_name = &sig.ident;
+			let generics = &sig.generics;
+
+			// Filter out 'self' parameters for the wrapper function
+			let fn_params = sig.inputs.iter().filter(|a| matches!(a, &&syn::FnArg::Typed(_)),);
+
+			// Generate method arguments for the delegation call
+			let method_args = method_args(&sig);
+			let variadic = &sig.variadic;
+			let output = &sig.output;
+
+			// Generate the wrapper function declaration
+			let decl = quote::quote! {
+				pub #unsafety #asyncness #constness #abi fn #fn_name #generics(#(#fn_params),* #variadic) #output {
+					#static_frame_buffer.#fn_name(#(#method_args),*)
+				}
+			};
+			Some(decl,)
+		} else {
+			// Skip non-function trait items
+			None
+		}
+	},);
+
+	// Combine wrapper functions with the original trait definition
+	let wrapper_fns = quote::quote! {
+		#(#wrapper_fns)*
+		#trait_def
+	};
+	Ok((wrapper_fns, vec![],),)
+}
 
 /// Extracts method arguments from a function signature, excluding the receiver (`self`)
 ///

@@ -1,5 +1,3 @@
-//  NOTE: - [ ] this is todo line comment
-
 //! # OSO Procedural Macro Logic
 //!
 //! This crate provides procedural macro logic and utilities for the OSO operating system project.
@@ -20,28 +18,22 @@
 //! - `associated_type_defaults`: Default associated types in traits
 //! - `iterator_try_collect`: Fallible iterator collection
 
-#![feature(proc_macro_diagnostic)]
 #![feature(str_as_str)]
 #![feature(iter_array_chunks)]
 #![feature(associated_type_defaults)]
 #![feature(iterator_try_collect)]
 
-use anyhow::Result as Rslt;
-use oso_dev_util_helper::fs::check_oso_kernel;
-
-extern crate proc_macro;
-
 /// Font data processing and bitmap conversion utilities
 pub mod font;
 
 /// Function wrapper generation utilities
-pub mod gen_wrapper_fn;
+pub mod wrapper;
 
 /// Trait implementation generation for integer types
-pub mod impl_init;
+pub mod impl_int;
 
 /// UEFI status code parsing from HTML specifications
-pub mod status_from_spec;
+pub mod status;
 
 /// ELF header parsing and analysis utilities
 pub mod test_elf_header_parse;
@@ -49,55 +41,16 @@ pub mod test_elf_header_parse;
 /// ELF program header parsing utilities
 pub mod test_program_headers_parse;
 
-pub mod derive_from_pathbuf_for_crate;
+pub mod from_path_buf;
 
 pub mod oso_proc_macro_helper;
 
-#[macro_export]
-macro_rules! fnl {
-	($name:ident => $ty:ty, $doc:literal) => {
-		#[proc_macro]
-		#[doc = $doc]
-		pub fn $name(item: proc_macro::TokenStream,) -> proc_macro::TokenStream {
-			$crate::def! { $name, item => $ty }
-		}
-	};
-}
+use anyhow::Result as Rslt;
+use oso_dev_util_helper::fs::check_oso_kernel;
 
-#[macro_export]
-macro_rules! drv {
-	(name: $derive:ident, $name:ident => $ty:ty, $(attributes: $($attributes:ident,)+)?, $doc:literal) => {
-		#[proc_macro_derive($derive $($(, attributes($attributes))+)?)]
-		#[doc = $doc]
-		pub fn $name(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
-			$crate::def!{ $name, item => $ty }
+use crate::oso_proc_macro_helper::Diag;
 
-		}
-	};
-}
-
-#[macro_export]
-macro_rules! atr {
-	(attr: $name:ident => $ty:ty, $doc:literal) => {
-		#[proc_macro_attribute]
-		#[doc = $doc]
-		pub fn $name(item: proc_macro::TokenStream,) -> proc_macro::TokenStream {
-			$crate::def! { $name, item, attr => $ty, }
-		}
-	};
-}
-
-#[macro_export]
-macro_rules! def {
-	($name:ident, $param1:ident $(, $param2:ident)? => $ty:ty)=>{
-		let $param1 = syn::parse_macro_input!($param1 as $ty);
-		$(
-			let $param2 = syn::parse_macro_input!($param2 as proc_macro2::TokenStream);
-		)?
-
-		oso_proc_macro_logic::$name::$name($param1, $($param2,)?).unwrap_or_emit().into()
-	};
-}
+type RsltP = Rslt<(proc_macro2::TokenStream, Vec<Diag,>,),>;
 
 #[cfg(test)]
 mod tests {
@@ -184,10 +137,6 @@ mod tests {
 
 	#[test]
 	fn test_check_oso_kernel_path_construction() {
-		// Test that the path is constructed correctly
-		let current = current_dir().expect("Failed to get current directory",);
-		let expected_path = current.join("target/oso_kernel.elf",);
-
 		// We can't easily test the internal path construction without modifying the function,
 		// but we can test that it behaves consistently
 		let result1 = check_oso_kernel();
@@ -205,11 +154,11 @@ mod tests {
 		// We can't directly test the module contents without using them,
 		// but we can verify they exist by referencing their types
 		use crate::font;
-		use crate::gen_wrapper_fn;
-		use crate::impl_init;
-		use crate::status_from_spec;
+		use crate::impl_int;
+		use crate::status;
 		use crate::test_elf_header_parse;
 		use crate::test_program_headers_parse;
+		use crate::wrapper;
 
 		// If this compiles, all modules are accessible
 		assert!(true);
