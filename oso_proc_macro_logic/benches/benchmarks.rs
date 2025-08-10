@@ -54,7 +54,7 @@ fn benchmark_fonts_data_processing() {
 
 #[test]
 fn benchmark_gen_wrapper_fn() {
-	use oso_proc_macro_logic::gen_wrapper_fn;
+	use oso_proc_macro_logic::wrapper;
 	use syn::Signature;
 	use syn::parse_quote;
 
@@ -67,37 +67,37 @@ fn benchmark_gen_wrapper_fn() {
 	// Benchmark method argument extraction
 	let _duration = benchmark("Method args extraction", 10000, || {
 		for sig in &signatures {
-			let _args: Vec<_,> = gen_wrapper_fn::method_args(sig,).collect();
+			let _args: Vec<_,> = wrapper::method_args(sig,).collect();
 		}
 	},);
 }
 
 #[test]
 fn benchmark_impl_init() {
-	use oso_proc_macro_logic::impl_init;
+	use oso_proc_macro_logic::impl_int;
 	use quote::quote;
 
 	let input = quote! { u8, u16, u32, u64, i8, i16, i32, i64, usize, isize };
 
 	// Benchmark type parsing
 	let _duration = benchmark("Type parsing", 1000, || {
-		let _types: impl_init::Types = syn::parse2(input.clone(),).unwrap();
+		let _types: impl_int::Types = syn::parse2(input.clone(),).unwrap();
 	},);
 
 	// Benchmark implementation generation
-	let types: impl_init::Types = syn::parse2(input,).unwrap();
+	let types: impl_int::Types = syn::parse2(input,).unwrap();
 	let type_vec: Vec<_,> = types.iter().collect();
 
 	let _duration = benchmark("Implementation generation", 1000, || {
 		for ty in &type_vec {
-			let _impl_tokens = impl_init::implement(ty,);
+			let _impl_tokens = impl_int::implement(ty,);
 		}
 	},);
 }
 
 #[test]
 fn benchmark_status_from_spec_html_parsing() {
-	use oso_proc_macro_logic::status_from_spec::*;
+	use oso_proc_macro_logic::status::*;
 
 	let test_html = r#"
 <!DOCTYPE html>

@@ -7,9 +7,11 @@
 //! The module uses the `readelf -l` command to extract program header information and
 //! parses it into structured Rust types for build-time analysis and validation.
 
+use crate::RsltP;
 use crate::check_oso_kernel;
 use anyhow::Result as Rslt;
 use anyhow::anyhow;
+use proc_macro2::Span;
 use std::process::Command;
 
 /// Trait for parsing hexadecimal string representations into integer types
@@ -71,6 +73,139 @@ pub struct ReadElfL {
 	pub flags:            u32,
 	/// Required alignment for the segment
 	pub align:            u64,
+}
+
+pub fn test_program_headers_parse(rslt: proc_macro2::TokenStream,) -> RsltP {
+	// Get the expected program headers information from readelf
+	let (answer, diag,) = program_headers_info()?;
+
+	// Generate conditional assertion for debug builds only
+	Ok((
+		quote::quote! {
+			if cfg!(debug_assertions) {
+				assert_eq!(#answer, #rslt);
+			}
+		},
+		diag,
+	),)
+}
+
+/// Generates token stream for expected program headers information.
+///
+/// This function executes `readelf -l` on the target binary and parses the output
+/// to create a token stream representing the expected program headers structure.
+/// This is used by the `test_program_headers_parse` macro to validate program
+/// header parsing.
+///
+/// # Returns
+///
+/// Returns a `proc_macro2::TokenStream` representing a vector of `ProgramHeader`
+/// structs, each initialized with data from the actual binary.
+///
+/// # Generated Structure
+///
+/// Each ProgramHeader contains:
+/// - `ty`: Program header type (LOAD, DYNAMIC, INTERP, etc.)
+/// - `flags`: Permission flags (read, write, execute)
+/// - `offset`: Offset in file where segment begins
+/// - `virtual_address`: Virtual address where segment should be loaded
+/// - `physical_address`: Physical address (for systems where relevant)
+/// - `file_size`: Size of segment in file
+/// - `memory_size`: Size of segment in memory (may be larger than file_size)
+/// - `align`: Alignment requirements for the segment
+///
+/// # Panics
+///
+/// This function will panic if:
+/// - The `readelf -l` command fails to execute
+/// - The readelf output cannot be parsed
+/// - Any required program header field is missing or malformed
+///
+/// # Dependencies
+///
+/// Requires the `readelf` command to be available in the system PATH.
+pub fn program_headers_info() -> RsltP {
+	// Execute readelf -l and parse the output
+	let program_headers = readelf_l()?;
+
+	// Generate ProgramHeader struct for each program header entry
+	let program_headers = program_headers.iter().map(|rel| {
+		let ty = parse_program_header_type(rel,);
+		let flags = rel.flags;
+		let offset = rel.offset;
+		let virtual_address = rel.virtual_address;
+		let physical_address = rel.physical_address;
+		let file_size = rel.file_size;
+		let memory_size = rel.memory_size;
+		let align = rel.align;
+
+		quote::quote! {
+			ProgramHeader {
+				ty: #ty,
+				flags: #flags,
+				offset: #offset,
+				virtual_address: #virtual_address,
+				physical_address: #physical_address,
+				file_size: #file_size,
+				memory_size: #memory_size,
+				align: #align,
+			}
+		}
+	},);
+
+	// Generate vector containing all program headers
+	Ok((
+		quote::quote! {
+			alloc::vec![
+				#(#program_headers, )*
+			]
+		},
+		vec![],
+	),)
+}
+
+/// Parses program header type from readelf output.
+///
+/// Converts the program header type string into the appropriate enum variant.
+/// The function converts underscore-separated uppercase strings into CamelCase
+/// identifiers for the ProgramHeaderType enum.
+///
+/// # Parameters
+///
+/// * `program_header` - Parsed readelf -l output for a single program header
+///
+/// # Returns
+///
+/// Returns a token stream representing the ProgramHeaderType enum variant
+///
+/// # Conversion Logic
+///
+/// The function:
+/// 1. Splits the type string on underscores
+/// 2. Converts each word to CamelCase (first letter uppercase, rest lowercase)
+/// 3. Concatenates the words to form the enum variant name
+///
+/// # Examples
+///
+/// - "PT_LOAD" -> `ProgramHeaderType::PtLoad`
+/// - "PT_DYNAMIC" -> `ProgramHeaderType::PtDynamic`
+/// - "PT_INTERP" -> `ProgramHeaderType::PtInterp`
+fn parse_program_header_type(program_header: &ReadElfL,) -> proc_macro2::TokenStream {
+	// Convert underscore_separated to CamelCase
+	let camel_cased: String = program_header
+		.ty
+		.split("_",)
+		.flat_map(|word| {
+			word.char_indices()
+				.map(|(i, c,)| if i == 0 { c } else { (c as u8 - b'A' + b'a') as char },)
+		},)
+		.collect();
+
+	let ident = syn::Ident::new(&camel_cased, Span::call_site(),);
+
+	quote::quote! {
+		ProgramHeaderType::#ident
+	}
 }
 
 pub fn readelf_l() -> Rslt<Vec<ReadElfL,>,> {

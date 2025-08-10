@@ -34,7 +34,7 @@ fn test_gen_wrapper_fn_integration() {
 	];
 
 	for sig in signatures {
-		let args: Vec<_,> = gen_wrapper_fn::method_args(&sig,).collect();
+		let args: Vec<_,> = wrapper::method_args(&sig,).collect();
 
 		// Verify that receiver arguments are filtered out
 		let _has_receiver =
@@ -99,9 +99,9 @@ fn test_impl_init_integration() {
 
 	// Test parsing and implementation generation for multiple types
 	let input = quote! { u8, u16, u32, u64, i8, i16, i32, i64 };
-	let types: impl_init::Types = syn::parse2(input,).expect("Failed to parse types",);
+	let types: impl_int::Types = syn::parse2(input,).expect("Failed to parse types",);
 
-	let implementations: Vec<_,> = types.iter().map(|ty| impl_init::implement(ty,),).collect();
+	let implementations: Vec<_,> = types.iter().map(|ty| impl_int::implement(ty,),).collect();
 
 	assert_eq!(implementations.len(), 8);
 
@@ -117,7 +117,7 @@ fn test_impl_init_integration() {
 
 #[test]
 fn test_status_from_spec_html_parsing_integration() {
-	use status_from_spec::*;
+	use status::*;
 
 	// Test the HTML parsing functions with a complete example
 	let test_html = r#"
