@@ -5,16 +5,20 @@
 //! text-based representations to binary formats suitable for rendering.
 
 use crate::Rslt;
+use crate::RsltP;
 use syn::LitStr;
 
 /// Number of ASCII characters supported (0-255)
 const CHARACTER_COUNT: usize = 256;
 
-pub fn font(path: syn::LitStr,) -> Rslt<proc_macro2::TokenStream,> {
+pub fn font(path: syn::LitStr,) -> RsltP {
 	let fonts = convert_bitfield(&font_data(path,)?,);
-	Ok(quote::quote! {
-		&[#(#fonts),*]
-	},)
+	Ok((
+		quote::quote! {
+			&[#(#fonts),*]
+		},
+		vec![],
+	),)
 }
 
 /// Loads and processes ASCII font data from a specified file path

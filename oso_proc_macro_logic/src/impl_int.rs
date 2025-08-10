@@ -9,6 +9,8 @@ use syn::TypePath;
 use syn::parse::Parse;
 use syn::spanned::Spanned;
 
+use crate::RsltP;
+
 /// A collection of Rust types parsed from a token stream
 ///
 /// This struct holds a list of `syn::Type` objects that can be used for
@@ -87,6 +89,17 @@ impl Parse for Types {
 		},)?;
 		Ok(parsed,)
 	}
+}
+
+pub fn impl_int(types: Types,) -> RsltP {
+	let integers = types.iter().map(implement,);
+
+	Ok((
+		quote::quote! {
+			#(#integers)*
+		},
+		vec![],
+	),)
 }
 
 /// Generates a trait implementation for the `Integer` trait for a given type
@@ -526,7 +539,7 @@ mod tests {
 		assert_eq!(implementations.len(), 3);
 
 		// Check that each implementation is valid
-		for (i, impl_tokens,) in implementations.iter().enumerate() {
+		for (_i, impl_tokens,) in implementations.iter().enumerate() {
 			let code_str = impl_tokens.to_string();
 			assert!(code_str.contains("impl Integer for"));
 			assert!(code_str.contains("fn digit_count"));
