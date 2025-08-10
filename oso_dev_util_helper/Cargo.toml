@@ -6,3 +6,6 @@ edition = "2024"
 [dependencies]
 anyhow = "*"
 colored = "*"
+
+[dev-dependencies]
+proptest = "*"
