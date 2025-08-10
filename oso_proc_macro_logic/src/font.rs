@@ -187,23 +187,50 @@ mod tests {
 
 	#[test]
 	fn test_fonts_loads_correct_number_of_characters() -> Rslt<(),> {
-		let temp_file = create_test_font_file();
-		let path_str = temp_file.path().to_str().unwrap();
-		let lit_str = syn::LitStr::new(path_str, proc_macro2::Span::call_site(),);
+		// Create a test font file in the project directory
+		use std::env;
+		
+		let project_root = env::var("CARGO_MANIFEST_DIR")?;
+		let test_file_path = format!("{}/test_font_temp.txt", project_root);
+		
+		// Create sample font data
+		let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@..\n..@..@..\n..@..@..\n..@..@..\n........\n........\n........\n........\n........\n........\n";
+		let mut full_font_data = String::new();
+		for _ in 0..256 {
+			full_font_data.push_str(sample_font_data);
+		}
 
+		fs::write(&test_file_path, full_font_data)?;
+
+		let lit_str = syn::LitStr::new("test_font_temp.txt", proc_macro2::Span::call_site(),);
 		let fonts = font_data(lit_str,)?;
 
 		// Should load exactly 256 characters
 		assert_eq!(fonts.len(), 256);
+		
+		// Cleanup
+		let _ = fs::remove_file(test_file_path);
 		Ok((),)
 	}
 
 	#[test]
 	fn test_fonts_each_character_has_correct_length() -> Rslt<(),> {
-		let temp_file = create_test_font_file();
-		let path_str = temp_file.path().to_str().unwrap();
-		let lit_str = syn::LitStr::new(path_str, proc_macro2::Span::call_site(),);
+		// Create a test font file in the project directory
+		use std::env;
+		
+		let project_root = env::var("CARGO_MANIFEST_DIR")?;
+		let test_file_path = format!("{}/test_font_temp2.txt", project_root);
+		
+		// Create sample font data
+		let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@..\n..@..@..\n..@..@..\n..@..@..\n........\n........\n........\n........\n........\n........\n";
+		let mut full_font_data = String::new();
+		for _ in 0..256 {
+			full_font_data.push_str(sample_font_data);
+		}
 
+		fs::write(&test_file_path, full_font_data)?;
+
+		let lit_str = syn::LitStr::new("test_font_temp2.txt", proc_macro2::Span::call_site(),);
 		let fonts = font_data(lit_str,)?;
 
 		// Each character should have exactly 128 characters (16 lines × 8 chars)
@@ -217,6 +244,8 @@ mod tests {
 			);
 		}
 
+		// Cleanup
+		let _ = fs::remove_file(test_file_path);
 		Ok((),)
 	}
 
@@ -299,16 +328,20 @@ mod tests {
 	}
 
 	#[test]
-	#[should_panic(expected = "failed to open font file")]
 	fn test_fonts_nonexistent_file() {
 		let lit_str =
 			syn::LitStr::new("/nonexistent/path/font.txt", proc_macro2::Span::call_site(),);
-		font_data(lit_str,);
+		let result = font_data(lit_str,);
+		assert!(result.is_err(), "Should return error for nonexistent file");
 	}
 
 	#[test]
 	fn test_fonts_with_hex_values_filtered() -> Rslt<(),> {
-		let temp_file = NamedTempFile::new().expect("Failed to create temp file",);
+		// Create a test font file in the project directory
+		use std::env;
+		
+		let project_root = env::var("CARGO_MANIFEST_DIR")?;
+		let test_file_path = format!("{}/test_font_hex_temp.txt", project_root);
 
 		// Create font data with hex values that should be filtered out
 		let font_data_with_hex = r#"
@@ -337,11 +370,9 @@ mod tests {
 			full_font_data.push('\n',);
 		}
 
-		fs::write(temp_file.path(), full_font_data,).expect("Failed to write test font data",);
+		fs::write(&test_file_path, full_font_data,)?;
 
-		let path_str = temp_file.path().to_str().unwrap();
-		let lit_str = syn::LitStr::new(path_str, proc_macro2::Span::call_site(),);
-
+		let lit_str = syn::LitStr::new("test_font_hex_temp.txt", proc_macro2::Span::call_site(),);
 		let fonts = font_data(lit_str,)?;
 
 		// Should still load 256 characters, with hex lines filtered out
@@ -351,6 +382,9 @@ mod tests {
 		for font_char in &fonts {
 			assert_eq!(font_char.len(), 128);
 		}
+		
+		// Cleanup
+		let _ = fs::remove_file(test_file_path);
 		Ok((),)
 	}
 }
