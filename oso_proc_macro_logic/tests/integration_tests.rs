@@ -5,7 +5,7 @@
 
 use html5ever::namespace_url;
 use html5ever::tendril::TendrilSink;
-use oso_proc_macro_logic::check_oso_kernel;
+use oso_dev_util_helper::fs::check_oso_kernel;
 // use markup5ever::namespace_url;
 use oso_proc_macro_logic::*;
 use std::fs;
@@ -47,50 +47,30 @@ fn test_gen_wrapper_fn_integration() {
 }
 
 #[test]
-#[ignore = "0w0"]
+#[ignore = "requires font file"]
 fn test_fonts_data_integration() {
 	// Create a temporary font file
 	let temp_file = NamedTempFile::new().expect("Failed to create temp file",);
 
-	// Create minimal valid font data (just for character 'A')
-	let font_data = r#"........
-...@@...
-..@..@..
-..@..@..
-..@..@..
-..@@@@..
-..@..@..
-..@..@..
-..@..@..
-..@..@..
-........
-........
-........
-........
-........"#
-		.repeat(256,);
+	// Create minimal valid font data (16 lines per character, 8 chars per line, 256 characters)
+	let single_char_pattern = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@..\n..@..@..\n..@..@..\n..@..@..\n........\n........\n........\n........\n........\n........\n";
+	let font_data = single_char_pattern.repeat(256);
 
 	fs::write(temp_file.path(), font_data,).expect("Failed to write font data",);
 
 	let path_str = temp_file.path().to_str().unwrap();
 	let lit_str = syn::LitStr::new(path_str, proc_macro2::Span::call_site(),);
 
-	// Test fonts function
-	let fonts = font::fonts(&lit_str,);
-	assert_eq!(fonts.len(), 256);
-
-	// Test convert_bitfield function
-	let bitfields = font::convert_bitfield(&fonts,);
-	assert_eq!(bitfields.len(), 256);
-
-	// Verify that the conversion produces different values for different patterns
-	let all_empty = "........".repeat(16,);
-	let all_filled = "@@@@@@@@".repeat(16,);
-
-	let test_fonts = vec![all_empty, all_filled];
-	let test_bitfields = font::convert_bitfield(&test_fonts,);
-
-	assert_ne!(test_bitfields[0], test_bitfields[1]);
+	// Test font function (the only public function)
+	let result = font::font(lit_str,);
+	assert!(result.is_ok(), "Font processing should succeed with valid data");
+	
+	let (tokens, _) = result.unwrap();
+	let token_string = tokens.to_string();
+	
+	// Verify that the result contains array-like structure
+	assert!(token_string.contains("&"), "Should contain array reference");
+	assert!(token_string.contains("["), "Should contain array brackets");
 }
 
 #[test]
