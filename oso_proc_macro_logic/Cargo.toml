@@ -19,6 +19,7 @@ tendril = "*"
 ureq = "*"
 
 [dev-dependencies]
+proptest = "*"
 tempfile = "3.0"
 
 [[bench]]
