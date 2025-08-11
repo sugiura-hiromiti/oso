@@ -5,8 +5,8 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-const CARGO_MANIFEST: &str = "Cargo.toml";
-const CARGO_CONFIG: &str = ".cargo/config.toml";
+pub const CARGO_MANIFEST: &str = "Cargo.toml";
+pub const CARGO_CONFIG: &str = ".cargo/config.toml";
 const CWD: &str = std::env!("CARGO_MANIFEST_DIR");
 const IGNORE_DIR_LIST: [&str; 5] = ["target", ".git", ".github", ".direnv", ".cargo",];
 
@@ -148,8 +148,8 @@ mod tests {
 	#[test]
 	fn test_search_in_found() -> Rslt<(),> {
 		// Use the current project directory and search for Cargo.toml
-		let current_dir = std::path::PathBuf::from(CWD);
-		let result = search_in(&current_dir, "Cargo.toml")?;
+		let current_dir = std::path::PathBuf::from(CWD,);
+		let result = search_in(&current_dir, "Cargo.toml",)?;
 		assert!(result.is_some());
 		let found_path = result.unwrap();
 		assert!(found_path.exists());
@@ -160,8 +160,8 @@ mod tests {
 	#[test]
 	fn test_search_in_not_found() -> Rslt<(),> {
 		// Search for a non-existent file in the current directory
-		let current_dir = std::path::PathBuf::from(CWD);
-		let result = search_in(&current_dir, "definitely_nonexistent_file_12345.xyz")?;
+		let current_dir = std::path::PathBuf::from(CWD,);
+		let result = search_in(&current_dir, "definitely_nonexistent_file_12345.xyz",)?;
 		assert!(result.is_none());
 		Ok((),)
 	}
@@ -169,7 +169,7 @@ mod tests {
 	#[test]
 	fn test_get_upstream_found() -> Rslt<(),> {
 		// This should find Cargo.toml in the project structure
-		let result = get_upstream("Cargo.toml");
+		let result = get_upstream("Cargo.toml",);
 		assert!(result.is_ok());
 		let path = result.unwrap();
 		assert!(path.exists());
@@ -180,7 +180,7 @@ mod tests {
 	#[test]
 	fn test_get_upstream_not_found() {
 		// This should fail to find a non-existent file
-		let result = get_upstream("definitely_nonexistent_file_12345.xyz");
+		let result = get_upstream("definitely_nonexistent_file_12345.xyz",);
 		assert!(result.is_err());
 		let error_msg = result.unwrap_err().to_string();
 		assert!(error_msg.contains("can not find out"));
@@ -190,7 +190,7 @@ mod tests {
 	#[test]
 	fn test_search_upstream_found() -> Rslt<(),> {
 		// This should find Cargo.toml in the project structure
-		let result = search_upstream("Cargo.toml")?;
+		let result = search_upstream("Cargo.toml",)?;
 		assert!(result.is_some());
 		let path = result.unwrap();
 		assert!(path.exists());
@@ -201,7 +201,7 @@ mod tests {
 	#[test]
 	fn test_search_upstream_not_found() -> Rslt<(),> {
 		// This should not find a non-existent file
-		let result = search_upstream("definitely_nonexistent_file_12345.xyz")?;
+		let result = search_upstream("definitely_nonexistent_file_12345.xyz",)?;
 		assert!(result.is_none());
 		Ok((),)
 	}
@@ -219,13 +219,13 @@ mod tests {
 	#[test]
 	fn test_search_cargo_toml_with_different_cwd() -> Rslt<(),> {
 		// Test with the root directory
-		let root_path = std::path::PathBuf::from("/");
-		let result = search_cargo_toml(&root_path);
-		
+		let root_path = std::path::PathBuf::from("/",);
+		let result = search_cargo_toml(&root_path,);
+
 		// Should still find the project's Cargo.toml by searching upstream
 		assert!(result.is_ok());
 		let found_path = result.unwrap();
-		if let Some(path) = found_path {
+		if let Some(path,) = found_path {
 			assert!(path.exists());
 			assert!(path.file_name().unwrap() == "Cargo.toml");
 		}
@@ -237,9 +237,9 @@ mod tests {
 		// Test that constants are defined correctly
 		assert_eq!(CARGO_MANIFEST, "Cargo.toml");
 		assert_eq!(CARGO_CONFIG, ".cargo/config.toml");
-		
+
 		// CWD should be a valid path string
-		let cwd_path = std::path::Path::new(CWD);
+		let cwd_path = std::path::Path::new(CWD,);
 		assert!(cwd_path.exists());
 		assert!(cwd_path.is_dir());
 	}
@@ -247,17 +247,17 @@ mod tests {
 	#[test]
 	fn test_search_in_with_subdirectories() -> Rslt<(),> {
 		// Use the current project directory which should have subdirectories
-		let current_dir = std::path::PathBuf::from(CWD);
-		
+		let current_dir = std::path::PathBuf::from(CWD,);
+
 		// Search for Cargo.toml which should exist in the main directory
-		let result = search_in(&current_dir, "Cargo.toml")?;
+		let result = search_in(&current_dir, "Cargo.toml",)?;
 		assert!(result.is_some());
 		let found_path = result.unwrap();
 		assert!(found_path.exists());
 		assert_eq!(found_path.file_name().unwrap(), "Cargo.toml");
 
 		// Search should not find files that don't exist at the current level
-		let result = search_in(&current_dir, "nonexistent_file.txt")?;
+		let result = search_in(&current_dir, "nonexistent_file.txt",)?;
 		assert!(result.is_none());
 		Ok((),)
 	}
@@ -265,16 +265,16 @@ mod tests {
 	#[test]
 	fn test_file_name_matching() -> Rslt<(),> {
 		// Use the current project directory
-		let current_dir = std::path::PathBuf::from(CWD);
-		
+		let current_dir = std::path::PathBuf::from(CWD,);
+
 		// Should find exact match for Cargo.toml
-		let result = search_in(&current_dir, "Cargo.toml")?;
+		let result = search_in(&current_dir, "Cargo.toml",)?;
 		assert!(result.is_some());
 		let found_path = result.unwrap();
 		assert_eq!(found_path.file_name().unwrap(), "Cargo.toml");
 
 		// Should not find partial matches
-		let result = search_in(&current_dir, "Cargo")?;
+		let result = search_in(&current_dir, "Cargo",)?;
 		assert!(result.is_none());
 		Ok((),)
 	}
@@ -293,13 +293,13 @@ mod tests {
 	#[test]
 	fn test_search_in_ignores_directories() -> Rslt<(),> {
 		// This test verifies that search_in only looks at files, not directories
-		let current_dir = std::path::PathBuf::from(CWD);
-		
+		let current_dir = std::path::PathBuf::from(CWD,);
+
 		// Even if there's a directory named like a file we're searching for,
 		// search_in should not return it (it only returns files)
 		// We can't easily test this without creating directories, so we'll
 		// just verify that search_in returns files, not directories
-		if let Some(found) = search_in(&current_dir, "Cargo.toml")? {
+		if let Some(found,) = search_in(&current_dir, "Cargo.toml",)? {
 			assert!(found.is_file(), "search_in should return files, not directories");
 		}
 		Ok((),)
@@ -308,11 +308,11 @@ mod tests {
 	#[test]
 	fn test_path_operations() -> Rslt<(),> {
 		// Test basic path operations used in the module
-		let current_dir = std::path::PathBuf::from(CWD);
+		let current_dir = std::path::PathBuf::from(CWD,);
 		assert!(current_dir.is_absolute() || current_dir.is_relative());
-		
+
 		// Test that we can join paths
-		let joined = current_dir.join("Cargo.toml");
+		let joined = current_dir.join("Cargo.toml",);
 		assert!(joined.to_string_lossy().contains("Cargo.toml"));
 		Ok((),)
 	}
@@ -321,18 +321,18 @@ mod tests {
 	fn test_search_upstream_behavior() -> Rslt<(),> {
 		// Test that search_upstream actually searches up the directory tree
 		// by starting from a subdirectory (if it exists)
-		let src_dir = std::path::PathBuf::from(CWD).join("src");
-		
+		let src_dir = std::path::PathBuf::from(CWD,).join("src",);
+
 		if src_dir.exists() && src_dir.is_dir() {
 			// Change to src directory and search for Cargo.toml
 			let original_dir = std::env::current_dir()?;
-			std::env::set_current_dir(&src_dir)?;
-			
-			let result = search_upstream("Cargo.toml")?;
+			std::env::set_current_dir(&src_dir,)?;
+
+			let result = search_upstream("Cargo.toml",)?;
 			assert!(result.is_some(), "Should find Cargo.toml by searching upstream");
-			
+
 			// Restore original directory
-			std::env::set_current_dir(original_dir)?;
+			std::env::set_current_dir(original_dir,)?;
 		}
 		Ok((),)
 	}

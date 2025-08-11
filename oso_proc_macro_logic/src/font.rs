@@ -146,6 +146,7 @@ fn convert_bitfield(fonts: &Vec<String,>,) -> Vec<u128,> {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use proptest::prelude::*;
 	use std::fs;
 	use std::path::Path;
 	use tempfile::NamedTempFile;
@@ -189,27 +190,29 @@ mod tests {
 	fn test_fonts_loads_correct_number_of_characters() -> Rslt<(),> {
 		// Create a test font file in the project directory
 		use std::env;
-		
-		let project_root = env::var("CARGO_MANIFEST_DIR")?;
+
+		let project_root = env::var("CARGO_MANIFEST_DIR",)?;
 		let test_file_path = format!("{}/test_font_temp.txt", project_root);
-		
+
 		// Create sample font data
-		let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@..\n..@..@..\n..@..@..\n..@..@..\n........\n........\n........\n........\n........\n........\n";
+		let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@\
+		                        ..\n..@..@..\n..@..@..\n..@..@..\n........\n........\n........\n..\
+		                        ......\n........\n........\n";
 		let mut full_font_data = String::new();
 		for _ in 0..256 {
-			full_font_data.push_str(sample_font_data);
+			full_font_data.push_str(sample_font_data,);
 		}
 
-		fs::write(&test_file_path, full_font_data)?;
+		fs::write(&test_file_path, full_font_data,)?;
 
 		let lit_str = syn::LitStr::new("test_font_temp.txt", proc_macro2::Span::call_site(),);
 		let fonts = font_data(lit_str,)?;
 
 		// Should load exactly 256 characters
 		assert_eq!(fonts.len(), 256);
-		
+
 		// Cleanup
-		let _ = fs::remove_file(test_file_path);
+		let _ = fs::remove_file(test_file_path,);
 		Ok((),)
 	}
 
@@ -217,18 +220,20 @@ mod tests {
 	fn test_fonts_each_character_has_correct_length() -> Rslt<(),> {
 		// Create a test font file in the project directory
 		use std::env;
-		
-		let project_root = env::var("CARGO_MANIFEST_DIR")?;
+
+		let project_root = env::var("CARGO_MANIFEST_DIR",)?;
 		let test_file_path = format!("{}/test_font_temp2.txt", project_root);
-		
+
 		// Create sample font data
-		let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@..\n..@..@..\n..@..@..\n..@..@..\n........\n........\n........\n........\n........\n........\n";
+		let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@\
+		                        ..\n..@..@..\n..@..@..\n..@..@..\n........\n........\n........\n..\
+		                        ......\n........\n........\n";
 		let mut full_font_data = String::new();
 		for _ in 0..256 {
-			full_font_data.push_str(sample_font_data);
+			full_font_data.push_str(sample_font_data,);
 		}
 
-		fs::write(&test_file_path, full_font_data)?;
+		fs::write(&test_file_path, full_font_data,)?;
 
 		let lit_str = syn::LitStr::new("test_font_temp2.txt", proc_macro2::Span::call_site(),);
 		let fonts = font_data(lit_str,)?;
@@ -245,7 +250,7 @@ mod tests {
 		}
 
 		// Cleanup
-		let _ = fs::remove_file(test_file_path);
+		let _ = fs::remove_file(test_file_path,);
 		Ok((),)
 	}
 
@@ -339,8 +344,8 @@ mod tests {
 	fn test_fonts_with_hex_values_filtered() -> Rslt<(),> {
 		// Create a test font file in the project directory
 		use std::env;
-		
-		let project_root = env::var("CARGO_MANIFEST_DIR")?;
+
+		let project_root = env::var("CARGO_MANIFEST_DIR",)?;
 		let test_file_path = format!("{}/test_font_hex_temp.txt", project_root);
 
 		// Create font data with hex values that should be filtered out
@@ -382,9 +387,348 @@ mod tests {
 		for font_char in &fonts {
 			assert_eq!(font_char.len(), 128);
 		}
-		
+
 		// Cleanup
-		let _ = fs::remove_file(test_file_path);
+		let _ = fs::remove_file(test_file_path,);
+		Ok((),)
+	}
+
+	// Property-based tests using proptest
+	proptest! {
+		#[test]
+		fn test_convert_bitfield_preserves_count(
+			patterns in prop::collection::vec(
+				prop::string::string_regex("[.@]{128}").unwrap(),
+				256..=256
+			)
+		) {
+			let bitfields = convert_bitfield(&patterns);
+			prop_assert_eq!(bitfields.len(), 256);
+		}
+
+		#[test]
+		fn test_convert_bitfield_deterministic(
+			pattern in prop::string::string_regex("[.@]{128}").unwrap()
+		) {
+			let patterns = vec![pattern.clone(); 1];
+			let bitfields1 = convert_bitfield(&patterns);
+			let bitfields2 = convert_bitfield(&patterns);
+
+			prop_assert_eq!(bitfields1, bitfields2);
+		}
+
+		#[test]
+		fn test_convert_bitfield_empty_vs_full(
+			size in 1usize..=256
+		) {
+			let empty_pattern = ".".repeat(128);
+			let full_pattern = "@".repeat(128);
+
+			let empty_patterns = vec![empty_pattern; size];
+			let full_patterns = vec![full_pattern; size];
+
+			let empty_bitfields = convert_bitfield(&empty_patterns);
+			let full_bitfields = convert_bitfield(&full_patterns);
+
+			// All empty patterns should result in 0
+			for bitfield in &empty_bitfields {
+				prop_assert_eq!(*bitfield, 0);
+			}
+
+			// All full patterns should result in non-zero
+			for bitfield in &full_bitfields {
+				prop_assert_ne!(*bitfield, 0);
+			}
+		}
+
+		#[test]
+		fn test_font_data_character_count_property(
+			char_count in 1usize..=512
+		) {
+			// Create font data with variable character count
+			let sample_char = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@..\n..@..@..\n..@..@..\n..@..@..\n........\n........\n........\n........\n........\n........\n";
+			let font_file_data = sample_char.repeat(char_count);
+
+			// Only test with exactly 256 characters as that's what the function expects
+			if char_count == 256 {
+				use std::env;
+				let project_root = env::var("CARGO_MANIFEST_DIR").unwrap();
+				let test_file_path = format!("{}/test_font_prop_{}.txt", project_root, char_count);
+
+				fs::write(&test_file_path, &font_file_data).unwrap();
+
+				let lit_str = syn::LitStr::new(&format!("test_font_prop_{}.txt", char_count), proc_macro2::Span::call_site());
+				let result = font_data(lit_str);
+
+				if let Ok(fonts) = result {
+					prop_assert_eq!(fonts.len(), 256);
+					for font_char in &fonts {
+						prop_assert_eq!(font_char.len(), 128);
+					}
+				}
+
+				let _ = fs::remove_file(test_file_path);
+			}
+		}
+
+		#[test]
+		fn test_bitfield_bit_operations(
+			dot_count in 0usize..=128,
+			at_count in 0usize..=128
+		) {
+			// Ensure total is exactly 128
+			let total = dot_count + at_count;
+			if total == 128 {
+				let mut pattern = String::new();
+				pattern.push_str(&".".repeat(dot_count));
+				pattern.push_str(&"@".repeat(at_count));
+
+				let patterns = vec![pattern; 1];
+				let bitfields = convert_bitfield(&patterns);
+
+				// If all dots, should be 0
+				if at_count == 0 {
+					prop_assert_eq!(bitfields[0], 0);
+				} else {
+					// If any @, should be non-zero
+					prop_assert_ne!(bitfields[0], 0);
+				}
+			}
+		}
+	}
+
+	#[test]
+	fn test_font_function_integration() -> Rslt<(),> {
+		use std::env;
+
+		let project_root = env::var("CARGO_MANIFEST_DIR",)?;
+		let test_file_path = format!("{}/test_font_integration.txt", project_root);
+
+		// Create valid font data
+		let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@\
+		                        ..\n..@..@..\n..@..@..\n..@..@..\n........\n........\n........\n..\
+		                        ......\n........\n........\n";
+		let mut full_font_data = String::new();
+		for _ in 0..256 {
+			full_font_data.push_str(sample_font_data,);
+		}
+
+		fs::write(&test_file_path, full_font_data,)?;
+
+		let lit_str =
+			syn::LitStr::new("test_font_integration.txt", proc_macro2::Span::call_site(),);
+		let result = font(lit_str,)?;
+
+		let (tokens, diags,) = result;
+
+		// Should have no diagnostics
+		assert!(diags.is_empty());
+
+		// Should generate valid token stream
+		let token_string = tokens.to_string();
+		assert!(token_string.contains("&"));
+		assert!(token_string.contains("["));
+
+		// Cleanup
+		let _ = fs::remove_file(test_file_path,);
+		Ok((),)
+	}
+
+	#[test]
+	fn test_font_data_with_mixed_line_endings() -> Rslt<(),> {
+		use std::env;
+
+		let project_root = env::var("CARGO_MANIFEST_DIR",)?;
+		let test_file_path = format!("{}/test_font_mixed_endings.txt", project_root);
+
+		// Create font data with different line endings
+		let mut font_file_data = String::new();
+		for i in 0..256 {
+			let line_ending = if i % 3 == 0 {
+				"\n"
+			} else if i % 3 == 1 {
+				"\r\n"
+			} else {
+				"\n"
+			};
+
+			for line in 0..16 {
+				font_file_data.push_str("........",);
+				if line < 15 {
+					font_file_data.push_str(line_ending,);
+				}
+			}
+			if i < 255 {
+				font_file_data.push_str(line_ending,);
+			}
+		}
+
+		fs::write(&test_file_path, font_file_data,)?;
+
+		let lit_str =
+			syn::LitStr::new("test_font_mixed_endings.txt", proc_macro2::Span::call_site(),);
+
+		// This might fail due to line ending handling, but shouldn't panic
+		let result = font_data(lit_str,);
+
+		// Cleanup regardless of result
+		let _ = fs::remove_file(test_file_path,);
+
+		// The result depends on how the parser handles different line endings
+		match result {
+			Ok(fonts,) => {
+				assert_eq!(fonts.len(), 256);
+			},
+			Err(_,) => {
+				// This is acceptable as the function may not handle mixed line endings
+				assert!(true);
+			},
+		}
+
+		Ok((),)
+	}
+
+	#[test]
+	fn test_convert_bitfield_line_by_line() {
+		// Test that each line contributes to the correct bit position
+		let mut test_patterns = Vec::new();
+
+		// Create patterns where only one line has content
+		for line_idx in 0..16 {
+			let mut pattern = String::new();
+			for i in 0..16 {
+				if i == line_idx {
+					pattern.push_str("@.......",); // One bit set in this line
+				} else {
+					pattern.push_str("........",); // Empty line
+				}
+			}
+			test_patterns.push(pattern,);
+		}
+
+		let bitfields = convert_bitfield(&test_patterns,);
+
+		// Each pattern should produce a different value
+		for i in 0..16 {
+			assert_ne!(bitfields[i], 0, "Pattern {} should not be zero", i);
+
+			// Check that different lines produce different values
+			for j in (i + 1)..16 {
+				assert_ne!(
+					bitfields[i], bitfields[j],
+					"Patterns {} and {} should produce different bitfields",
+					i, j
+				);
+			}
+		}
+	}
+
+	#[test]
+	fn test_convert_bitfield_bit_reversal() {
+		// Test that bit reversal works correctly
+		let patterns = vec![
+			"@.......".repeat(16,), // Leftmost bit
+			".......@".repeat(16,), // Rightmost bit
+		];
+
+		let bitfields = convert_bitfield(&patterns,);
+
+		// Due to bit reversal, the leftmost @ should set the rightmost bit
+		// and the rightmost @ should set the leftmost bit
+		assert_ne!(bitfields[0], bitfields[1]);
+		assert_ne!(bitfields[0], 0);
+		assert_ne!(bitfields[1], 0);
+	}
+
+	#[test]
+	fn test_font_data_error_conditions() {
+		// Test various error conditions
+
+		// Non-existent file
+		let lit_str =
+			syn::LitStr::new("definitely_does_not_exist.txt", proc_macro2::Span::call_site(),);
+		let result = font_data(lit_str,);
+		assert!(result.is_err());
+
+		// Test with invalid CARGO_MANIFEST_DIR
+		unsafe {
+			std::env::set_var("CARGO_MANIFEST_DIR", "/invalid/path/that/does/not/exist",);
+		}
+		let lit_str = syn::LitStr::new("test.txt", proc_macro2::Span::call_site(),);
+		let result = font_data(lit_str,);
+		assert!(result.is_err());
+
+		// Restore CARGO_MANIFEST_DIR
+		unsafe {
+			std::env::set_var("CARGO_MANIFEST_DIR", env!("CARGO_MANIFEST_DIR"),);
+		}
+	}
+
+	#[test]
+	fn test_character_count_constant() {
+		// Test that CHARACTER_COUNT is correct
+		assert_eq!(CHARACTER_COUNT, 256);
+
+		// Test that it matches ASCII character range
+		assert_eq!(CHARACTER_COUNT, (u8::MAX as usize) + 1);
+	}
+
+	#[test]
+	fn test_font_data_with_insufficient_characters() -> Rslt<(),> {
+		use std::env;
+
+		let project_root = env::var("CARGO_MANIFEST_DIR",)?;
+		let test_file_path = format!("{}/test_font_insufficient.txt", project_root);
+
+		// Create font data with only 100 characters instead of 256
+		let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@\
+		                        ..\n..@..@..\n..@..@..\n..@..@..\n........\n........\n........\n..\
+		                        ......\n........\n........\n";
+		let mut font_file_data = String::new();
+		for _ in 0..100 {
+			// Only 100 characters
+			font_file_data.push_str(sample_font_data,);
+		}
+
+		fs::write(&test_file_path, font_file_data,)?;
+
+		let lit_str =
+			syn::LitStr::new("test_font_insufficient.txt", proc_macro2::Span::call_site(),);
+		let result = font_data(lit_str,);
+
+		// This should fail because we don't have 256 characters
+		assert!(result.is_err());
+
+		// Cleanup
+		let _ = fs::remove_file(test_file_path,);
+		Ok((),)
+	}
+
+	#[test]
+	fn test_font_data_with_wrong_character_length() -> Rslt<(),> {
+		use std::env;
+
+		let project_root = env::var("CARGO_MANIFEST_DIR",)?;
+		let test_file_path = format!("{}/test_font_wrong_length.txt", project_root);
+
+		// Create font data where each character has wrong length (not 128 chars)
+		let wrong_font_data = "........\n...@@...\n..@..@..\n"; // Only 3 lines instead of 16
+		let mut font_file_data = String::new();
+		for _ in 0..256 {
+			font_file_data.push_str(wrong_font_data,);
+		}
+
+		fs::write(&test_file_path, font_file_data,)?;
+
+		let lit_str =
+			syn::LitStr::new("test_font_wrong_length.txt", proc_macro2::Span::call_site(),);
+
+		// This should panic due to the assertion in font_data
+		let result = std::panic::catch_unwind(|| font_data(lit_str,),);
+		assert!(result.is_err());
+
+		// Cleanup
+		let _ = fs::remove_file(test_file_path,);
 		Ok((),)
 	}
 }

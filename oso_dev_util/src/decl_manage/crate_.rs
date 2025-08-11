@@ -8,6 +8,9 @@ use crate::decl_manage::workspace::WorkspaceAction;
 use crate::decl_manage::workspace::WorkspaceInfo;
 use crate::decl_manage::workspace::WorkspaceSurvey;
 use oso_dev_util_helper::cli::Run;
+use oso_dev_util_helper::fs::CARGO_CONFIG;
+use oso_dev_util_helper::fs::CARGO_MANIFEST;
+use oso_proc_macro::FromPathBuf;
 use std::ffi::OsStr;
 use std::path::Path;
 use std::path::PathBuf;
@@ -98,11 +101,11 @@ pub trait CrateInfo: CrateCalled {
 	/// return path to the crate
 	fn path(&self,) -> Rslt<PathBuf,>;
 	fn toml(&self,) -> Rslt<toml::Table,> {
-		let cargo_toml = self.path()?.join(crate::fs::CARGO_MANIFEST,);
+		let cargo_toml = self.path()?.join(CARGO_MANIFEST,);
 		read_toml(cargo_toml,)
 	}
 	fn cargo_conf(&self,) -> Rslt<toml::Table,> {
-		let config_toml = self.path()?.join(crate::fs::CARGO_CONFIG,);
+		let config_toml = self.path()?.join(CARGO_CONFIG,);
 		read_toml(config_toml,)
 	}
 }
@@ -119,14 +122,7 @@ fn read_toml(path: impl AsRef<Path,>,) -> Rslt<toml::Table,> {
 pub struct OsoCrate {
 	path: PathBuf,
 	#[chart]
-	//  TODO:
-	i_am: OsoCrateCalled,
-}
-
-impl From<PathBuf,> for OsoCrate {
-	fn from(value: PathBuf,) -> Self {
-		todo!()
-	}
+	i_am: (),
 }
 
 impl Crate for OsoCrate {}
@@ -193,5 +189,5 @@ pub trait CrateCalled: Eq + Sized + Clone + From<Self::F,> {
 
 //  TODO: implement proc macro to fill enum variants
 //  or generate definition of this type from macro
-#[derive(Eq, PartialEq, Clone, FromPathBuf,)]
-pub enum OsoCrateCalled {}
+// #[derive(Eq, PartialEq, Clone, FromPathBuf,)]
+// pub enum OsoCrateCalled {}

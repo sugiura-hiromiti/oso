@@ -53,8 +53,10 @@ fn test_fonts_data_integration() {
 	let temp_file = NamedTempFile::new().expect("Failed to create temp file",);
 
 	// Create minimal valid font data (16 lines per character, 8 chars per line, 256 characters)
-	let single_char_pattern = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@..\n..@..@..\n..@..@..\n..@..@..\n........\n........\n........\n........\n........\n........\n";
-	let font_data = single_char_pattern.repeat(256);
+	let single_char_pattern = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@.\
+	                           .\n..@..@..\n..@..@..\n..@..@..\n........\n........\n........\n....\
+	                           ....\n........\n........\n";
+	let font_data = single_char_pattern.repeat(256,);
 
 	fs::write(temp_file.path(), font_data,).expect("Failed to write font data",);
 
@@ -64,10 +66,10 @@ fn test_fonts_data_integration() {
 	// Test font function (the only public function)
 	let result = font::font(lit_str,);
 	assert!(result.is_ok(), "Font processing should succeed with valid data");
-	
-	let (tokens, _) = result.unwrap();
+
+	let (tokens, _,) = result.unwrap();
 	let token_string = tokens.to_string();
-	
+
 	// Verify that the result contains array-like structure
 	assert!(token_string.contains("&"), "Should contain array reference");
 	assert!(token_string.contains("["), "Should contain array brackets");

@@ -48,8 +48,7 @@ fn benchmark_fonts_data_processing() {
 
 	// Benchmark bitfield conversion
 	let fonts = font::fonts(&lit_str,);
-	let _duration =
-		benchmark("Bitfield conversion", 1000, || font::convert_bitfield(&fonts,),);
+	let _duration = benchmark("Bitfield conversion", 1000, || font::convert_bitfield(&fonts,),);
 }
 
 #[test]

@@ -256,7 +256,7 @@ fn readelf_l_out() -> Rslt<Vec<String,>,> {
 fn program_headers_count(info: &String,) -> Rslt<usize,> {
 	let desc_lines_count = info.lines().count();
 	if desc_lines_count < 2 {
-		return Err(anyhow::anyhow!("Insufficient lines to parse program header count"));
+		return Err(anyhow::anyhow!("Insufficient lines to parse program header count"),);
 	}
 	let program_header_count: usize =
 		info.lines().nth(desc_lines_count - 2,).unwrap().split(" ",).nth(2,).unwrap().parse()?;
@@ -375,10 +375,10 @@ mod tests {
 		go_workspace_root()?;
 
 		// Check if the kernel file exists before running the test
-		if !std::path::Path::new("target/oso_kernel.elf").exists() {
+		if !std::path::Path::new("target/oso_kernel.elf",).exists() {
 			set_current_dir(cwd,)?;
 			// Skip test if kernel file doesn't exist
-			return Ok(());
+			return Ok((),);
 		}
 
 		let phs = readelf_l()?;
@@ -393,10 +393,10 @@ mod tests {
 		go_workspace_root()?;
 
 		// Check if the kernel file exists before running the test
-		if !std::path::Path::new("target/oso_kernel.elf").exists() {
+		if !std::path::Path::new("target/oso_kernel.elf",).exists() {
 			set_current_dir(cwd,)?;
 			// Skip test if kernel file doesn't exist
-			return Ok(());
+			return Ok((),);
 		}
 
 		let program_headers_info = readelf_l_out()?;
@@ -412,10 +412,10 @@ mod tests {
 		go_workspace_root()?;
 
 		// Check if the kernel file exists before running the test
-		if !std::path::Path::new("target/oso_kernel.elf").exists() {
+		if !std::path::Path::new("target/oso_kernel.elf",).exists() {
 			set_current_dir(cwd,)?;
 			// Skip test if kernel file doesn't exist
-			return Ok(());
+			return Ok((),);
 		}
 
 		let program_headers_info = readelf_l_out()?;
@@ -432,10 +432,10 @@ mod tests {
 		go_workspace_root()?;
 
 		// Check if the kernel file exists before running the test
-		if !std::path::Path::new("target/oso_kernel.elf").exists() {
+		if !std::path::Path::new("target/oso_kernel.elf",).exists() {
 			set_current_dir(cwd,)?;
 			// Skip test if kernel file doesn't exist
-			return Ok(());
+			return Ok((),);
 		}
 
 		let program_headers_info = readelf_l_out()?;

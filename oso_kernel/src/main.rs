@@ -56,8 +56,8 @@ use oso_kernel::init;
 ///
 /// # Arguments
 ///
-/// * `_device_tree_ptr` - Pointer to the device tree blob (DTB) passed by the bootloader.
-///   Currently unused but reserved for future hardware discovery implementation.
+/// * `_device_tree_ptr` - Pointer to the device tree blob (DTB) passed by the bootloader. Currently
+///   unused but reserved for future hardware discovery implementation.
 ///
 /// # Safety
 ///
@@ -68,8 +68,8 @@ use oso_kernel::init;
 ///
 /// # Boot Sequence
 ///
-/// 1. **Interrupt Disable**: Disables IRQ (Interrupt Request) to prevent interruptions
-///    during critical initialization phases
+/// 1. **Interrupt Disable**: Disables IRQ (Interrupt Request) to prevent interruptions during
+///    critical initialization phases
 /// 2. **Kernel Initialization**: Calls `init()` to set up all kernel subsystems
 /// 3. **Application Launch**: Starts the main kernel application
 /// 4. **Power Management**: Enters wait-for-interrupt state to conserve power
@@ -171,7 +171,7 @@ pub extern "sysv64" fn kernel_main() {
 
 	// TODO: Implement proper x86_64 kernel initialization
 	// The following code represents the intended future implementation:
-	
+
 	// Feature-based application entry points for different pixel formats
 	#[cfg(feature = "rgb")]
 	enter_app!(Rgb, frame_buf_conf);
@@ -181,7 +181,7 @@ pub extern "sysv64" fn kernel_main() {
 	enter_app!(Bitmask, frame_buf_conf);
 	#[cfg(feature = "bltonly")]
 	// enter_app!(BltOnly, frame_buf_conf);
-	
+
 	// Fallback halt loop if no features are enabled
 	loop {
 		unsafe {
@@ -234,10 +234,10 @@ pub extern "sysv64" fn kernel_main() {
 /// ```rust,ignore
 /// // Fill background
 /// fill_rectangle(&(0, 0), &frame_buffer.right_bottom(), &"#ffffff")?;
-/// 
+///
 /// // Draw colored rectangles
 /// fill_rectangle(&(100, 100), &(200, 200), &"#fedcba")?;
-/// 
+///
 /// // Draw outlines
 /// outline_rectangle(&(100, 100), &(300, 300), &"#fedcba")?;
 /// ```
@@ -253,14 +253,14 @@ pub extern "sysv64" fn kernel_main() {
 fn app() -> Rslt<(),> {
 	// TODO: Implement graphics operations
 	// The following code represents planned graphics functionality:
-	
+
 	// Background and rectangle filling operations
 	// fill_rectangle(&(100, 100,), &(700, 500,), &"#abcdef",)?;
 	// fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#012345",)?;
 	// fill_rectangle(&(100, 100,), &(200, 200,), &"#fedcba",)?;
 	// fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#ffffff",)?;
 	// fill_rectangle(&(0, 0,), &FRAME_BUFFER.right_bottom(), &"#abcdef",)?;
-	
+
 	// Outline rectangle operations
 	// outline_rectangle(&(100, 100,), &(300, 300,), &"#fedcba",)?;
 	// outline_rectangle(&(101, 101,), &(299, 299,), &"#fedcba",)?;
@@ -270,7 +270,7 @@ fn app() -> Rslt<(),> {
 	// println!("width: {} height: {}", FRAME_BUFFER.width, FRAME_BUFFER.height);
 	// println!("size: {} stride: {}", FRAME_BUFFER.size, FRAME_BUFFER.stride);
 	// println!("buf address: {}", FRAME_BUFFER.buf);
-	
+
 	// Cursor rendering
 	// let mut cursor_buf = CursorBuf::new();
 	// cursor_buf.draw_mouse_cursor()?;

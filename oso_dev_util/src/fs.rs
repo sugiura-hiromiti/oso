@@ -4,7 +4,7 @@ use oso_dev_util_helper::fs::current_crate_path;
 use oso_dev_util_helper::fs::project_root_path;
 
 pub fn project_root() -> Rslt<OsoCrate,> {
-	let pr = project_root_path();
+	let pr = project_root_path()?;
 	Ok(OsoCrate::from(pr,),)
 }
 
