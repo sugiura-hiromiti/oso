@@ -75,9 +75,9 @@ impl ReadElfH {
 	/// - "little endian" becomes "little"
 	fn fix(&mut self,) {
 		// Extract first word from each field (split on whitespace)
-		self.file_class = self.file_class.split(" ",).nth(0,).unwrap().to_string();
-		self.endianness = self.endianness.split(" ",).nth(0,).unwrap().to_string();
-		self.elf_version = self.elf_version.split(" ",).nth(0,).unwrap().to_string();
+		self.file_class = self.file_class.split_whitespace().next().unwrap_or("",).to_string();
+		self.endianness = self.endianness.split_whitespace().next().unwrap_or("",).to_string();
+		self.elf_version = self.elf_version.split_whitespace().next().unwrap_or("",).to_string();
 		// Note: target_os_abi is intentionally not processed as it may contain spaces
 		self.abi_version = self.abi_version.split(" ",).nth(0,).unwrap().to_string();
 		self.ty = self.ty.split(" ",).nth(0,).unwrap().to_string();
@@ -127,7 +127,7 @@ trait Property {
 impl Property for Vec<&str,> {
 	fn is_peoperty_of(&self, key: &str,) -> bool {
 		// Check if the first element (index 0) matches the key
-		*self.index(0,) == key
+		self.get(0,).map_or(false, |first| *first == key,)
 	}
 }
 
@@ -922,7 +922,7 @@ mod tests {
 		assert!(!key_value.is_peoperty_of("Data"));
 	}
 
-#[test]
+	#[test]
 	fn test_property_trait_single_element() {
 		let key_value = vec!["Class"];
 		assert!(key_value.is_peoperty_of("Class"));
@@ -990,5 +990,370 @@ mod tests {
 
 		// Object version contains 0x
 		assert!(obj_key_value[1].contains("0x"));
+	}
+
+	#[test]
+	fn test_readelf_h_fix_method_edge_cases() {
+		let mut header = ReadElfH {
+			file_class: "ELF32".to_string(), // No extra text
+			endianness: "big".to_string(),   // Single word
+			elf_version: "".to_string(),     // Empty string
+			target_os_abi: "Multiple words here".to_string(),
+			abi_version: "1".to_string(), // Already clean
+			ty: "DYN".to_string(),
+			machine: "ARM".to_string(),
+			version: "0x2".to_string(),
+			entry: "0x8000".to_string(),
+			program_header_offset: "52".to_string(),
+			section_header_offset: "0".to_string(),
+			flags: "0x5000000".to_string(),
+			elf_header_size: "52".to_string(),
+			program_header_entry_size: "32".to_string(),
+			program_header_count: "2".to_string(),
+			section_header_entry_size: "40".to_string(),
+			section_header_count: "0".to_string(),
+			section_header_index_of_section_name_string_table: "0".to_string(),
+		};
+
+		header.fix();
+
+		assert_eq!(header.file_class, "ELF32");
+		assert_eq!(header.endianness, "big");
+		assert_eq!(header.elf_version, ""); // Empty string should remain empty
+		assert_eq!(header.target_os_abi, "Multiple words here"); // Not processed
+		assert_eq!(header.abi_version, "1");
+		assert_eq!(header.ty, "DYN");
+		assert_eq!(header.machine, "ARM");
+		assert_eq!(header.version, "0x2");
+		assert_eq!(header.entry, "0x8000");
+		assert_eq!(header.program_header_offset, "52");
+		assert_eq!(header.section_header_offset, "0");
+		assert_eq!(header.flags, "0x5000000");
+		assert_eq!(header.elf_header_size, "52");
+		assert_eq!(header.program_header_entry_size, "32");
+		assert_eq!(header.program_header_count, "2");
+		assert_eq!(header.section_header_entry_size, "40");
+		assert_eq!(header.section_header_count, "0");
+		assert_eq!(header.section_header_index_of_section_name_string_table, "0");
+	}
+
+	#[test]
+	fn test_property_trait_case_sensitivity() {
+		let key_value = vec!["Class", "ELF64"];
+
+		// Should match exact case
+		assert!(key_value.is_peoperty_of("Class"));
+
+		// Should not match different case
+		assert!(!key_value.is_peoperty_of("class"));
+		assert!(!key_value.is_peoperty_of("CLASS"));
+	}
+
+	#[test]
+	fn test_property_trait_partial_matches() {
+		let key_value = vec!["Entry point address", "0x401000"];
+
+		// Should match full string
+		assert!(key_value.is_peoperty_of("Entry point address"));
+
+		// Should not match partial strings
+		assert!(!key_value.is_peoperty_of("Entry"));
+		assert!(!key_value.is_peoperty_of("point"));
+		assert!(!key_value.is_peoperty_of("address"));
+	}
+
+	#[test]
+	fn test_property_trait_empty_vector() {
+		let key_value: Vec<&str,> = vec![];
+
+		// Should not match anything with empty vector
+		assert!(!key_value.is_peoperty_of("Class"));
+		assert!(!key_value.is_peoperty_of(""));
+	}
+
+	#[test]
+	fn test_property_trait_whitespace_handling() {
+		let key_value = vec!["  Class  ", "ELF64"];
+
+		// Should not match due to whitespace differences
+		assert!(!key_value.is_peoperty_of("Class"));
+
+		// Should match with exact whitespace
+		assert!(key_value.is_peoperty_of("  Class  "));
+	}
+
+	#[test]
+	fn test_readelf_h_with_whitespace_variations() {
+		let mut header = ReadElfH {
+			file_class: "  ELF64   (64-bit)  ".to_string(),
+			endianness: "\tlittle\tendian\t".to_string(),
+			elf_version: " 1  (current) ".to_string(),
+			target_os_abi: "UNIX - System V".to_string(),
+			abi_version: "0".to_string(),
+			ty: "EXEC".to_string(),
+			machine: "x86-64".to_string(),
+			version: "0x1".to_string(),
+			entry: "0x401000".to_string(),
+			program_header_offset: "64".to_string(),
+			section_header_offset: "4096".to_string(),
+			flags: "0x0".to_string(),
+			elf_header_size: "64".to_string(),
+			program_header_entry_size: "56".to_string(),
+			program_header_count: "4".to_string(),
+			section_header_entry_size: "64".to_string(),
+			section_header_count: "10".to_string(),
+			section_header_index_of_section_name_string_table: "9".to_string(),
+		};
+
+		header.fix();
+
+		// The fix method should handle leading/trailing whitespace by taking first word
+		assert_eq!(header.file_class, "ELF64");
+		assert_eq!(header.endianness, "little");
+		assert_eq!(header.elf_version, "1");
+	}
+
+	#[test]
+	fn test_readelf_h_memory_efficiency() {
+		// Test that creating many ReadElfH instances doesn't cause issues
+		let mut headers = Vec::new();
+
+		for i in 0..1000 {
+			let header = ReadElfH {
+				file_class: format!("ELF{}", i % 2 + 32),
+				endianness: if i % 2 == 0 { "little".to_string() } else { "big".to_string() },
+				entry: format!("0x{:x}", i * 0x1000),
+				..Default::default()
+			};
+			headers.push(header,);
+		}
+
+		assert_eq!(headers.len(), 1000);
+		assert_eq!(headers[0].file_class, "ELF32");
+		assert_eq!(headers[999].file_class, "ELF33");
+	}
+
+	#[test]
+	fn test_readelf_h_clone_behavior() {
+		let original = ReadElfH {
+			file_class: "ELF64".to_string(),
+			endianness: "little".to_string(),
+			entry: "0x401000".to_string(),
+			..Default::default()
+		};
+
+		// Test that we can create copies with the same data
+		let copy = ReadElfH {
+			file_class: original.file_class.clone(),
+			endianness: original.endianness.clone(),
+			entry: original.entry.clone(),
+			..Default::default()
+		};
+
+		assert_eq!(original.file_class, copy.file_class);
+		assert_eq!(original.endianness, copy.endianness);
+		assert_eq!(original.entry, copy.entry);
+	}
+
+	#[test]
+	fn test_readelf_h_field_independence() {
+		let mut header = ReadElfH::default();
+
+		// Test that modifying one field doesn't affect others
+		header.file_class = "ELF64 (64-bit)".to_string();
+		header.endianness = "little endian".to_string();
+
+		// Before fix
+		assert_eq!(header.file_class, "ELF64 (64-bit)");
+		assert_eq!(header.endianness, "little endian");
+		assert_eq!(header.elf_version, ""); // Should remain empty
+
+		header.fix();
+
+		// After fix
+		assert_eq!(header.file_class, "ELF64");
+		assert_eq!(header.endianness, "little");
+		assert_eq!(header.elf_version, ""); // Should still be empty
+	}
+
+	#[test]
+	fn test_readelf_h_string_operations() {
+		// Test various string operations that might be used with ReadElfH
+		let header = ReadElfH {
+			file_class: "ELF64".to_string(),
+			entry: "0x401000".to_string(),
+			..Default::default()
+		};
+
+		// Test string comparisons
+		assert_eq!(header.file_class, "ELF64");
+		assert_ne!(header.file_class, "ELF32");
+
+		// Test string contains
+		assert!(header.entry.contains("0x"));
+		assert!(header.entry.contains("401000"));
+
+		// Test string length
+		assert_eq!(header.file_class.len(), 5);
+		assert_eq!(header.entry.len(), 8);
+	}
+
+	#[test]
+	fn test_readelf_h_with_unicode_content() {
+		let mut header = ReadElfH {
+			target_os_abi: "UNIX - System V with unicode: αβγ".to_string(),
+			..Default::default()
+		};
+
+		header.fix();
+
+		// target_os_abi is not processed by fix(), so unicode should remain
+		assert!(header.target_os_abi.contains("αβγ"));
+	}
+
+	#[test]
+	fn test_readelf_h_empty_string_handling() {
+		let mut header = ReadElfH {
+			file_class: "".to_string(),
+			endianness: " ".to_string(),    // Just whitespace
+			elf_version: "   ".to_string(), // Multiple spaces
+			..Default::default()
+		};
+
+		header.fix();
+
+		// Empty strings should remain empty after fix
+		assert_eq!(header.file_class, "");
+		// Whitespace-only strings should become empty after split
+		assert_eq!(header.endianness, "");
+		assert_eq!(header.elf_version, "");
+	}
+
+	#[test]
+	fn test_readelf_h_numeric_field_formats() {
+		let mut header = ReadElfH {
+			entry: "0x401000 (entry point)".to_string(),
+			program_header_offset: "64 (bytes into file)".to_string(),
+			section_header_offset: "4096 (bytes into file)".to_string(),
+			flags: "0x0 (no flags)".to_string(),
+			elf_header_size: "64 (bytes)".to_string(),
+			program_header_entry_size: "56 (bytes)".to_string(),
+			program_header_count: "4 (entries)".to_string(),
+			section_header_entry_size: "64 (bytes)".to_string(),
+			section_header_count: "10 (entries)".to_string(),
+			section_header_index_of_section_name_string_table: "9 (section name string table)"
+				.to_string(),
+			..Default::default()
+		};
+
+		header.fix();
+
+		// All numeric fields should have only the number part
+		assert_eq!(header.entry, "0x401000");
+		assert_eq!(header.program_header_offset, "64");
+		assert_eq!(header.section_header_offset, "4096");
+		assert_eq!(header.flags, "0x0");
+		assert_eq!(header.elf_header_size, "64");
+		assert_eq!(header.program_header_entry_size, "56");
+		assert_eq!(header.program_header_count, "4");
+		assert_eq!(header.section_header_entry_size, "64");
+		assert_eq!(header.section_header_count, "10");
+		assert_eq!(header.section_header_index_of_section_name_string_table, "9");
+	}
+
+	#[test]
+	fn test_readelf_h_architecture_variations() {
+		let architectures = vec![
+			("Advanced Micro Devices X86-64", "Advanced",),
+			("ARM", "ARM",),
+			("Intel 80386", "Intel",),
+			("MIPS R3000", "MIPS",),
+			("PowerPC", "PowerPC",),
+			("SPARC", "SPARC",),
+		];
+
+		for (full_arch, expected_first,) in architectures {
+			let mut header = ReadElfH { machine: full_arch.to_string(), ..Default::default() };
+
+			header.fix();
+			assert_eq!(header.machine, expected_first);
+		}
+	}
+
+	#[test]
+	fn test_readelf_h_type_variations() {
+		let types = vec![
+			("EXEC (Executable file)", "EXEC",),
+			("DYN (Shared object file)", "DYN",),
+			("REL (Relocatable file)", "REL",),
+			("CORE (Core file)", "CORE",),
+		];
+
+		for (full_type, expected_first,) in types {
+			let mut header = ReadElfH { ty: full_type.to_string(), ..Default::default() };
+
+			header.fix();
+			assert_eq!(header.ty, expected_first);
+		}
+	}
+
+	#[test]
+	fn test_property_trait_with_special_characters() {
+		let key_value = vec!["Entry point address", "0x401000"];
+
+		// Should handle strings with spaces
+		assert!(key_value.is_peoperty_of("Entry point address"));
+
+		let key_value_special = vec!["OS/ABI", "UNIX - System V"];
+
+		// Should handle strings with special characters
+		assert!(key_value_special.is_peoperty_of("OS/ABI"));
+	}
+
+	#[test]
+	fn test_readelf_h_all_fields_populated() {
+		let mut header = ReadElfH {
+			file_class: "ELF64 (64-bit)".to_string(),
+			endianness: "little endian".to_string(),
+			elf_version: "1 (current)".to_string(),
+			target_os_abi: "UNIX - System V".to_string(),
+			abi_version: "0 (current)".to_string(),
+			ty: "EXEC (Executable file)".to_string(),
+			machine: "Advanced Micro Devices X86-64".to_string(),
+			version: "0x1 (current)".to_string(),
+			entry: "0x401000 (entry point)".to_string(),
+			program_header_offset: "64 (bytes into file)".to_string(),
+			section_header_offset: "4096 (bytes into file)".to_string(),
+			flags: "0x0 (no flags)".to_string(),
+			elf_header_size: "64 (bytes)".to_string(),
+			program_header_entry_size: "56 (bytes)".to_string(),
+			program_header_count: "4 (entries)".to_string(),
+			section_header_entry_size: "64 (bytes)".to_string(),
+			section_header_count: "10 (entries)".to_string(),
+			section_header_index_of_section_name_string_table: "9 (section name string table)"
+				.to_string(),
+		};
+
+		header.fix();
+
+		// Verify all fields are properly cleaned
+		assert!(!header.file_class.is_empty());
+		assert!(!header.endianness.is_empty());
+		assert!(!header.elf_version.is_empty());
+		assert!(!header.target_os_abi.is_empty());
+		assert!(!header.abi_version.is_empty());
+		assert!(!header.ty.is_empty());
+		assert!(!header.machine.is_empty());
+		assert!(!header.version.is_empty());
+		assert!(!header.entry.is_empty());
+		assert!(!header.program_header_offset.is_empty());
+		assert!(!header.section_header_offset.is_empty());
+		assert!(!header.flags.is_empty());
+		assert!(!header.elf_header_size.is_empty());
+		assert!(!header.program_header_entry_size.is_empty());
+		assert!(!header.program_header_count.is_empty());
+		assert!(!header.section_header_entry_size.is_empty());
+		assert!(!header.section_header_count.is_empty());
+		assert!(!header.section_header_index_of_section_name_string_table.is_empty());
 	}
 }
