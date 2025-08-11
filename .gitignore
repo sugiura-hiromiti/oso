@@ -8,3 +8,4 @@ mnt/
 *.sh
 **/tmp/
 .direnv/
+**/*.txt
