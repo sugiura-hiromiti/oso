@@ -118,8 +118,8 @@ fn read_toml(path: impl AsRef<Path,>,) -> Rslt<toml::Table,> {
 	Ok(be_toml,)
 }
 
-#[derive(PartialEq, Eq, Clone, FromPathBuf,)]
-pub struct OsoCrate {
+#[derive(FromPathBuf,)]
+pub struct __OsoCrate {
 	path: PathBuf,
 	#[chart]
 	i_am: (),
@@ -186,8 +186,3 @@ pub trait CrateCalled: Eq + Sized + Clone + From<Self::F,> {
 		self.clone()
 	}
 }
-
-//  TODO: implement proc macro to fill enum variants
-//  or generate definition of this type from macro
-// #[derive(Eq, PartialEq, Clone, FromPathBuf,)]
-// pub enum OsoCrateCalled {}
