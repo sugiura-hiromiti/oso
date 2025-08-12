@@ -68,6 +68,7 @@
 
 use anyhow::Result as Rslt;
 
+pub mod cli;
 #[cfg_attr(doc, aquamarine::aquamarine)]
 /// ```mermaid
 /// flowchart TD
