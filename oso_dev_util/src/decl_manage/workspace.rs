@@ -78,14 +78,14 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction {
 		let current = self.whoami();
 		//  this operation is safe due to `&self` is valid
 		let self_mut = unsafe { (self as *const Self).cast_mut().as_mut().unwrap() };
-		self_mut.land(at,).cargo_xxx_with(cmd, opt,)?;
-		self_mut.land(current,);
+		self_mut.land_on(at,).cargo_xxx_with(cmd, opt,)?;
+		self_mut.land_on(current,);
 		Ok((),)
 	}
 }
 
 pub trait WorkspaceSurvey: WorkspaceInfo + CrateSurvey {
-	fn land(&mut self, on: impl CrateCalled,) -> impl Crate;
+	fn land_on(&mut self, on: impl CrateCalled,) -> impl Crate;
 }
 
 /// Trait for managing OSO workspace operations
