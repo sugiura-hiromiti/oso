@@ -137,6 +137,14 @@ impl CrateSurvey for OsoCrate {
 	}
 
 	fn build_artifact(&self, target: impl Into<String,>,) -> Rslt<PathBuf,> {
+		let conf = self.cargo_conf()?;
+		let conf = conf.get("build",);
+
+		if let Some(toml::Value::Table(t,),) = conf
+			&& let Some(toml::Value::String(s,),) = t.get("target",)
+		{
+			todo!()
+		}
 		todo!()
 	}
 
