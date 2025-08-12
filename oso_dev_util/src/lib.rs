@@ -80,4 +80,4 @@ pub mod decl_manage;
 pub mod fs;
 
 /// The path to the oso_dev_util crate manifest, set at compile time
-const OSO_DEV_UTIL_PATH: &'static str = std::env!("CARGO_MANIFEST_PATH");
+const OSO_DEV_UTIL_PATH: &str = std::env!("CARGO_MANIFEST_PATH");

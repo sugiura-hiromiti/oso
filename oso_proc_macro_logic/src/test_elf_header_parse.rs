@@ -13,7 +13,6 @@ use crate::oso_proc_macro_helper::Diag;
 use anyhow::Result as Rslt;
 use anyhow::bail;
 use proc_macro2::Span;
-use std::ops::Index;
 use std::process::Command;
 
 /// Structured representation of ELF header information
@@ -127,7 +126,7 @@ trait Property {
 impl Property for Vec<&str,> {
 	fn is_peoperty_of(&self, key: &str,) -> bool {
 		// Check if the first element (index 0) matches the key
-		self.get(0,).map_or(false, |first| *first == key,)
+		self.first().is_some_and(|s| *s == key,)
 	}
 }
 
@@ -544,8 +543,8 @@ fn parse_machine(header: &ReadElfH,) -> proc_macro2::TokenStream {
 		.as_str()
 		.chars()
 		.map(|c| match c {
-			cap if 'a' <= cap && 'z' >= cap => (cap as u8 + b'A' - b'a') as char,
-			space if space == ' ' => '_',
+			cap if cap.is_ascii_lowercase() => (cap as u8 + b'A' - b'a') as char,
+			' ' => '_',
 			_ => c,
 		},)
 		.collect();
@@ -566,7 +565,7 @@ fn parse_version(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let version = header.version.as_str();
 	let version = &version[2..]; // Remove "0x" prefix
 	let version = u32::from_str_radix(version, 16,)
-		.expect(&format!("version must be valid hex number: {version}",),);
+		.unwrap_or_else(|_| panic!("version must be valid hex number: {version}"),);
 
 	quote::quote! {
 		#version
@@ -579,7 +578,7 @@ fn parse_entry(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let entry = header.entry.as_str();
 	let entry = &entry[2..]; // Remove "0x" prefix
 	let entry = u64::from_str_radix(entry, 16,)
-		.expect(&format!("entry point address must be valid hex number: {entry}",),);
+		.unwrap_or_else(|_| panic!("entry point address must be valid hex number: {entry}"),);
 
 	quote::quote! {
 		#entry
@@ -590,9 +589,9 @@ fn parse_entry(header: &ReadElfH,) -> proc_macro2::TokenStream {
 /// Expects a decimal string.
 fn parse_program_header_offset(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let program_header_offset = header.program_header_offset.as_str();
-	let program_header_offset = u64::from_str_radix(program_header_offset, 10,).expect(&format!(
-		"program_header_offset address must be valid hex number: {program_header_offset}",
-	),);
+	let program_header_offset = program_header_offset.parse::<u64>().unwrap_or_else(|_| {
+		panic!("program_header_offset address must be valid hex number: {program_header_offset}")
+	},);
 
 	quote::quote! {
 		#program_header_offset
@@ -603,9 +602,9 @@ fn parse_program_header_offset(header: &ReadElfH,) -> proc_macro2::TokenStream {
 /// Expects a decimal string.
 fn parse_section_header_offset(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let section_header_offset = header.section_header_offset.as_str();
-	let section_header_offset = u64::from_str_radix(section_header_offset, 10,).expect(&format!(
-		"section_header_offset address must be valid hex number: {section_header_offset}",
-	),);
+	let section_header_offset = section_header_offset.parse::<u64>().unwrap_or_else(|_| {
+		panic!("section_header_offset address must be valid hex number: {section_header_offset}")
+	},);
 
 	quote::quote! {
 		#section_header_offset
@@ -618,7 +617,7 @@ fn parse_flags(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let flags = header.flags.as_str();
 	let flags = &flags[2..]; // Remove "0x" prefix
 	let flags = u32::from_str_radix(flags, 16,)
-		.expect(&format!("flags must be valid hex number: {flags}",),);
+		.unwrap_or_else(|_| panic!("flags must be valid hex number: {flags}"),);
 
 	quote::quote! {
 		#flags
@@ -629,8 +628,9 @@ fn parse_flags(header: &ReadElfH,) -> proc_macro2::TokenStream {
 /// Expects a decimal string.
 fn parse_elf_header_size(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let elf_header_size = header.elf_header_size.as_str();
-	let elf_header_size = u16::from_str_radix(elf_header_size, 10,)
-		.expect(&format!("elf_header_size must be valid hex number: {elf_header_size}",),);
+	let elf_header_size = elf_header_size
+		.parse::<u16>()
+		.unwrap_or_else(|_| panic!("elf_header_size must be valid hex number: {elf_header_size}"),);
 
 	quote::quote! {
 		#elf_header_size
@@ -641,9 +641,9 @@ fn parse_elf_header_size(header: &ReadElfH,) -> proc_macro2::TokenStream {
 /// Expects a decimal string.
 fn parse_program_header_entry_size(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let program_header_entry_size = header.program_header_entry_size.as_str();
-	let program_header_entry_size = u16::from_str_radix(program_header_entry_size, 10,).expect(
-		&format!("program_header_entry_size must be valid hex number: {program_header_entry_size}",),
-	);
+	let program_header_entry_size = program_header_entry_size.parse::<u16>().unwrap_or_else(|_| {
+		panic!("program_header_entry_size must be valid hex number: {program_header_entry_size}")
+	},);
 
 	quote::quote! {
 		#program_header_entry_size
@@ -654,8 +654,9 @@ fn parse_program_header_entry_size(header: &ReadElfH,) -> proc_macro2::TokenStre
 /// Expects a decimal string.
 fn parse_program_header_count(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let program_header_count = header.program_header_count.as_str();
-	let program_header_count = u16::from_str_radix(program_header_count, 10,)
-		.expect(&format!("program_header_count must be valid hex number: {program_header_count}",),);
+	let program_header_count = program_header_count.parse::<u16>().unwrap_or_else(|_| {
+		panic!("program_header_count must be valid hex number: {program_header_count}")
+	},);
 
 	quote::quote! {
 		#program_header_count
@@ -666,9 +667,9 @@ fn parse_program_header_count(header: &ReadElfH,) -> proc_macro2::TokenStream {
 /// Expects a decimal string.
 fn parse_section_header_entry_size(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let section_header_entry_size = header.section_header_entry_size.as_str();
-	let section_header_entry_size = u16::from_str_radix(section_header_entry_size, 10,).expect(
-		&format!("section_header_entry_size must be valid hex number: {section_header_entry_size}",),
-	);
+	let section_header_entry_size = section_header_entry_size.parse::<u16>().unwrap_or_else(|_| {
+		panic!("section_header_entry_size must be valid hex number: {section_header_entry_size}")
+	},);
 
 	quote::quote! {
 		#section_header_entry_size
@@ -679,8 +680,9 @@ fn parse_section_header_entry_size(header: &ReadElfH,) -> proc_macro2::TokenStre
 /// Expects a decimal string.
 fn parse_section_header_count(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let section_header_count = header.section_header_count.as_str();
-	let section_header_count = u16::from_str_radix(section_header_count, 10,)
-		.expect(&format!("section_header_count must be valid hex number: {section_header_count}",),);
+	let section_header_count = section_header_count.parse::<u16>().unwrap_or_else(|_| {
+		panic!("section_header_count must be valid hex number: {section_header_count}")
+	},);
 
 	quote::quote! {
 		#section_header_count
@@ -696,12 +698,12 @@ fn parse_section_header_index_of_section_name_string_table(
 	let section_header_index_of_section_name_string_table =
 		header.section_header_index_of_section_name_string_table.as_str();
 	let section_header_index_of_section_name_string_table =
-		u16::from_str_radix(section_header_index_of_section_name_string_table, 10,).expect(
-			&format!(
+		section_header_index_of_section_name_string_table.parse::<u16>().unwrap_or_else(|_| {
+			panic!(
 				"section_header_index_of_section_name_string_table must be valid hex number: \
-				 {section_header_index_of_section_name_string_table}",
-			),
-		);
+				 {section_header_index_of_section_name_string_table}"
+			)
+		},);
 
 	quote::quote! {
 		#section_header_index_of_section_name_string_table
@@ -765,7 +767,7 @@ pub fn readelf_h() -> Rslt<ReadElfH,> {
 			if key_value[1].contains("0x",) {
 				header.version = key_value[1].to_string();
 			} else {
-				header.elf_version = key_value[1].split(" ",).nth(0,).unwrap().to_string();
+				header.elf_version = key_value[1].split(" ",).next().unwrap().to_string();
 			}
 		}
 		if key_value.is_peoperty_of("OS/ABI",) {
@@ -775,7 +777,7 @@ pub fn readelf_h() -> Rslt<ReadElfH,> {
 			header.abi_version = key_value[1].to_string();
 		}
 		if key_value.is_peoperty_of("Type",) {
-			header.ty = key_value[1].split(" ",).nth(0,).unwrap().to_string();
+			header.ty = key_value[1].split(" ",).next().unwrap().to_string();
 		}
 		if key_value.is_peoperty_of("Machine",) {
 			header.machine = key_value[1].to_string();
@@ -784,7 +786,7 @@ pub fn readelf_h() -> Rslt<ReadElfH,> {
 			header.entry = key_value[1].to_string();
 		}
 		if key_value.is_peoperty_of("Start of program headers",) {
-			header.program_header_offset = key_value[1].split(" ",).nth(0,).unwrap().to_string();
+			header.program_header_offset = key_value[1].split(" ",).next().unwrap().to_string();
 		}
 		if key_value.is_peoperty_of("Start of section headers",) {
 			header.section_header_offset = key_value[1].to_string();
@@ -793,11 +795,10 @@ pub fn readelf_h() -> Rslt<ReadElfH,> {
 			header.flags = key_value[1].to_string();
 		}
 		if key_value.is_peoperty_of("Size of this header",) {
-			header.elf_header_size = key_value[1].split(" ",).nth(0,).unwrap().to_string();
+			header.elf_header_size = key_value[1].split(" ",).next().unwrap().to_string();
 		}
 		if key_value.is_peoperty_of("Size of program headers",) {
-			header.program_header_entry_size =
-				key_value[1].split(" ",).nth(0,).unwrap().to_string();
+			header.program_header_entry_size = key_value[1].split(" ",).next().unwrap().to_string();
 		}
 		if key_value.is_peoperty_of("Number of program headers",) {
 			header.program_header_count = key_value[1].to_string();
@@ -820,7 +821,6 @@ pub fn readelf_h() -> Rslt<ReadElfH,> {
 }
 #[cfg(test)]
 mod tests {
-	use oso_dev_util_helper::cli::Run;
 
 	use super::*;
 	use std::env::current_dir;

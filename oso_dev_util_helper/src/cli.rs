@@ -303,4 +303,259 @@ mod tests {
 		// Both should fail, but potentially with different error types
 		// We can't easily distinguish them in the test, but both should be errors
 	}
+
+	#[test]
+	fn test_run_trait_with_complex_args() {
+		// Test with complex argument patterns
+		let mut cmd = Command::new("echo",);
+		cmd.args(&["--flag", "value", "-x", "test with spaces",],);
+
+		let result = cmd.run();
+		assert!(result.is_ok(), "Echo with complex args should succeed");
+	}
+
+	#[test]
+	fn test_run_trait_with_empty_args() {
+		// Test with no arguments
+		let mut cmd = Command::new("true",); // Command that always succeeds
+
+		let result = cmd.run();
+		assert!(result.is_ok(), "True command with no args should succeed");
+	}
+
+	#[test]
+	fn test_run_trait_with_special_characters_in_args() {
+		// Test with special characters in arguments
+		let mut cmd = Command::new("echo",);
+		cmd.args(&["hello", "world!", "@#$%", "test",],);
+
+		let result = cmd.run();
+		assert!(result.is_ok(), "Echo with special characters should succeed");
+	}
+
+	#[test]
+	fn test_run_trait_with_unicode_args() {
+		// Test with unicode characters in arguments
+		let mut cmd = Command::new("echo",);
+		cmd.args(&["hello", "世界", "🦀", "test",],);
+
+		let result = cmd.run();
+		assert!(result.is_ok(), "Echo with unicode should succeed");
+	}
+
+	#[test]
+	fn test_run_trait_with_very_long_args() {
+		// Test with very long arguments
+		let long_arg = "a".repeat(1000,);
+		let mut cmd = Command::new("echo",);
+		cmd.arg(&long_arg,);
+
+		let result = cmd.run();
+		assert!(result.is_ok(), "Echo with long args should succeed");
+	}
+
+	#[test]
+	fn test_run_trait_with_many_args() {
+		// Test with many arguments
+		let mut cmd = Command::new("echo",);
+		for i in 0..50 {
+			cmd.arg(format!("arg{}", i,),);
+		}
+
+		let result = cmd.run();
+		assert!(result.is_ok(), "Echo with many args should succeed");
+	}
+
+	#[test]
+	fn test_run_trait_with_env_vars() {
+		// Test with multiple environment variables
+		let mut cmd = Command::new("echo",);
+		cmd.arg("test",);
+		cmd.env("VAR1", "value1",);
+		cmd.env("VAR2", "value2",);
+		cmd.env("UNICODE_VAR", "世界",);
+
+		let result = cmd.run();
+		assert!(result.is_ok(), "Echo with multiple env vars should succeed");
+	}
+
+	#[test]
+	fn test_run_trait_with_working_directory() {
+		// Test with different working directories
+		let mut cmd = Command::new("pwd",);
+
+		// Try to set working directory to /tmp if it exists
+		if std::path::Path::new("/tmp",).exists() {
+			cmd.current_dir("/tmp",);
+		}
+
+		let result = cmd.run();
+		// Don't assert success since pwd might not be available on all systems
+		let _ = result;
+	}
+
+	#[test]
+	fn test_run_trait_command_display_formatting() {
+		// Test that command display includes program name and args
+		// This is harder to test directly since the output goes to stdout
+		// But we can at least verify the command runs without panicking
+		let mut cmd = Command::new("echo",);
+		cmd.args(&["test", "display", "formatting",],);
+
+		let result = cmd.run();
+		assert!(result.is_ok(), "Command display formatting should work");
+	}
+
+	#[test]
+	fn test_run_trait_with_shell_commands() {
+		// Test with shell commands that might have different exit codes
+		let test_cases = vec![
+			("true", true,),   // Should succeed
+			("false", false,), // Should fail
+		];
+
+		for (cmd_name, should_succeed,) in test_cases {
+			let mut cmd = Command::new(cmd_name,);
+			let result = cmd.run();
+
+			if should_succeed {
+				assert!(result.is_ok(), "{} should succeed", cmd_name);
+			} else {
+				assert!(result.is_err(), "{} should fail", cmd_name);
+			}
+		}
+	}
+
+	#[test]
+	fn test_run_trait_error_propagation() {
+		// Test that errors are properly propagated
+		let mut cmd = Command::new("sh",);
+		cmd.args(&["-c", "exit 42",],); // Exit with specific code
+
+		let result = cmd.run();
+		assert!(result.is_err(), "Non-zero exit should be error");
+
+		// Check that the error contains useful information
+		let error_msg = result.unwrap_err().to_string();
+		assert!(!error_msg.is_empty(), "Error message should not be empty");
+	}
+
+	#[test]
+	fn test_run_trait_with_stdin_interaction() {
+		// Test commands that might read from stdin
+		let mut cmd = Command::new("cat",);
+		cmd.args(&["/dev/null",],); // Read from /dev/null instead of stdin
+
+		let result = cmd.run();
+		// This might fail on some systems, so just check it doesn't panic
+		let _ = result;
+	}
+
+	#[test]
+	fn test_run_trait_with_output_commands() {
+		// Test commands that produce various types of output
+		let test_commands = vec![
+			vec!["echo", "simple output"],
+			vec!["echo", "-n", "no newline"],
+			vec!["printf", "formatted %s\\n", "output"],
+		];
+
+		for args in test_commands {
+			if args.is_empty() {
+				continue;
+			}
+
+			let mut cmd = Command::new(&args[0],);
+			if args.len() > 1 {
+				cmd.args(&args[1..],);
+			}
+
+			let result = cmd.run();
+			// Don't assert success since not all commands may be available
+			let _ = result;
+		}
+	}
+
+	#[test]
+	fn test_run_trait_concurrent_execution() {
+		// Test that multiple commands can be run concurrently
+		use std::thread;
+
+		let handles: Vec<_,> = (0..5)
+			.map(|i| {
+				thread::spawn(move || {
+					let mut cmd = Command::new("echo",);
+					cmd.arg(format!("thread_{}", i,),);
+					cmd.run()
+				},)
+			},)
+			.collect();
+
+		for handle in handles {
+			let result = handle.join().expect("Thread should not panic",);
+			assert!(result.is_ok(), "Concurrent echo should succeed");
+		}
+	}
+
+	#[test]
+	fn test_run_trait_with_path_commands() {
+		// Test commands with full paths
+		let common_paths = vec!["/bin/echo", "/usr/bin/echo", "/bin/true", "/usr/bin/true"];
+
+		for path in common_paths {
+			if std::path::Path::new(path,).exists() {
+				let mut cmd = Command::new(path,);
+				cmd.arg("path_test",);
+
+				let result = cmd.run();
+				assert!(result.is_ok(), "Command with full path should work: {}", path);
+				break; // Only test the first available one
+			}
+		}
+	}
+
+	#[test]
+	fn test_run_trait_with_relative_paths() {
+		// Test with relative path commands (if any exist)
+		// This is system-dependent, so we'll just test that it doesn't panic
+		let mut cmd = Command::new("./nonexistent_relative_command",);
+		let result = cmd.run();
+		assert!(result.is_err(), "Nonexistent relative command should fail");
+	}
+
+	#[test]
+	fn test_run_trait_command_chaining_simulation() {
+		// Simulate command chaining by running multiple commands in sequence
+		let commands = vec![vec!["echo", "first"], vec!["echo", "second"], vec!["echo", "third"]];
+
+		for args in commands {
+			let mut cmd = Command::new(&args[0],);
+			if args.len() > 1 {
+				cmd.args(&args[1..],);
+			}
+
+			let result = cmd.run();
+			assert!(result.is_ok(), "Sequential commands should work");
+		}
+	}
+
+	#[test]
+	fn test_run_trait_with_numeric_args() {
+		// Test with numeric arguments
+		let mut cmd = Command::new("echo",);
+		cmd.args(&["123", "456.789", "-42", "0",],);
+
+		let result = cmd.run();
+		assert!(result.is_ok(), "Echo with numeric args should succeed");
+	}
+
+	#[test]
+	fn test_run_trait_with_boolean_like_args() {
+		// Test with boolean-like arguments
+		let mut cmd = Command::new("echo",);
+		cmd.args(&["true", "false", "yes", "no", "on", "off",],);
+
+		let result = cmd.run();
+		assert!(result.is_ok(), "Echo with boolean-like args should succeed");
+	}
 }

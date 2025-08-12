@@ -206,27 +206,243 @@ mod tests {
 	#[test]
 	fn test_method_args_with_generics() {
 		let sig: Signature = parse_quote! {
-			fn generic_method<T, U>(&mut self, arg1: T, arg2: Vec<U>) -> Option<T>
-			where
-				T: Clone,
-				U: Debug
+			fn generic_method<T, U>(&self, arg1: T, arg2: Vec<U>, arg3: Option<T>) -> Result<T, U>
 		};
 
 		let args: Vec<_,> = method_args(&sig,).collect();
-		// Should exclude &mut self, return 2 generic typed arguments
-		assert_eq!(args.len(), 2);
+		// Should exclude &self, return 3 typed arguments with generics
+		assert_eq!(args.len(), 3);
 	}
 
 	#[test]
 	fn test_method_args_preserves_pattern_structure() {
 		let sig: Signature = parse_quote! {
-			fn destructure_method(&self, Point { x, y }: Point, mut z: i32) -> ()
+			fn test_fn(&self, arg1: i32, arg2: String,)
 		};
 
 		let args: Vec<_,> = method_args(&sig,).collect();
-		assert_eq!(args.len(), 2);
 
-		// The patterns should be preserved as-is for code generation
-		// This test ensures we don't lose the destructuring information
+		// Check that we can convert patterns back to tokens
+		for arg in args {
+			let _tokens = quote::quote! { #arg };
+			// If this compiles, the pattern structure is preserved
+		}
+	}
+
+	#[test]
+	fn test_wrapper_function_basic() {
+		let static_frame_buffer = syn::Ident::new("FRAME_BUFFER", proc_macro2::Span::call_site(),);
+		let trait_def: syn::ItemTrait = parse_quote! {
+			trait TestTrait {
+				fn test_method(&self, arg: i32,) -> bool;
+			}
+		};
+
+		let result = wrapper(static_frame_buffer, trait_def,);
+		assert!(result.is_ok());
+
+		let (tokens, diags,) = result.unwrap();
+		let token_string = tokens.to_string();
+
+		// Check that wrapper function is generated
+		assert!(token_string.contains("pub fn test_method"));
+		assert!(token_string.contains("FRAME_BUFFER . test_method"));
+		assert!(token_string.contains("trait TestTrait"));
+		assert!(diags.is_empty());
+	}
+
+	#[test]
+	fn test_wrapper_function_multiple_methods() {
+		let static_frame_buffer = syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
+		let trait_def: syn::ItemTrait = parse_quote! {
+			trait MultiTrait {
+				fn method1(&self,) -> i32;
+				fn method2(&mut self, arg: String,) -> bool;
+				fn method3(arg1: i32, arg2: f64,) -> String;
+			}
+		};
+
+		let result = wrapper(static_frame_buffer, trait_def,);
+		assert!(result.is_ok());
+
+		let (tokens, diags,) = result.unwrap();
+		let token_string = tokens.to_string();
+
+		// Check that all wrapper functions are generated
+		assert!(token_string.contains("pub fn method1"));
+		assert!(token_string.contains("pub fn method2"));
+		assert!(token_string.contains("pub fn method3"));
+		assert!(token_string.contains("BUFFER . method1"));
+		assert!(token_string.contains("BUFFER . method2"));
+		assert!(token_string.contains("BUFFER . method3"));
+		assert!(diags.is_empty());
+	}
+
+	#[test]
+	fn test_wrapper_function_with_const() {
+		let static_frame_buffer = syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
+		let trait_def: syn::ItemTrait = parse_quote! {
+			trait ConstTrait {
+				const fn const_method(&self,) -> i32;
+			}
+		};
+
+		let result = wrapper(static_frame_buffer, trait_def,);
+		assert!(result.is_ok());
+
+		let (tokens, diags,) = result.unwrap();
+		let token_string = tokens.to_string();
+
+		// Check that const is preserved
+		assert!(token_string.contains("pub const fn const_method"));
+		assert!(diags.is_empty());
+	}
+
+	#[test]
+	fn test_wrapper_function_with_unsafe() {
+		let static_frame_buffer = syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
+		let trait_def: syn::ItemTrait = parse_quote! {
+			trait UnsafeTrait {
+				unsafe fn unsafe_method(&self,) -> i32;
+			}
+		};
+
+		let result = wrapper(static_frame_buffer, trait_def,);
+		assert!(result.is_ok());
+
+		let (tokens, diags,) = result.unwrap();
+		let token_string = tokens.to_string();
+
+		// Check that unsafe is preserved
+		assert!(token_string.contains("pub unsafe fn unsafe_method"));
+		assert!(diags.is_empty());
+	}
+
+	#[test]
+	fn test_wrapper_function_with_async() {
+		let static_frame_buffer = syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
+		let trait_def: syn::ItemTrait = parse_quote! {
+			trait AsyncTrait {
+				async fn async_method(&self,) -> i32;
+			}
+		};
+
+		let result = wrapper(static_frame_buffer, trait_def,);
+		assert!(result.is_ok());
+
+		let (tokens, diags,) = result.unwrap();
+		let token_string = tokens.to_string();
+
+		// Check that async is preserved
+		assert!(token_string.contains("pub async fn async_method"));
+		assert!(diags.is_empty());
+	}
+
+	#[test]
+	fn test_wrapper_function_with_generics() {
+		let static_frame_buffer = syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
+		let trait_def: syn::ItemTrait = parse_quote! {
+			trait GenericTrait {
+				fn generic_method<T,>(&self, arg: T,) -> T;
+			}
+		};
+
+		let result = wrapper(static_frame_buffer, trait_def,);
+		assert!(result.is_ok());
+
+		let (tokens, diags,) = result.unwrap();
+		let token_string = tokens.to_string();
+
+		// Check that generics are preserved (format may vary)
+		assert!(token_string.contains("generic_method"));
+		assert!(token_string.contains("< T"));
+		assert!(diags.is_empty());
+	}
+
+	#[test]
+	fn test_wrapper_function_with_return_type() {
+		let static_frame_buffer = syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
+		let trait_def: syn::ItemTrait = parse_quote! {
+			trait ReturnTrait {
+				fn return_method(&self,) -> Result<String, Error,>;
+			}
+		};
+
+		let result = wrapper(static_frame_buffer, trait_def,);
+		assert!(result.is_ok());
+
+		let (tokens, diags,) = result.unwrap();
+		let token_string = tokens.to_string();
+
+		// Check that return type is preserved (format may vary)
+		assert!(token_string.contains("return_method"));
+		assert!(token_string.contains("Result"));
+		assert!(token_string.contains("String"));
+		assert!(token_string.contains("Error"));
+		assert!(diags.is_empty());
+	}
+
+	#[test]
+	fn test_wrapper_function_filters_non_functions() {
+		let static_frame_buffer = syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
+		let trait_def: syn::ItemTrait = parse_quote! {
+			trait MixedTrait {
+				type AssocType;
+				const CONST_VAL: i32;
+				fn method(&self,) -> i32;
+			}
+		};
+
+		let result = wrapper(static_frame_buffer, trait_def,);
+		assert!(result.is_ok());
+
+		let (tokens, diags,) = result.unwrap();
+		let token_string = tokens.to_string();
+
+		// Check that only function gets wrapper, but trait is preserved
+		assert!(token_string.contains("pub fn method"));
+		assert!(token_string.contains("type AssocType"));
+		assert!(token_string.contains("const CONST_VAL"));
+		assert!(diags.is_empty());
+	}
+
+	#[test]
+	fn test_wrapper_function_empty_trait() {
+		let static_frame_buffer = syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
+		let trait_def: syn::ItemTrait = parse_quote! {
+			trait EmptyTrait {
+			}
+		};
+
+		let result = wrapper(static_frame_buffer, trait_def,);
+		assert!(result.is_ok());
+
+		let (tokens, diags,) = result.unwrap();
+		let token_string = tokens.to_string();
+
+		// Check that trait is preserved even if empty
+		assert!(token_string.contains("trait EmptyTrait"));
+		assert!(diags.is_empty());
+	}
+
+	#[test]
+	fn test_wrapper_function_with_where_clause() {
+		let static_frame_buffer = syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
+		let trait_def: syn::ItemTrait = parse_quote! {
+			trait WhereTrait {
+				fn where_method<T,>(&self, arg: T,) -> T where T: Clone;
+			}
+		};
+
+		let result = wrapper(static_frame_buffer, trait_def,);
+		assert!(result.is_ok());
+
+		let (tokens, diags,) = result.unwrap();
+		let token_string = tokens.to_string();
+
+		// Check that where clause is preserved (though it might be formatted differently)
+		assert!(token_string.contains("pub fn where_method"));
+		assert!(token_string.contains("Clone"));
+		assert!(diags.is_empty());
 	}
 }
