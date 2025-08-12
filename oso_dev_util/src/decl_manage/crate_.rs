@@ -158,7 +158,7 @@ impl CrateCalled for OsoCrate {
 impl Workspace for OsoCrate {}
 impl WorkspaceAction for OsoCrate {}
 impl WorkspaceSurvey for OsoCrate {
-	fn land(&mut self, on: impl CrateCalled,) -> impl Crate {
+	fn land_on(&mut self, on: impl CrateCalled,) -> impl Crate {
 		todo!()
 	}
 }
