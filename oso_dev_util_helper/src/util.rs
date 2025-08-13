@@ -286,11 +286,11 @@ mod tests {
 		let snake_case = "hello_world_test".to_string();
 		let camel: String = snake_case.to_camel();
 		// The case_transit method preserves the original spacer
-		assert_eq!(camel, "Hello_World_Test");
+		assert_eq!(camel, "HelloWorldTest");
 
 		let kebab_case = "hello-world-test".to_string();
 		let camel: String = kebab_case.to_camel();
-		assert_eq!(camel, "Hello-World-Test");
+		assert_eq!(camel, "HelloWorldTest");
 
 		let single_word = "hello".to_string();
 		let camel: String = single_word.to_camel();
@@ -302,11 +302,11 @@ mod tests {
 		let camel_case = "HelloWorldTest".to_string();
 		let snake: String = camel_case.to_snake();
 		// The actual behavior produces "helloworldtest" because camel case doesn't have a spacer
-		assert_eq!(snake, "helloworldtest");
+		assert_eq!(snake, "hello_world_test");
 
 		let kebab_case = "hello-world-test".to_string();
 		let snake: String = kebab_case.to_snake();
-		assert_eq!(snake, "hello-world-test"); // Uses original spacer
+		assert_eq!(snake, "hello_world_test"); // Uses original spacer
 
 		let screaming_snake = "HELLO_WORLD_TEST".to_string();
 		let snake: String = screaming_snake.to_snake();
@@ -321,7 +321,7 @@ mod tests {
 
 		let kebab_case = "hello-world-test".to_string();
 		let screaming: String = kebab_case.to_screaming_snake();
-		assert_eq!(screaming, "HELLO-WORLD-TEST"); // Uses original spacer
+		assert_eq!(screaming, "HELLO_WORLD_TEST"); // Uses original spacer
 
 		let camel_case = "HelloWorldTest".to_string();
 		let screaming: String = camel_case.to_screaming_snake();
@@ -333,11 +333,11 @@ mod tests {
 	fn test_string_to_kebab() {
 		let snake_case = "hello_world_test".to_string();
 		let kebab: String = snake_case.to_kebab();
-		assert_eq!(kebab, "hello_world_test"); // Uses original spacer
+		assert_eq!(kebab, "hello-world-test"); // Uses original spacer
 
 		let screaming_snake = "HELLO_WORLD_TEST".to_string();
 		let kebab: String = screaming_snake.to_kebab();
-		assert_eq!(kebab, "h_e_l_l_o__w_o_r_l_d__t_e_s_t");
+		assert_eq!(kebab, "HELLO-WORLD-TEST");
 
 		let camel_case = "HelloWorldTest".to_string();
 		let kebab: String = camel_case.to_kebab();
@@ -644,7 +644,7 @@ mod tests {
 		// Test case conversion
 		let camel: String = snake_str.to_camel();
 		// The case_transit method preserves the original spacer
-		assert_eq!(camel, "Hello_World_Test");
+		assert_eq!(camel, "HelloWorldTest");
 		assert!(camel.is_camel());
 
 		// Test that converted string also implements the traits
@@ -697,7 +697,7 @@ mod tests {
 		let snake_with_nums = "hello123_world456".to_string();
 		let camel: String = snake_with_nums.to_camel();
 		// The case_transit method preserves the original spacer
-		assert_eq!(camel, "Hello123_World456");
+		assert_eq!(camel, "Hello123World456");
 
 		let screaming: String = snake_with_nums.to_screaming_snake();
 		assert_eq!(screaming, "HELLO123_WORLD456");
@@ -880,11 +880,11 @@ mod tests {
 		// Test the case_transit method directly
 		let snake_case = "hello_world".to_string();
 		let upper_converter = |s: String| s.to_uppercase();
-		let result: String = snake_case.case_transit(upper_converter,);
+		let result: String = snake_case.case_transit(upper_converter, Some('_',),);
 		assert_eq!(result, "HELLO_WORLD");
 
 		let lower_converter = |s: String| s.to_lowercase();
-		let result: String = snake_case.case_transit(lower_converter,);
+		let result: String = snake_case.case_transit(lower_converter, Some('_',),);
 		assert_eq!(result, "hello_world");
 	}
 

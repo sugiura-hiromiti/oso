@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 anyhow = "*"
 colored = "*"
+toml = { version = "*", features = ["parse"] }
 
 [dev-dependencies]
 proptest = "*"
