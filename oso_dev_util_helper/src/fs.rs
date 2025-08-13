@@ -27,7 +27,6 @@ const IGNORE_DIR_LIST: [&str; 5] = ["target", ".git", ".github", ".direnv", ".ca
 /// This function will return an error if:
 /// - The current directory cannot be determined
 /// - The `oso_kernel.elf` file doesn't exist in the target directory
-/// TODO: move to oso_dev_util_helper
 pub fn check_oso_kernel() -> Rslt<(),> {
 	// Construct the expected path to the kernel ELF file
 	let target_path = current_dir()?.join("target/oso_kernel.elf",);
@@ -37,13 +36,16 @@ pub fn check_oso_kernel() -> Rslt<(),> {
 }
 
 pub fn all_crates() -> Rslt<Vec<PathBuf,>,> {
-	all_crates_in(project_root_path()?,)
+	let proot = project_root_path()?;
+	let mut crates = all_crates_in(&proot,)?;
+	crates.push(proot,);
+	Ok(crates,)
 }
 
-pub fn all_crates_in(path: PathBuf,) -> Rslt<Vec<PathBuf,>,> {
+pub fn all_crates_in(path: &Path,) -> Rslt<Vec<PathBuf,>,> {
 	Ok(path
 		.read_dir()
-		.expect(&format!("failed to read {}", path.display()),)
+		.unwrap_or_else(|_| panic!("failed to read {}", path.display()),)
 		.filter_map(|entry| {
 			if entry.as_ref().expect("failed to get entry",).path().is_file() {
 				return None;
@@ -58,9 +60,10 @@ pub fn all_crates_in(path: PathBuf,) -> Rslt<Vec<PathBuf,>,> {
 			}
 		},)
 		.map(|p| {
+			dbg!(&p);
 			let mut paths =
 				if search_cargo_toml(&p,)?.is_some() { vec![p.clone()] } else { vec![] };
-			paths.append(&mut all_crates_in(p,)?,);
+			paths.append(&mut all_crates_in(&p,)?,);
 			Ok(paths,)
 		},)
 		.flat_map(|v: Rslt<Vec<PathBuf,>,>| v.unwrap(),)
@@ -72,9 +75,8 @@ pub fn project_root_path() -> Rslt<PathBuf,> {
 	let mut last_cargo_toml = None;
 
 	while p.pop() {
-		match search_cargo_toml(&p,)? {
-			Some(p,) => last_cargo_toml = Some(p,),
-			None => {},
+		if let Some(p,) = search_cargo_toml(&p,)? {
+			last_cargo_toml = Some(p,)
 		}
 	}
 
@@ -89,7 +91,6 @@ pub fn current_crate_path() -> Rslt<PathBuf,> {
 }
 
 /// depth 1 file search
-/// TODO: sophisticate implementation
 pub fn search_cargo_toml(path: impl AsRef<Path,>,) -> Rslt<Option<PathBuf,>,> {
 	search_in(&path, CARGO_MANIFEST,)
 }
@@ -132,6 +133,22 @@ pub fn search_upstream(file_name: impl Into<String,> + Clone,) -> Rslt<Option<Pa
 			break Ok(None,);
 		}
 	}
+}
+
+pub fn read_toml(path: impl AsRef<Path,>,) -> Option<Rslt<toml::Table,>,> {
+	if !path.as_ref().exists() {
+		return None;
+	}
+
+	let read_toml_ = || -> Rslt<toml::Table,> {
+		let be_toml = std::fs::read(path,)?;
+		let be_toml = String::from_utf8(be_toml,)?;
+		let be_toml = be_toml.as_str();
+		let be_toml: toml::Table = toml::de::from_str(be_toml,)?;
+		Ok(be_toml,)
+	};
+
+	Some(read_toml_(),)
 }
 
 #[cfg(test)]
@@ -330,10 +347,13 @@ mod tests {
 	#[test]
 	fn test_project_root_path_functionality() -> Rslt<(),> {
 		// Test that project_root_path returns a result
-		let result = project_root_path();
+		let result = project_root_path()?;
+		eprintln!("{result:?}");
 		// We can't make strong assertions about the result since it depends on the file system
 		// but we can verify it returns something
-		assert!(result.is_ok() || result.is_err());
+		let answer = std::env!("CARGO_MANIFEST_DIR");
+		let answer = PathBuf::from_str(answer,)?.parent().unwrap().to_path_buf();
+		assert_eq!(result, answer);
 		Ok((),)
 	}
 
@@ -361,29 +381,29 @@ mod tests {
 		Ok((),)
 	}
 
-	// #[test]
-	// fn test_all_crates_in_with_empty_directory() -> Rslt<(),> {
-	// 	// Test with a directory that likely doesn't have crates
-	// 	// This test is commented out because it triggers a bug in the production code
-	// 	// where unwrap() is called on a Result that can fail
-	// 	let temp_dir = std::path::PathBuf::from("/tmp");
-	// 	if temp_dir.exists() && temp_dir.is_dir() {
-	// 		// The function might fail due to permission issues or other reasons
-	// 		// Just test that it returns a result
-	// 		let result = all_crates_in(temp_dir);
-	// 		match result {
-	// 			Ok(crates) => {
-	// 				// Should return a vector (empty or not)
-	// 				assert!(crates.is_empty() || !crates.is_empty());
-	// 			},
-	// 			Err(_) => {
-	// 				// It's okay if it fails due to file system issues
-	// 				// The important thing is that the function doesn't panic
-	// 			}
-	// 		}
-	// 	}
-	// 	Ok((),)
-	// }
+	#[test]
+	fn test_all_crates_in_with_empty_directory() -> Rslt<(),> {
+		// Test with a directory that likely doesn't have crates
+		// This test is commented out because it triggers a bug in the production code
+		// where unwrap() is called on a Result that can fail
+		let temp_dir = std::path::PathBuf::from("/tmp",);
+		if temp_dir.exists() && temp_dir.is_dir() {
+			// The function might fail due to permission issues or other reasons
+			// Just test that it returns a result
+			let result = all_crates_in(&temp_dir,);
+			match result {
+				Ok(crates,) => {
+					// Should return a vector (empty or not)
+					assert!(crates.is_empty() || !crates.is_empty());
+				},
+				Err(_,) => {
+					// It's okay if it fails due to file system issues
+					// The important thing is that the function doesn't panic
+				},
+			}
+		}
+		Ok((),)
+	}
 
 	#[test]
 	fn test_search_in_with_empty_directory() -> Rslt<(),> {
@@ -749,7 +769,7 @@ mod tests {
 		use std::thread;
 
 		let handles: Vec<_,> = (0..5)
-			.map(|i| {
+			.map(|_i| {
 				thread::spawn(move || {
 					let current_dir = std::path::PathBuf::from(CWD,);
 					search_in(&current_dir, "Cargo.toml",)
@@ -825,9 +845,6 @@ mod tests {
 		// The function should return a result (success or failure)
 		match result {
 			Ok(crates,) => {
-				// If successful, should return a vector
-				assert!(crates.len() >= 0); // Can be empty or have items
-
 				// All returned paths should be valid
 				for crate_path in crates {
 					assert!(crate_path.exists());
