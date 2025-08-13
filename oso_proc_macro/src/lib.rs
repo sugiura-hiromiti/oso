@@ -358,6 +358,8 @@ drv!(FromPathBuf, from_path_buf => syn::DeriveInput, attributes: chart,
 r#""#
 );
 
+atr!(features => proc_macro2::TokenStream, syn::ItemEnum, r#""#);
+
 #[cfg(test)]
 mod tests {
 	use super::*;
