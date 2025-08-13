@@ -29,7 +29,7 @@ pub trait Crate: Workspace + Package {
 pub trait CrateSurvey: CrateInfo {
 	fn has_parent(&self,) -> Rslt<bool,>;
 	fn go_parent(&mut self,) -> Rslt<bool,>;
-	fn build_artifact(&self, target: impl Into<String,>,) -> Rslt<PathBuf,>;
+	fn build_artifact(&self, target: Option<impl Into<String,>,>,) -> Rslt<PathBuf,>;
 	fn fix(&self,) -> Rslt<(),>;
 }
 
@@ -99,23 +99,33 @@ pub trait CrateInfo: CrateCalled {
 	}
 
 	/// return path to the crate
-	fn path(&self,) -> Rslt<PathBuf,>;
+	/// return type is not Result because macro ensures that path exists and self has path in
+	/// compile time
+	fn path(&self,) -> PathBuf;
 	fn toml(&self,) -> Rslt<toml::Table,> {
-		let cargo_toml = self.path()?.join(CARGO_MANIFEST,);
-		read_toml(cargo_toml,)
+		let cargo_toml = self.path().join(CARGO_MANIFEST,);
+		read_toml(cargo_toml,).unwrap_or_else(|| panic!("{CARGO_MANIFEST} must exist"),)
 	}
-	fn cargo_conf(&self,) -> Rslt<toml::Table,> {
-		let config_toml = self.path()?.join(CARGO_CONFIG,);
+	fn cargo_conf(&self,) -> Option<Rslt<toml::Table,>,> {
+		let config_toml = self.path().join(CARGO_CONFIG,);
 		read_toml(config_toml,)
 	}
 }
 
-fn read_toml(path: impl AsRef<Path,>,) -> Rslt<toml::Table,> {
-	let be_toml = std::fs::read(path,)?;
-	let be_toml = String::from_utf8(be_toml,)?;
-	let be_toml = be_toml.as_str();
-	let be_toml = toml::de::from_str(be_toml,)?;
-	Ok(be_toml,)
+fn read_toml(path: impl AsRef<Path,>,) -> Option<Rslt<toml::Table,>,> {
+	if !path.as_ref().exists() {
+		return None;
+	}
+
+	let read_toml_ = || -> Rslt<toml::Table,> {
+		let be_toml = std::fs::read(path,)?;
+		let be_toml = String::from_utf8(be_toml,)?;
+		let be_toml = be_toml.as_str();
+		let be_toml: toml::Table = toml::de::from_str(be_toml,)?;
+		Ok(be_toml,)
+	};
+
+	Some(read_toml_(),)
 }
 
 #[derive(FromPathBuf,)]
@@ -136,14 +146,20 @@ impl CrateSurvey for OsoCrate {
 		todo!()
 	}
 
-	fn build_artifact(&self, target: impl Into<String,>,) -> Rslt<PathBuf,> {
-		let conf = self.cargo_conf()?;
-		let conf = conf.get("build",);
+	fn build_artifact(&self, target: Option<impl Into<String,>,>,) -> Rslt<PathBuf,> {
+		if let Some(target,) = target {
+			if let Some(conf,) = self.cargo_conf() {
+				let conf = conf?;
+				let conf = conf.get("build",);
 
-		if let Some(toml::Value::Table(t,),) = conf
-			&& let Some(toml::Value::String(s,),) = t.get("target",)
-		{
-			todo!()
+				if let Some(toml::Value::Table(t,),) = conf
+					&& let Some(toml::Value::String(s,),) = t.get("target",)
+				{
+					todo!()
+				} else {
+					todo!()
+				}
+			}
 		}
 		todo!()
 	}
@@ -154,7 +170,7 @@ impl CrateSurvey for OsoCrate {
 }
 
 impl CrateInfo for OsoCrate {
-	fn path(&self,) -> Rslt<PathBuf,> {
+	fn path(&self,) -> PathBuf {
 		todo!()
 	}
 }
