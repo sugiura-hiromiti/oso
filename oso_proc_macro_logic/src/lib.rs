@@ -18,6 +18,7 @@
 //! - `associated_type_defaults`: Default associated types in traits
 //! - `iterator_try_collect`: Fallible iterator collection
 
+#![feature(log_syntax)]
 #![feature(str_as_str)]
 #![feature(iter_array_chunks)]
 #![feature(associated_type_defaults)]
@@ -44,6 +45,7 @@ pub mod test_program_headers_parse;
 
 pub mod from_path_buf;
 
+pub mod features;
 pub mod oso_proc_macro_helper;
 
 use anyhow::Result as Rslt;
