@@ -18,26 +18,56 @@ jobs:
     outputs:
       pr_list: ${{ steps.set.outputs.pr_list }}
     steps:
-      - name: Get today's date in UTC
+      - name: Get start of yesterday in JST as UTC
         id: date
-        run: echo "utc_today=$(date -u +%Y-%m-%dT00:00:00Z)" >> $GITHUB_OUTPUT
+        run: |
+          # Start of yesterday in JST (UTC+9) converted to UTC
+          utc_since=$(date -u -d "$(date +%Y-%m-%d --date='yesterday') 15:00:00" +%Y-%m-%dT%H:%M:%SZ)
+          echo "utc_since=$utc_since" >> $GITHUB_OUTPUT
 
-      - name: List today’s PRs
+      - name: List yesterday’s PRs (JST, including reopened)
         id: list_prs
         uses: actions/github-script@v7
         with:
           script: |
-            const since = process.env.UTC_TODAY;
+            const since = process.env.UTC_SINCE;
             const prs = await github.paginate(github.rest.pulls.list, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: "open",
               per_page: 100
             });
-            const todayPRs = prs.filter(pr => new Date(pr.created_at) >= new Date(since));
-            return todayPRs.map(pr => pr.number);
-        env:
-          UTC_TODAY: ${{ steps.date.outputs.utc_today }}
+
+            const targetPRs = [];
+
+            for (const pr of prs) {
+              const created = new Date(pr.created_at);
+              if (created >= new Date(since)) {
+                targetPRs.push(pr.number);
+                continue;
+              }
+
+              // Fetch issue events to detect reopen
+              const events = await github.paginate(github.rest.issues.listEvents, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                per_page: 100
+              });
+
+              const reopened = events.some(e =>
+                e.event === "reopened" &&
+                new Date(e.created_at) >= new Date(since)
+              );
+
+              if (reopened) {
+                targetPRs.push(pr.number);
+              }
+            }
+
+            return targetPRs;
+          env:
+            UTC_SINCE: ${{ steps.date.outputs.utc_since }}
 
       - name: Set PR list output
         id: set
