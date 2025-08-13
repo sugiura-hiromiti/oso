@@ -526,6 +526,7 @@ dependencies = [
  "anyhow",
  "colored",
  "proptest",
+ "toml",
 ]
 
 [[package]]
@@ -587,6 +588,7 @@ dependencies = [
  "syn",
  "tempfile",
  "tendril",
+ "toml",
  "ureq",
 ]
 

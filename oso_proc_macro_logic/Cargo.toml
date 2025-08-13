@@ -16,6 +16,7 @@ quote = "*"
 string_cache = "*"
 syn = { version = "*", features = ["full", "extra-traits"] }
 tendril = "*"
+toml = { version = "*", features = ["parse"] }
 ureq = "*"
 
 [dev-dependencies]
