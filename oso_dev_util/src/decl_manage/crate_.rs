@@ -10,9 +10,9 @@ use crate::decl_manage::workspace::WorkspaceSurvey;
 use oso_dev_util_helper::cli::Run;
 use oso_dev_util_helper::fs::CARGO_CONFIG;
 use oso_dev_util_helper::fs::CARGO_MANIFEST;
+use oso_dev_util_helper::fs::read_toml;
 use oso_proc_macro::FromPathBuf;
 use std::ffi::OsStr;
-use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -29,7 +29,6 @@ pub trait Crate: Workspace + Package {
 pub trait CrateSurvey: CrateInfo {
 	fn has_parent(&self,) -> Rslt<bool,>;
 	fn go_parent(&mut self,) -> Rslt<bool,>;
-	fn build_artifact(&self, target: Option<impl Into<String,>,>,) -> Rslt<PathBuf,>;
 	fn fix(&self,) -> Rslt<(),>;
 }
 
@@ -112,22 +111,6 @@ pub trait CrateInfo: CrateCalled {
 	}
 }
 
-fn read_toml(path: impl AsRef<Path,>,) -> Option<Rslt<toml::Table,>,> {
-	if !path.as_ref().exists() {
-		return None;
-	}
-
-	let read_toml_ = || -> Rslt<toml::Table,> {
-		let be_toml = std::fs::read(path,)?;
-		let be_toml = String::from_utf8(be_toml,)?;
-		let be_toml = be_toml.as_str();
-		let be_toml: toml::Table = toml::de::from_str(be_toml,)?;
-		Ok(be_toml,)
-	};
-
-	Some(read_toml_(),)
-}
-
 #[derive(FromPathBuf,)]
 pub struct __OsoCrate {
 	path: PathBuf,
@@ -146,24 +129,6 @@ impl CrateSurvey for OsoCrate {
 		todo!()
 	}
 
-	fn build_artifact(&self, target: Option<impl Into<String,>,>,) -> Rslt<PathBuf,> {
-		if let Some(target,) = target {
-			if let Some(conf,) = self.cargo_conf() {
-				let conf = conf?;
-				let conf = conf.get("build",);
-
-				if let Some(toml::Value::Table(t,),) = conf
-					&& let Some(toml::Value::String(s,),) = t.get("target",)
-				{
-					todo!()
-				} else {
-					todo!()
-				}
-			}
-		}
-		todo!()
-	}
-
 	fn fix(&self,) -> Rslt<(),> {
 		todo!()
 	}
@@ -171,7 +136,7 @@ impl CrateSurvey for OsoCrate {
 
 impl CrateInfo for OsoCrate {
 	fn path(&self,) -> PathBuf {
-		todo!()
+		self.path.clone()
 	}
 }
 
@@ -199,6 +164,24 @@ impl Package for OsoCrate {}
 impl PackageAction for OsoCrate {}
 impl PackageSurvey for OsoCrate {
 	fn target(&self,) -> impl Into<String,> {
+		todo!()
+	}
+
+	fn build_artifact(&self, target: Option<impl Into<String,>,>,) -> Rslt<PathBuf,> {
+		if let Some(target,) = target {
+			if let Some(conf,) = self.cargo_conf() {
+				let conf = conf?;
+				let conf = conf.get("build",);
+
+				if let Some(toml::Value::Table(t,),) = conf
+					&& let Some(toml::Value::String(s,),) = t.get("target",)
+				{
+					todo!()
+				} else {
+					todo!()
+				}
+			}
+		}
 		todo!()
 	}
 }
