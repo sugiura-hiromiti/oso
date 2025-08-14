@@ -52,7 +52,7 @@ impl<T,> ErrorDiagnose for anyhow::Result<(T, Vec<Diag,>,),> {
 			},
 			Self::Err(e,) => {
 				Diagnostic::new(Level::Error, format!("{e}"),).emit();
-				panic!()
+				panic!("{e}");
 			},
 		}
 	}
