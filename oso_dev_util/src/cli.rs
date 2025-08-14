@@ -1,6 +1,5 @@
-use oso_proc_macro::features;
-
 use crate::decl_manage::crate_::OsoCrate;
+use oso_proc_macro::features;
 use std::path::PathBuf;
 
 //  TODO: refactor to use clap
