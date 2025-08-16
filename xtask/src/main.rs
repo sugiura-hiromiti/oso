@@ -27,15 +27,10 @@
 //! - `--debug`: Enable debug mode with GDB support (listens on port 12345)
 
 use anyhow::Result as Rslt;
-use builder::Builder;
 use colored::Colorize;
-use oso_dev_util::Run;
+use oso_dev_util_helper::cli::Run;
 use std::process::Command;
-
-pub mod builder;
-pub mod qemu;
-pub mod shell;
-pub mod workspace;
+use xtask::builder::Builder;
 
 /// Entry point for the xtask utility.
 ///
