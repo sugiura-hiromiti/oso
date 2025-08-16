@@ -60,7 +60,6 @@ pub fn all_crates_in(path: &Path,) -> Rslt<Vec<PathBuf,>,> {
 			}
 		},)
 		.map(|p| {
-			dbg!(&p);
 			let mut paths =
 				if search_cargo_toml(&p,)?.is_some() { vec![p.clone()] } else { vec![] };
 			paths.append(&mut all_crates_in(&p,)?,);
