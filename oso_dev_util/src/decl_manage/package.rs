@@ -1,4 +1,5 @@
 use crate::Rslt;
+use crate::cargo::CompileOpt;
 use crate::decl_manage::crate_::CrateAction;
 use crate::decl_manage::crate_::CrateInfo;
 use crate::decl_manage::crate_::CrateSurvey;
@@ -16,8 +17,8 @@ pub trait Package: PackageAction + PackageSurvey {
 
 pub trait PackageAction: PackageInfo + CrateAction {}
 pub trait PackageSurvey: PackageInfo + CrateSurvey {
-	fn target(&self,) -> impl Into<String,>;
-	fn build_artifact(&self, target: Option<impl Into<String,>,>,) -> Rslt<PathBuf,>;
+	fn default_target(&self,) -> Rslt<impl Into<String,>,>;
+	fn build_artifact(&self, target: Option<impl CompileOpt,>,) -> Rslt<PathBuf,>;
 }
 
 pub trait PackageInfo: Sized + CrateInfo {}
