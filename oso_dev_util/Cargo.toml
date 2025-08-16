@@ -16,3 +16,4 @@ toml = { version = "*", features = ["parse"] }
 
 [dev-dependencies]
 proptest = "*"
+aquamarine = "*"
