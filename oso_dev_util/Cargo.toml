@@ -5,9 +5,13 @@ edition = "2024"
 
 [dependencies]
 anyhow = "*"
+clap = { version = "*", features = ["derive"] }
+clap_derive = { version = "4.0.0-rc.1" }
 colored = "*"
 oso_dev_util_helper = { path = "../oso_dev_util_helper" }
 oso_proc_macro = { path = "../oso_proc_macro" }
+strum = "*"
+strum_macros = "*"
 toml = { version = "*", features = ["parse"] }
 
 [dev-dependencies]
