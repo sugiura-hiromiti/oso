@@ -19,7 +19,7 @@ use crate::workspace::OsoWorkSpace;
 use anyhow::Result as Rslt;
 use anyhow::anyhow;
 use colored::Colorize;
-use oso_dev_util::Run;
+use oso_dev_util_helper::cli::Run;
 use std::env::set_current_dir;
 use std::path::Path;
 use std::path::PathBuf;
