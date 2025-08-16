@@ -8,6 +8,7 @@ anyhow = "*"
 colored = "*"
 fs-err = "*"
 oso_dev_util = { path = "../oso_dev_util" }
+oso_dev_util_helper = { path = "../oso_dev_util_helper" }
 ovmf-prebuilt = "*"
 serde_json = "*"
 toml = "*"
