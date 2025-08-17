@@ -7,6 +7,8 @@
 //! - Managing OVMF firmware files for UEFI boot
 //! - Setting up block devices and persistent flash memory
 
+use crate::builder::Builder;
+use crate::shell::Architecture;
 use anyhow::Result as Rslt;
 use ovmf_prebuilt::Arch;
 use ovmf_prebuilt::FileType;
@@ -15,8 +17,6 @@ use ovmf_prebuilt::Source;
 use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
-use xtask::builder::Builder;
-use xtask::shell::Architecture;
 
 impl Builder {
 	/// Gets the QEMU executable name based on the target architecture
