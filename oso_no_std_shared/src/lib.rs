@@ -81,11 +81,15 @@ use core::arch::asm;
 pub fn wfi() -> ! {
 	loop {
 		unsafe {
-			// Platform-specific wait-for-interrupt implementation
-			#[cfg(target_arch = "aarch64")]
-			asm!("wfi"); // ARM64: Wait For Interrupt
-			#[cfg(target_arch = "x86_64")]
-			asm!("hlt"); // x86_64: Halt until interrupt
+			if cfg!(target_arch = "aarch64") {
+				asm!("wfi"); // ARM64: Wait For Interrupt
+			} else if cfg!(target_arch = "riscv64") {
+				todo!()
+			} else if cfg!(target_arch = "x86_64") {
+				asm!("hlt"); // x86_64: Halt until interrupt
+			} else {
+				unimplemented!("Architecture not supported")
+			}
 		}
 	}
 }
@@ -117,11 +121,15 @@ pub fn wfi() -> ! {
 pub fn wfe() -> ! {
 	loop {
 		unsafe {
-			// Platform-specific wait-for-event implementation
-			#[cfg(target_arch = "aarch64")]
-			asm!("wfe"); // ARM64: Wait For Event
-			#[cfg(target_arch = "x86_64")]
-			asm!("hlt"); // x86_64: Halt (no direct WFE equivalent)
+			if cfg!(target_arch = "aarch64") {
+				asm!("wfe"); // ARM64: Wait For Event
+			} else if cfg!(target_arch = "riscv64") {
+				todo!()
+			} else if cfg!(target_arch = "x86_64") {
+				asm!("hlt"); // x86_64: Halt until interrupt
+			} else {
+				unimplemented!("Architecture not supported")
+			}
 		}
 	}
 }
@@ -154,10 +162,15 @@ pub fn nop() -> ! {
 	loop {
 		unsafe {
 			// Platform-specific no-operation implementation
-			#[cfg(target_arch = "aarch64")]
-			asm!("nop"); // ARM64: No Operation
-			#[cfg(target_arch = "x86_64")]
-			asm!("hlt"); // x86_64: Halt (alternative to spinning NOP)
+			if cfg!(target_arch = "aarch64") {
+				asm!("nop"); // ARM64: Wait For Event
+			} else if cfg!(target_arch = "riscv64") {
+				todo!()
+			} else if cfg!(target_arch = "x86_64") {
+				asm!("hlt"); // x86_64: Halt until interrupt
+			} else {
+				unimplemented!("Architecture not supported")
+			}
 		}
 	}
 }
