@@ -151,11 +151,10 @@ impl<T,> BinaryParserBuilder<T,> {
 	///
 	/// This method is currently commented out but represents future functionality
 	/// for handling different byte orders in binary data.
-	// pub fn with_endianness(self, endianness: Endianness) -> Self {
-	//     // Configure endianness handling
-	//     self
-	// }
-
+	/// pub fn with_endianness(self, endianness: Endianness) -> Self {
+	///     // Configure endianness handling
+	///     self
+	/// }
 	/// Configure alignment requirements for binary parsing.
 	///
 	/// # Parameters
@@ -170,11 +169,10 @@ impl<T,> BinaryParserBuilder<T,> {
 	///
 	/// This method is currently commented out but represents future functionality
 	/// for handling memory alignment requirements.
-	// pub fn with_alignment(self, alignment: usize) -> Self {
-	//     // Configure alignment requirements
-	//     self
-	// }
-
+	/// pub fn with_alignment(self, alignment: usize) -> Self {
+	///     // Configure alignment requirements
+	///     self
+	/// }
 	/// Build the configured binary parser.
 	///
 	/// # Returns
@@ -188,5 +186,11 @@ impl<T,> BinaryParserBuilder<T,> {
 	pub fn build<C: Context,>(self,) {
 		// Construct the final parser with all configurations
 		todo!()
+	}
+}
+
+impl<T,> Default for BinaryParserBuilder<T,> {
+	fn default() -> Self {
+		Self::new()
 	}
 }

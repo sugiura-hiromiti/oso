@@ -66,7 +66,7 @@ fn font_data(specified_path: LitStr,) -> Rslt<Vec<String,>,> {
 		.split("\n",)
 		.collect::<Vec<&str,>>()
 		.into_iter()
-		.filter(|s| !(*s == "" || s.contains("0x",)),) // Remove empty lines and hex values
+		.filter(|s| !(s.is_empty() || s.contains("0x",)),) // Remove empty lines and hex values
 		.collect();
 
 	// Process each character (16 lines per character)
@@ -112,9 +112,9 @@ fn font_data(specified_path: LitStr,) -> Rslt<Vec<String,>,> {
 /// let bitfields = convert_bitfield(&fonts);
 /// assert_eq!(bitfields.len(), 256);
 /// ```
-fn convert_bitfield(fonts: &Vec<String,>,) -> Vec<u128,> {
+fn convert_bitfield(fonts: &[String],) -> Vec<u128,> {
 	let fonts: Vec<u128,> = fonts
-		.into_iter()
+		.iter()
 		.map(|s| {
 			// Split each character's bitmap into 16 lines
 			let lines = s.split("\n",).collect::<Vec<&str,>>();
@@ -814,7 +814,7 @@ mod tests {
 		// Test error handling for various invalid inputs
 		use std::env;
 
-		let project_root = env::var("CARGO_MANIFEST_DIR",).unwrap_or_else(|_| ".".to_string(),);
+		let _project_root = env::var("CARGO_MANIFEST_DIR",).unwrap_or_else(|_| ".".to_string(),);
 
 		// Test with non-existent file
 		let nonexistent_file =

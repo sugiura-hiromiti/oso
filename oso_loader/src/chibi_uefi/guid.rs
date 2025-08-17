@@ -179,7 +179,7 @@ where [Hex; N]: BytesNotTooLong<true,>
 		let mut i = 0;
 		let mut rslt = 0;
 		while i < N {
-			rslt += (self[i] as u128) << 4 * i;
+			rslt += (self[i] as u128) << (4 * i);
 			i += 1;
 		}
 		rslt

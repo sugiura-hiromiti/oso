@@ -643,7 +643,6 @@ impl ElfHeader {
 	/// Andes Tech. compact code emb. RISC
 	pub const EM_NDS32: u16 = 167;
 	/// TODO: use Enum with explicit discriminant and get debug printer for free?
-
 	/// No machine
 	pub const EM_NONE: u16 = 0;
 	/// Nanoradio Optimized RISC
