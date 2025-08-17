@@ -54,10 +54,16 @@ impl CursorBuf {
 	}
 }
 
+impl Default for CursorBuf {
+	fn default() -> Self {
+		Self::new()
+	}
+}
+
 impl MouseCursorDraw for CursorBuf {
 	fn draw_mouse_cursor(&mut self,) -> Rslt<(),> {
 		let mut coord = self.pos.clone();
-		for y in 0..self.height {
+		(0..self.height).for_each(|y| {
 			for x in 0..self.width {
 				match MOUSE_CURSOR[y][x] {
 					'@' => todo!(), //put_pixel(&coord, &self.outline_color,)?,
@@ -68,7 +74,7 @@ impl MouseCursorDraw for CursorBuf {
 			}
 			*coord.x_mut() = self.pos.x();
 			*coord.y_mut() += 1;
-		}
+		},);
 
 		Ok((),)
 	}
