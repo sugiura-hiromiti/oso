@@ -143,14 +143,14 @@ fn is_xxx_format_with_case(
 	let spacer_checker = || -> Box<dyn Fn(char,) -> bool,> {
 		match spacer {
 			Some(spacer,) => Box::new(move |c| c == spacer,),
-			None => Box::new(|_| true,),
+			None => Box::new(|c| c.is_ascii_alphanumeric(),),
 		}
 	};
 	let checker = || -> Box<dyn Fn(&String,) -> bool,> {
 		match form {
 			Form::StartWithUpper => Box::new(|s| {
 				s.starts_with(|c: char| c.is_ascii_uppercase(),)
-					&& s.chars().all(|c| c.is_ascii_alphanumeric() || spacer_checker()(c,),)
+					&& s.chars().all(|c| c.is_ascii_alphanumeric() && spacer_checker()(c,),)
 			},),
 			Form::Upper => Box::new(|s| {
 				s.chars().all(|c| c.is_ascii_uppercase() || c.is_numeric() || spacer_checker()(c,),)
@@ -201,7 +201,7 @@ impl CaseConvert for PathBuf {
 
 impl StringKind for PathBuf {
 	fn dump_string(&self,) -> String {
-		self.file_name()
+		self.file_prefix()
 			.expect("failed to get file/dir name",)
 			.to_str()
 			.expect("failed to &str-fy file/dir name",)
@@ -310,7 +310,7 @@ mod tests {
 
 		let screaming_snake = "HELLO_WORLD_TEST".to_string();
 		let snake: String = screaming_snake.to_snake();
-		assert_eq!(snake, "h_e_l_l_o__w_o_r_l_d__t_e_s_t");
+		assert_eq!(snake, "hello_world_test");
 	}
 
 	#[test]
@@ -336,13 +336,15 @@ mod tests {
 		assert_eq!(kebab, "hello-world-test"); // Uses original spacer
 
 		let screaming_snake = "HELLO_WORLD_TEST".to_string();
+		let words = screaming_snake.words();
+		assert_eq!(words, &["HELLO", "WORLD", "TEST"]);
 		let kebab: String = screaming_snake.to_kebab();
-		assert_eq!(kebab, "HELLO-WORLD-TEST");
+		assert_eq!(kebab, "hello-world-test");
 
 		let camel_case = "HelloWorldTest".to_string();
 		let kebab: String = camel_case.to_kebab();
 		// The actual behavior produces "helloworldtest" because camel case doesn't have a spacer
-		assert_eq!(kebab, "helloworldtest");
+		assert_eq!(kebab, "hello-world-test");
 	}
 
 	// Test find_spacer functionality
@@ -471,7 +473,7 @@ mod tests {
 		let snake_path = <std::path::PathBuf as std::convert::From<&str,>>::from(
 			"/path/to/snake_case_file.txt",
 		);
-		assert!(!snake_path.is_snake()); // snake_case_file.txt fails because of the dot
+		assert!(snake_path.is_snake());
 		assert!(!snake_path.is_camel()); // The filename doesn't start with uppercase
 
 		// Test without extension
@@ -490,10 +492,10 @@ mod tests {
 	fn test_pathbuf_dump_string() {
 		let path =
 			<std::path::PathBuf as std::convert::From<&str,>>::from("/path/to/test_file.txt",);
-		assert_eq!(path.dump_string(), "test_file.txt");
+		assert_eq!(path.dump_string(), "test_file");
 
 		let path = <std::path::PathBuf as std::convert::From<&str,>>::from("simple_file.txt",);
-		assert_eq!(path.dump_string(), "simple_file.txt");
+		assert_eq!(path.dump_string(), "simple_file");
 	}
 
 	#[test]
@@ -517,7 +519,7 @@ mod tests {
 			"/path/to/snake_case_file.txt",
 		);
 		let words = snake_path.words();
-		assert_eq!(words, vec!["snake", "case", "file.txt"]);
+		assert_eq!(words, vec!["snake", "case", "file"]);
 	}
 
 	#[test]
@@ -628,7 +630,7 @@ mod tests {
 		#[test]
 		fn test_pathbuf_filename_extraction(filename in "[a-zA-Z][a-zA-Z0-9_.-]*") {
 			let path = <std::path::PathBuf as std::convert::From<String>>::from(format!("/some/path/{}", filename));
-			prop_assert_eq!(path.dump_string(), filename);
+			prop_assert_eq!(path.dump_string(), filename.split('.').nth(0).unwrap());
 		}
 	}
 
@@ -659,10 +661,8 @@ mod tests {
 			"/path/to/hello_world_test.txt",
 		);
 
-		// Test that PathBuf implements both traits
-		// Due to bug in is_xxx_format_with_case, snake case detection is inverted
-		assert!(!snake_path.is_snake());
-		assert_eq!(snake_path.dump_string(), "hello_world_test.txt");
+		assert!(snake_path.is_snake());
+		assert_eq!(snake_path.dump_string(), "hello_world_test");
 
 		// Test spacer detection
 		let spacer: Option<String,> = snake_path.find_spacer();
@@ -670,7 +670,7 @@ mod tests {
 
 		// Test word extraction
 		let words = snake_path.words();
-		assert_eq!(words, vec!["hello", "world", "test.txt"]);
+		assert_eq!(words, vec!["hello", "world", "test"]);
 	}
 
 	// Error condition tests
@@ -950,7 +950,7 @@ mod tests {
 				"/path/to/{}",
 				filename
 			),);
-			assert_eq!(path.dump_string(), filename);
+			assert_eq!(path.dump_string(), filename.split('.').next().unwrap());
 
 			// Test case detection with extensions
 			let snake_with_ext = format!("snake_case_file{}", ext);
@@ -958,8 +958,7 @@ mod tests {
 				"/path/to/{}",
 				snake_with_ext
 			),);
-			// Extensions with dots break case detection
-			assert!(!path.is_snake());
+			assert!(path.is_snake());
 		}
 	}
 
@@ -1045,7 +1044,7 @@ mod tests {
 		let path = <std::path::PathBuf as std::convert::From<&str,>>::from("/path/to/test.txt",);
 
 		let dumped = path.dump_string();
-		assert_eq!(dumped, "test.txt");
+		assert_eq!(dumped, "test");
 
 		let case_convert = path.as_case_convert();
 		assert!(case_convert.is_some());

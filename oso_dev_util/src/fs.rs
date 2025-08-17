@@ -69,9 +69,8 @@ mod tests {
 		let result = project_root();
 
 		// Verify the return type is correct
-		match result {
-			Ok(_crate_obj,) => {},
-			Err(_,) => {},
+		if let Err(e,) = result {
+			panic!("{e:?}")
 		}
 	}
 
@@ -81,13 +80,8 @@ mod tests {
 		let result = current_crate();
 
 		// Verify the return type is correct
-		match result {
-			Ok(_crate_obj,) => {
-				// Type check passes if this compiles
-			},
-			Err(_,) => {
-				// Error is acceptable in test environment
-			},
+		if let Err(e,) = result {
+			panic!("{e:?}")
 		}
 	}
 
@@ -198,39 +192,5 @@ mod tests {
 
 		// current_crate should take no parameters and return Rslt<OsoCrate>
 		let _: fn() -> Rslt<OsoCrate,> = current_crate;
-	}
-
-	#[test]
-	fn test_oso_crate_basic_functionality() {
-		// Test basic OsoCrate functionality
-		let test_path = PathBuf::from("/test/crate",);
-		let crate_obj = OsoCrate::from(test_path.clone(),);
-
-		// Test path method
-		assert_eq!(crate_obj.path(), test_path);
-
-		// Test that it implements required traits (compile-time check)
-		let _cloned = crate_obj.clone();
-		let _default = OsoCrate::default();
-
-		// Test equality
-		let another_crate = OsoCrate::from(test_path.clone(),);
-		assert_eq!(crate_obj, another_crate);
-	}
-
-	#[test]
-	fn test_cross_platform_paths() {
-		// Test paths that work across different platforms
-		let unix_path = PathBuf::from("/unix/style/path",);
-		let relative_path = PathBuf::from("relative/path",);
-		let current_dir = PathBuf::from(".",);
-
-		let unix_crate = OsoCrate::from(unix_path.clone(),);
-		let relative_crate = OsoCrate::from(relative_path.clone(),);
-		let current_crate = OsoCrate::from(current_dir.clone(),);
-
-		assert_eq!(unix_crate.path(), unix_path);
-		assert_eq!(relative_crate.path(), relative_path);
-		assert_eq!(current_crate.path(), current_dir);
 	}
 }

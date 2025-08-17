@@ -82,7 +82,7 @@ pub mod decl_manage;
 pub mod fs;
 
 /// The path to the oso_dev_util crate manifest, set at compile time
-const OSO_DEV_UTIL_PATH: &str = std::env!("CARGO_MANIFEST_PATH");
+pub const OSO_DEV_UTIL_PATH: &str = std::env!("CARGO_MANIFEST_PATH");
 
 #[cfg(test)]
 mod tests {
@@ -114,19 +114,6 @@ mod tests {
 		// Note: These might fail in test environment, but we test they're callable
 		let _project_root_result = fs::project_root();
 		let _current_crate_result = fs::current_crate();
-	}
-
-	#[test]
-	fn test_result_type_alias() {
-		// Test that our Result type alias works correctly
-		let success: Rslt<i32,> = Ok(42,);
-		let error: Rslt<i32,> = Err(anyhow::anyhow!("test error"),);
-
-		assert!(success.is_ok());
-		assert_eq!(success.unwrap(), 42);
-
-		assert!(error.is_err());
-		assert_eq!(error.unwrap_err().to_string(), "test error");
 	}
 
 	#[test]

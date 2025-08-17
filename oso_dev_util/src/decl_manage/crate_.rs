@@ -81,6 +81,7 @@ pub trait CrateAction: CrateInfo {
 		Command::new("cargo",).arg(cmd,).args(opt,).run()
 	}
 }
+
 pub trait CrateInfo: CrateCalled {
 	fn is_package(&self,) -> Rslt<bool,> {
 		let pkg_sec = self.toml()?;
