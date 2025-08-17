@@ -12,7 +12,7 @@ macro_rules! guid {
 
 impl Guid {
 	#[track_caller]
-	pub fn from_str(s: impl AsRef<str,>,) -> Rslt<Self,> {
+	pub fn gen_from_str(s: impl AsRef<str,>,) -> Rslt<Self,> {
 		let mut s = s.as_ref().chars().filter_map(|c| Hex::try_from(c,).ok(),).map(|h| h as u8,);
 		let mut time_low: [u8; 4] = s.next_chunk().unwrap();
 		time_low.reverse();
@@ -169,7 +169,7 @@ const fn bytes_not_too_long<const BYTES: usize,>() -> bool {
 pub trait BytesIsEven<const B: bool, const N: usize,> {}
 impl<const BYTES: usize,> BytesIsEven<{ bytes_is_even::<BYTES,>() }, BYTES,> for [Hex; BYTES] {}
 const fn bytes_is_even<const BYTES: usize,>() -> bool {
-	BYTES % 2 == 0
+	BYTES.is_multiple_of(2,)
 }
 
 impl<const N: usize,> const BytesToInt<N,> for [Hex; N]

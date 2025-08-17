@@ -44,6 +44,8 @@ impl FileProtocolV1 {
 	/// # Return
 	///
 	/// returns bytes amount of read data
+	/// # Safety
+	/// TODO: fill doc comment
 	pub unsafe fn read(&mut self, buf: &mut [u8],) -> Rslt<usize, UefiError,> {
 		let mut len = buf.len();
 		unsafe { (self.read)(self, &mut len, buf.as_mut_ptr().cast(),) }.ok_or_with(|_| len,)
