@@ -37,7 +37,7 @@ fn test_cli_conversion() {
 #[test]
 fn test_compile_opt_trait() {
 	let opts = Opts {
-		build_mode:    BuildMode::Relese,
+		build_mode:    BuildMode::Release,
 		feature_flags: vec![],
 		target:        Target { runs_on: RunsOn::Mac, arch: Arch::Aarch64, },
 	};
@@ -99,7 +99,7 @@ fn test_enum_defaults() {
 
 #[test]
 fn test_enum_cloning() {
-	let build_mode = BuildMode::Relese;
+	let build_mode = BuildMode::Release;
 	let cloned = build_mode;
 	assert_eq!(build_mode, cloned);
 
@@ -115,7 +115,7 @@ fn test_enum_cloning() {
 #[test]
 fn test_enum_equality() {
 	assert_eq!(BuildMode::Debug, BuildMode::Debug);
-	assert_ne!(BuildMode::Debug, BuildMode::Relese);
+	assert_ne!(BuildMode::Debug, BuildMode::Release);
 
 	assert_eq!(RunsOn::Oso, RunsOn::Oso);
 	assert_ne!(RunsOn::Oso, RunsOn::Linux);
@@ -144,8 +144,8 @@ fn test_is_methods() {
 	// BuildMode
 	assert!(BuildMode::Debug.is_debug());
 	assert!(!BuildMode::Debug.is_relese());
-	assert!(BuildMode::Relese.is_relese());
-	assert!(!BuildMode::Relese.is_debug());
+	assert!(BuildMode::Release.is_relese());
+	assert!(!BuildMode::Release.is_debug());
 
 	// RunsOn
 	assert!(RunsOn::Oso.is_oso());
@@ -200,7 +200,7 @@ fn test_cli_all_combinations() {
 	// Test CLI with all possible combinations
 	use clap::ValueEnum;
 
-	for build_mode in [None, Some(BuildMode::Debug,), Some(BuildMode::Relese,),] {
+	for build_mode in [None, Some(BuildMode::Debug,), Some(BuildMode::Release,),] {
 		for runs_on in [
 			None,
 			Some(RunsOn::Oso,),
@@ -387,7 +387,7 @@ fn test_value_enum_completeness() {
 	let build_mode_variants = BuildMode::value_variants();
 	assert_eq!(build_mode_variants.len(), 2);
 	assert!(build_mode_variants.contains(&BuildMode::Debug));
-	assert!(build_mode_variants.contains(&BuildMode::Relese));
+	assert!(build_mode_variants.contains(&BuildMode::Release));
 
 	let runs_on_variants = RunsOn::value_variants();
 	assert_eq!(runs_on_variants.len(), 4);

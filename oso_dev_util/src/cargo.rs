@@ -4,10 +4,7 @@ use std::path::PathBuf;
 pub trait CompileOpt {
 	fn build_mode(&self,) -> impl Into<String,>;
 	fn feature_flags(&self,) -> Vec<impl Into<String,>,>;
-	fn runs_on(&self,) -> impl Into<String,>;
 	fn arch(&self,) -> impl Into<String,>;
-	/// return target tuple
-	fn target(&self,) -> impl Into<String,>;
 }
 
 #[features]
@@ -17,7 +14,7 @@ pub enum Feature {}
 pub struct Opts {
 	pub build_mode:    BuildMode,
 	pub feature_flags: Vec<Feature,>,
-	pub target:        Target,
+	pub arch:          Arch,
 }
 
 impl CompileOpt for Opts {
@@ -29,20 +26,8 @@ impl CompileOpt for Opts {
 		self.feature_flags.iter().map(|f| f.as_ref(),).collect()
 	}
 
-	fn runs_on(&self,) -> impl Into<String,> {
-		self.target.runs_on.as_ref()
-	}
-
 	fn arch(&self,) -> impl Into<String,> {
-		self.target.arch.as_ref()
-	}
-
-	fn target(&self,) -> impl Into<String,> {
-		format!(
-			"{}-unknown-{}",
-			self.target.arch.as_ref().to_lowercase(),
-			self.target.runs_on.as_ref().to_lowercase()
-		)
+		self.arch.as_ref()
 	}
 }
 
@@ -53,8 +38,6 @@ pub struct Cli {
 	#[arg(short)]
 	pub feature_flags: Option<Vec<Feature,>,>,
 	#[arg(short)]
-	pub runs_on:       Option<RunsOn,>,
-	#[arg(short)]
 	pub arch:          Option<Arch,>,
 }
 
@@ -63,10 +46,7 @@ impl Cli {
 		Opts {
 			build_mode:    self.build_mode.unwrap_or_default(),
 			feature_flags: self.feature_flags.unwrap_or_default(),
-			target:        Target {
-				runs_on: self.runs_on.unwrap_or_default(),
-				arch:    self.arch.unwrap_or_default(),
-			},
+			arch:          self.arch.unwrap_or_default(),
 		}
 	}
 }
@@ -84,7 +64,7 @@ impl Cli {
 	Debug,
 )]
 pub enum BuildMode {
-	Relese,
+	Release,
 	#[default]
 	Debug,
 }
@@ -100,32 +80,6 @@ pub struct Firmware {
 	pub code: PathBuf,
 	/// Path to the OVMF variables file
 	pub vars: PathBuf,
-}
-
-#[derive(Default, Clone, Debug,)]
-pub struct Target {
-	pub runs_on: RunsOn,
-	pub arch:    Arch,
-}
-
-#[derive(
-	Default,
-	strum_macros::AsRefStr,
-	strum_macros::EnumIs,
-	strum_macros::EnumString,
-	Clone,
-	Copy,
-	clap::ValueEnum,
-	PartialEq,
-	Eq,
-	Debug,
-)]
-pub enum RunsOn {
-	Mac,
-	Uefi,
-	#[default]
-	Oso,
-	Linux,
 }
 
 #[derive(
@@ -146,6 +100,20 @@ pub enum Arch {
 	Riscv64,
 }
 
+impl Arch {
+	/// Gets the boot file name for the architecture
+	///
+	/// # Returns
+	///
+	/// The boot file name (e.g., "bootaa64.efi" for aarch64)
+	pub fn boot_file_name(&self,) -> &str {
+		match self {
+			Self::Aarch64 => "bootaa64.efi",
+			Self::Riscv64 => "bootriscv64.efi",
+		}
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -162,21 +130,21 @@ mod tests {
 	#[test]
 	fn test_build_mode_variants() {
 		assert!(BuildMode::Debug.is_debug());
-		assert!(!BuildMode::Debug.is_relese());
-		assert!(BuildMode::Relese.is_relese());
-		assert!(!BuildMode::Relese.is_debug());
+		assert!(!BuildMode::Debug.is_release());
+		assert!(BuildMode::Release.is_release());
+		assert!(!BuildMode::Release.is_debug());
 	}
 
 	#[test]
 	fn test_build_mode_string_conversion() {
 		assert_eq!(BuildMode::Debug.as_ref(), "Debug");
-		assert_eq!(BuildMode::Relese.as_ref(), "Relese");
+		assert_eq!(BuildMode::Release.as_ref(), "Relese");
 	}
 
 	#[test]
 	fn test_build_mode_from_string() {
 		assert_eq!(BuildMode::from_str("Debug").unwrap(), BuildMode::Debug);
-		assert_eq!(BuildMode::from_str("Relese").unwrap(), BuildMode::Relese);
+		assert_eq!(BuildMode::from_str("Relese").unwrap(), BuildMode::Release);
 		assert!(BuildMode::from_str("Invalid").is_err());
 	}
 
@@ -263,14 +231,14 @@ mod tests {
 	#[test]
 	fn test_cli_to_opts_with_values() {
 		let cli = Cli {
-			build_mode:    Some(BuildMode::Relese,),
+			build_mode:    Some(BuildMode::Release,),
 			feature_flags: Some(vec![],),
 			runs_on:       Some(RunsOn::Linux,),
 			arch:          Some(Arch::Riscv64,),
 		};
 
 		let opts = cli.to_opts();
-		assert!(opts.build_mode.is_relese());
+		assert!(opts.build_mode.is_release());
 		assert!(opts.feature_flags.is_empty());
 		assert!(opts.target.runs_on.is_linux());
 		assert!(opts.target.arch.is_riscv_64());
@@ -295,7 +263,7 @@ mod tests {
 	#[test]
 	fn test_compile_opt_implementation() {
 		let opts = Opts {
-			build_mode:    BuildMode::Relese,
+			build_mode:    BuildMode::Release,
 			feature_flags: vec![],
 			target:        Target { runs_on: RunsOn::Linux, arch: Arch::Riscv64, },
 		};
@@ -384,7 +352,7 @@ mod tests {
 	// Property-based tests
 	proptest! {
 		#[test]
-		fn test_build_mode_roundtrip(mode in prop::sample::select(vec![BuildMode::Debug, BuildMode::Relese])) {
+		fn test_build_mode_roundtrip(mode in prop::sample::select(vec![BuildMode::Debug, BuildMode::Release])) {
 			let as_str = mode.as_ref();
 			let parsed = BuildMode::from_str(as_str).unwrap();
 			assert_eq!(mode, parsed);
@@ -430,7 +398,7 @@ mod tests {
 
 		#[test]
 		fn test_cli_opts_conversion_preserves_values(
-			build_mode in prop::option::of(prop::sample::select(vec![BuildMode::Debug, BuildMode::Relese])),
+			build_mode in prop::option::of(prop::sample::select(vec![BuildMode::Debug, BuildMode::Release])),
 			runs_on in prop::option::of(prop::sample::select(vec![RunsOn::Mac, RunsOn::Uefi, RunsOn::Oso, RunsOn::Linux])),
 			arch in prop::option::of(prop::sample::select(vec![Arch::Aarch64, Arch::Riscv64]))
 		) {
@@ -469,7 +437,7 @@ mod tests {
 		let build_modes = BuildMode::value_variants();
 		assert_eq!(build_modes.len(), 2);
 		assert!(build_modes.contains(&BuildMode::Debug));
-		assert!(build_modes.contains(&BuildMode::Relese));
+		assert!(build_modes.contains(&BuildMode::Release));
 
 		// Test RunsOn variants
 		let runs_on_variants = RunsOn::value_variants();
@@ -490,7 +458,7 @@ mod tests {
 	fn test_partial_eq_implementations() {
 		// Test that enums implement PartialEq correctly
 		assert_eq!(BuildMode::Debug, BuildMode::Debug);
-		assert_ne!(BuildMode::Debug, BuildMode::Relese);
+		assert_ne!(BuildMode::Debug, BuildMode::Release);
 
 		assert_eq!(RunsOn::Oso, RunsOn::Oso);
 		assert_ne!(RunsOn::Oso, RunsOn::Linux);
@@ -532,12 +500,12 @@ mod tests {
 		assert!(cli.arch.unwrap().is_riscv_64());
 
 		let opts = Opts {
-			build_mode:    BuildMode::Relese,
+			build_mode:    BuildMode::Release,
 			feature_flags: vec![],
 			target:        Target { runs_on: RunsOn::Mac, arch: Arch::Aarch64, },
 		};
 
-		assert!(opts.build_mode.is_relese());
+		assert!(opts.build_mode.is_release());
 		assert!(opts.feature_flags.is_empty());
 		assert!(opts.target.runs_on.is_mac());
 		assert!(opts.target.arch.is_aarch_64());
@@ -552,7 +520,7 @@ mod tests {
 		for variant in BuildMode::value_variants() {
 			match variant {
 				BuildMode::Debug => assert!(variant.is_debug()),
-				BuildMode::Relese => assert!(variant.is_relese()),
+				BuildMode::Release => assert!(variant.is_release()),
 			}
 		}
 
@@ -624,7 +592,7 @@ mod tests {
 
 		// BuildMode strings should be stable
 		assert_eq!(BuildMode::Debug.as_ref(), "Debug");
-		assert_eq!(BuildMode::Relese.as_ref(), "Relese");
+		assert_eq!(BuildMode::Release.as_ref(), "Relese");
 
 		// RunsOn strings should be stable
 		assert_eq!(RunsOn::Mac.as_ref(), "Mac");
@@ -789,9 +757,9 @@ mod tests {
 		// Test CompileOpt trait with various configurations
 		let test_cases = vec![
 			(BuildMode::Debug, RunsOn::Oso, Arch::Aarch64,),
-			(BuildMode::Relese, RunsOn::Linux, Arch::Riscv64,),
+			(BuildMode::Release, RunsOn::Linux, Arch::Riscv64,),
 			(BuildMode::Debug, RunsOn::Mac, Arch::Riscv64,),
-			(BuildMode::Relese, RunsOn::Uefi, Arch::Aarch64,),
+			(BuildMode::Release, RunsOn::Uefi, Arch::Aarch64,),
 		];
 
 		for (build_mode, runs_on, arch,) in test_cases {

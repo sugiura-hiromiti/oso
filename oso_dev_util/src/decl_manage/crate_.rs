@@ -9,7 +9,7 @@ use crate::decl_manage::workspace::Workspace;
 use crate::decl_manage::workspace::WorkspaceAction;
 use crate::decl_manage::workspace::WorkspaceInfo;
 use crate::decl_manage::workspace::WorkspaceSurvey;
-use anyhow::anyhow;
+use anyhow::Context;
 use oso_dev_util_helper::cli::Run;
 use oso_dev_util_helper::fs::CARGO_CONFIG;
 use oso_dev_util_helper::fs::CARGO_MANIFEST;
@@ -243,7 +243,7 @@ impl PackageSurvey for OsoCrate {
 						None
 					}
 				},)
-				.ok_or(anyhow!("can't get host target tuple"),)
+				.context("can't get host target tuple",)
 		};
 
 		Ok(match self.cargo_conf() {
@@ -264,13 +264,12 @@ impl PackageSurvey for OsoCrate {
 	}
 
 	fn build_artifact(&self, opt: Option<impl CompileOpt,>,) -> Rslt<PathBuf,> {
-		let (target_tuple, build_mode,): (String, String,) = match opt {
-			Some(opt,) => (opt.target().into(), opt.build_mode().into(),),
+		let (arch, build_mode,): (String, String,) = match opt {
+			Some(opt,) => (opt.arch().into(), opt.build_mode().into(),),
 			None => (self.default_target()?.into(), BuildMode::default().as_ref().to_string(),),
 		};
 
-		let project_root =
-			project_root_path()?.join("target",).join(target_tuple,).join(build_mode,);
+		let project_root = project_root_path()?.join("target",).join(arch,).join(build_mode,);
 
 		Ok(project_root,)
 	}
@@ -284,7 +283,6 @@ pub trait CrateCalled: Eq + Sized + Clone + From<Self::F,> + Debug {
 }
 
 #[cfg(test)]
-#[cfg(false)]
 mod tests {
 	use super::*;
 	use std::path::PathBuf;
@@ -294,6 +292,7 @@ mod tests {
 	// Working around this by using the current directory which should exist
 
 	#[test]
+	#[ignore = "infinite loop"]
 	fn test_oso_crate_default() {
 		let default_crate = OsoCrate::default();
 		let default_path = default_crate.path();
@@ -302,6 +301,7 @@ mod tests {
 	}
 
 	#[test]
+	#[ignore = "infinite loop"]
 	fn test_oso_crate_creation_with_current_dir() {
 		// Use current directory which should exist
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
@@ -310,6 +310,7 @@ mod tests {
 	}
 
 	#[test]
+	#[ignore = "infinite loop"]
 	fn test_oso_crate_clone_with_current_dir() {
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let original = OsoCrate::from(current_dir.clone(),);
@@ -320,6 +321,7 @@ mod tests {
 	}
 
 	#[test]
+	#[ignore = "infinite loop"]
 	fn test_oso_crate_equality_with_current_dir() {
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate1 = OsoCrate::from(current_dir.clone(),);
@@ -329,6 +331,7 @@ mod tests {
 	}
 
 	#[test]
+	#[ignore = "infinite loop"]
 	fn test_crate_info_path_with_current_dir() {
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir.clone(),);
@@ -338,6 +341,7 @@ mod tests {
 	}
 
 	#[test]
+	#[ignore = "infinite loop"]
 	fn test_crate_called_whoami_with_current_dir() {
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir.clone(),);
@@ -348,6 +352,7 @@ mod tests {
 	}
 
 	#[test]
+	#[ignore = "infinite loop"]
 	fn test_crate_called_path_buf_with_current_dir() {
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir.clone(),);
@@ -357,6 +362,7 @@ mod tests {
 	}
 
 	#[test]
+	#[ignore = "infinite loop"]
 	fn test_from_pathbuf_conversion_with_current_dir() {
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 
@@ -373,6 +379,7 @@ mod tests {
 	}
 
 	#[test]
+	#[ignore = "infinite loop"]
 	fn test_oso_crate_chart_conversion_with_current_dir() {
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir.clone(),);
@@ -389,6 +396,7 @@ mod tests {
 	}
 
 	#[test]
+	#[ignore = "infinite loop"]
 	fn test_debug_implementation() {
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
@@ -402,6 +410,7 @@ mod tests {
 	// Test methods that don't require valid paths (they return Results)
 
 	#[test]
+	#[ignore = "infinite loop"]
 	fn test_crate_action_methods_exist() {
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
@@ -410,13 +419,14 @@ mod tests {
 		// ignore `test` method because running it in test cause infinity loop
 		// ignore `run` too because this crate is library crate. nothing to run.
 		let _build_result = crate_obj.build();
-		let _check_result = crate_obj.ckeck();
+		let _check_result = crate_obj.check();
 		let _fmt_result = crate_obj.format();
 
 		// If we get here without compilation errors, the methods exist
 	}
 
 	#[test]
+	#[ignore = "infinite loop"]
 	fn test_crate_action_with_methods_exist() {
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
@@ -433,6 +443,7 @@ mod tests {
 	}
 
 	#[test]
+	#[ignore = "infinite loop"]
 	fn test_crate_info_methods() {
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
@@ -446,6 +457,7 @@ mod tests {
 	}
 
 	#[test]
+	#[ignore = "infinite loop"]
 	fn test_package_survey_methods() {
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
@@ -458,12 +470,10 @@ mod tests {
 		use crate::cargo::BuildMode;
 		use crate::cargo::Feature;
 		use crate::cargo::Opts;
-		use crate::cargo::RunsOn;
-		use crate::cargo::Target;
 		let opts = Opts {
 			build_mode:    BuildMode::Debug,
 			feature_flags: Vec::<Feature,>::new(),
-			target:        Target { runs_on: RunsOn::Oso, arch: Arch::Aarch64, },
+			arch:          Arch::Aarch64,
 		};
 		let _artifact_result = crate_obj.build_artifact(Some(opts,),);
 
@@ -471,6 +481,7 @@ mod tests {
 	}
 
 	#[test]
+	#[ignore = "infinite loop"]
 	fn test_workspace_info_methods() {
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
@@ -482,6 +493,7 @@ mod tests {
 	}
 
 	#[test]
+	#[ignore = "infinite loop"]
 	fn test_workspace_survey_land_on() {
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let parent_dir = current_dir.parent().unwrap_or(&current_dir,).to_path_buf();
@@ -497,6 +509,7 @@ mod tests {
 	}
 
 	#[test]
+	#[ignore = "infinite loop"]
 	fn test_trait_implementations() {
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
@@ -514,6 +527,7 @@ mod tests {
 
 	// Test the survey methods that contain todo!() - they should panic
 	#[test]
+	#[ignore = "infinite loop"]
 	fn test_crate_survey_todo_methods() {
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);

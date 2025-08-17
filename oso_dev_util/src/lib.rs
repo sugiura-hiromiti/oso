@@ -236,7 +236,7 @@ mod tests {
 		use cargo::RunsOn;
 
 		let cli = Cli {
-			build_mode:    Some(BuildMode::Relese,),
+			build_mode:    Some(BuildMode::Release,),
 			feature_flags: None,
 			runs_on:       Some(RunsOn::Linux,),
 			arch:          Some(Arch::Riscv64,),
@@ -313,7 +313,7 @@ mod tests {
 		use cargo::RunsOn;
 
 		assert_eq!(BuildMode::Debug.as_ref(), "Debug");
-		assert_eq!(BuildMode::Relese.as_ref(), "Relese");
+		assert_eq!(BuildMode::Release.as_ref(), "Relese");
 
 		assert_eq!(RunsOn::Oso.as_ref(), "Oso");
 		assert_eq!(RunsOn::Linux.as_ref(), "Linux");
@@ -334,8 +334,8 @@ mod tests {
 		// BuildMode
 		assert!(BuildMode::Debug.is_debug());
 		assert!(!BuildMode::Debug.is_relese());
-		assert!(BuildMode::Relese.is_relese());
-		assert!(!BuildMode::Relese.is_debug());
+		assert!(BuildMode::Release.is_relese());
+		assert!(!BuildMode::Release.is_debug());
 
 		// RunsOn
 		assert!(RunsOn::Oso.is_oso());
@@ -411,7 +411,7 @@ mod tests {
 		let build_mode_values = BuildMode::value_variants();
 		assert_eq!(build_mode_values.len(), 2);
 		assert!(build_mode_values.contains(&BuildMode::Debug));
-		assert!(build_mode_values.contains(&BuildMode::Relese));
+		assert!(build_mode_values.contains(&BuildMode::Release));
 
 		let runs_on_values = RunsOn::value_variants();
 		assert_eq!(runs_on_values.len(), 4);
@@ -556,7 +556,7 @@ mod tests {
 		test_target_traits(Target::default(),);
 
 		// Test that Opts can be constructed with all combinations
-		let all_build_modes = [BuildMode::Debug, BuildMode::Relese,];
+		let all_build_modes = [BuildMode::Debug, BuildMode::Release,];
 		let all_runs_on = [RunsOn::Oso, RunsOn::Linux, RunsOn::Mac, RunsOn::Uefi,];
 		let all_archs = [Arch::Aarch64, Arch::Riscv64,];
 
@@ -614,7 +614,7 @@ mod tests {
 		use std::str::FromStr;
 
 		// Test round-trip conversions for all enum variants
-		let build_modes = [BuildMode::Debug, BuildMode::Relese,];
+		let build_modes = [BuildMode::Debug, BuildMode::Release,];
 		for mode in build_modes {
 			let as_str = mode.as_ref();
 			let parsed = BuildMode::from_str(as_str,).unwrap();
@@ -656,7 +656,7 @@ mod tests {
 		let mut opts_vec = Vec::new();
 		for i in 0..1000 {
 			let opts = Opts {
-				build_mode:    if i % 2 == 0 { BuildMode::Debug } else { BuildMode::Relese },
+				build_mode:    if i % 2 == 0 { BuildMode::Debug } else { BuildMode::Release },
 				feature_flags: Vec::<Feature,>::new(),
 				target:        Target {
 					runs_on: match i % 4 {
