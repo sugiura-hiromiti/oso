@@ -1,15 +1,15 @@
 [package]
 name = "oso_loader"
 version = "0.1.0"
-edition = "2024"
-description = "UEFI-based bootloader for the OSO operating system with ELF kernel loading support"
 authors = ["OSO Development Team"]
-license = "MIT OR Apache-2.0"
-repository = "https://github.com/oso-os/oso"
-documentation = "https://docs.rs/oso_loader"
-keywords = ["bootloader", "uefi", "elf", "kernel", "operating-system"]
 categories = ["embedded", "no-std", "os"]
+documentation = "https://docs.rs/oso_loader"
+edition = "2024"
+keywords = ["bootloader", "uefi", "elf", "kernel", "operating-system"]
+license = "MIT OR Apache-2.0"
 readme = "README.md"
+repository = "https://github.com/oso-os/oso"
+description = "UEFI-based bootloader for the OSO operating system with ELF kernel loading support"
 
 [dependencies]
 oso_error = { path = "../oso_error" }
@@ -29,3 +29,6 @@ bltonly = []
 # Documentation configuration for docs.rs
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
+
+[lints.clippy]
+tabs_in_doc_comments = "allow"
