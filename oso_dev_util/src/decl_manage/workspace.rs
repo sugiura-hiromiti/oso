@@ -143,7 +143,6 @@ mod tests {
 	use std::path::PathBuf;
 
 	#[test]
-	#[ignore = "infinite loop"]
 	fn test_workspace_action_at_methods() {
 		// Test workspace action methods that operate on specific crates
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
@@ -154,9 +153,9 @@ mod tests {
 
 		// Test action methods (they will likely fail in test environment)
 		// Note: These methods require WorkspaceSurvey bound, which OsoCrate implements
+		// ignore `test_at` method because running it in test cause infinity loop
+		// ignore `run_at` too because this crate is library crate. nothing to run.
 		let _build_result = workspace.build_at(target_crate.clone(),);
-		let _test_result = workspace.test_at(target_crate.clone(),);
-		let _run_result = workspace.run_at(target_crate.clone(),);
 		let _check_result = workspace.check_at(target_crate.clone(),);
 		let _fmt_result = workspace.fmt_at(target_crate,);
 
@@ -164,7 +163,6 @@ mod tests {
 	}
 
 	#[test]
-	#[ignore = "infinite loop"]
 	fn test_workspace_action_at_with_methods() {
 		// Test workspace action methods with options
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
@@ -176,11 +174,11 @@ mod tests {
 		let opts = ["--verbose",];
 
 		// Test action methods with options
+		// ignore `test_at_with` method because running it in test cause infinity loop
+		// ignore `run_at_with` too because this crate is library crate. nothing to run.
 		let _build_result = workspace.build_at_with(target_crate.clone(), &opts,);
-		let _test_result = workspace.test_at_with(target_crate.clone(), &opts,);
-		let _run_result = workspace.run_at_with(target_crate.clone(), &opts,);
 		let _check_result = workspace.check_at_with(target_crate.clone(), &opts,);
-		let _fmt_result = workspace.fmt_at_with(target_crate, &opts,);
+		let _fmt_result = workspace.fmt_at_with(target_crate, &["--all",],);
 
 		// If we get here without compilation errors, the methods exist
 	}
@@ -313,7 +311,6 @@ mod tests {
 	}
 
 	#[test]
-	///  TEST: need fix production code
 	fn test_workspace_integration() {
 		// Test that Workspace trait integrates all functionality
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
