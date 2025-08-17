@@ -5,3 +5,6 @@ edition = "2024"
 
 [dependencies]
 oso_error = { path = "../oso_error" }
+
+[lints.clippy]
+tabs_in_doc_comments = "allow"
