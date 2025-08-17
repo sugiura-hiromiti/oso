@@ -34,7 +34,7 @@
 //! ### Basic Command Execution
 //!
 //! ```rust,no_run
-//! use oso_dev_util::Run;
+//! use oso_dev_util_helper::cli::Run;
 //! use std::process::Command;
 //!
 //! // Execute a command with enhanced output
@@ -91,7 +91,6 @@ mod tests {
 	#[test]
 	fn test_oso_dev_util_path_constant() {
 		// Test that the OSO_DEV_UTIL_PATH constant is set and valid
-		assert!(!OSO_DEV_UTIL_PATH.is_empty());
 		assert!(OSO_DEV_UTIL_PATH.contains("Cargo.toml"));
 
 		// Verify the path exists
@@ -425,5 +424,321 @@ mod tests {
 		assert_eq!(arch_values.len(), 2);
 		assert!(arch_values.contains(&Arch::Aarch64));
 		assert!(arch_values.contains(&Arch::Riscv64));
+	}
+
+	#[test]
+	fn test_oso_dev_util_path_validation() {
+		// Test that the OSO_DEV_UTIL_PATH constant points to a valid Cargo.toml
+		let path = std::path::Path::new(OSO_DEV_UTIL_PATH,);
+
+		// Should be an absolute path
+		assert!(path.is_absolute());
+
+		// Should end with Cargo.toml
+		assert_eq!(path.file_name().unwrap(), "Cargo.toml");
+
+		// Should be readable
+		let content = std::fs::read_to_string(path,).expect("Should be able to read Cargo.toml",);
+		assert!(content.contains("[package]"));
+		assert!(content.contains("oso_dev_util"));
+	}
+
+	#[test]
+	fn test_result_type_alias() {
+		// Test that Rslt is properly aliased to anyhow::Result
+		use anyhow::Context;
+
+		fn test_function() -> Rslt<i32,> {
+			Ok(42,)
+		}
+
+		fn test_error_function() -> Rslt<i32,> {
+			Err(anyhow::anyhow!("test error"),).context("additional context",)
+		}
+
+		// Test success case
+		let result = test_function();
+		assert!(result.is_ok());
+		assert_eq!(result.unwrap(), 42);
+
+		// Test error case
+		let error_result = test_error_function();
+		assert!(error_result.is_err());
+		let error = error_result.unwrap_err();
+		assert!(error.to_string().contains("additional context"));
+	}
+
+	#[test]
+	fn test_module_imports() {
+		// Test that all modules can be imported without conflicts
+		use cargo::*;
+		use fs::*;
+
+		// Test that we can create instances of key types
+		let _build_mode = BuildMode::Debug;
+		let _runs_on = RunsOn::Oso;
+		let _arch = Arch::Aarch64;
+
+		// Test that functions are accessible
+		let _project_result = project_root();
+		let _current_result = current_crate();
+	}
+
+	#[test]
+	fn test_feature_flag_compilation() {
+		// Test that we can reference the Feature enum even if empty
+		use cargo::Feature;
+		let _features: Vec<Feature,> = vec![];
+	}
+
+	#[test]
+	fn test_error_handling_patterns() {
+		// Test common error handling patterns used throughout the crate
+		use anyhow::Context;
+		use anyhow::Result;
+
+		fn inner_operation() -> Result<String,> {
+			Ok("success".to_string(),)
+		}
+
+		fn outer_operation() -> Rslt<String,> {
+			inner_operation().context("outer operation failed",)
+		}
+
+		// Test successful operation
+		let result = outer_operation();
+		assert!(result.is_ok());
+		assert_eq!(result.unwrap(), "success");
+
+		// Test error propagation
+		fn failing_operation() -> Result<String,> {
+			Err(anyhow::anyhow!("inner failure"),)
+		}
+
+		fn failing_outer() -> Rslt<String,> {
+			failing_operation().context("outer context",)
+		}
+
+		let error_result = failing_outer();
+		assert!(error_result.is_err());
+		let error = error_result.unwrap_err();
+		let error_chain: Vec<_,> = error.chain().collect();
+		assert!(error_chain.len() >= 2);
+	}
+
+	#[test]
+	fn test_type_system_constraints() {
+		// Test that the type system enforces expected constraints
+		use cargo::Arch;
+		use cargo::BuildMode;
+		use cargo::CompileOpt;
+		use cargo::Feature;
+		use cargo::Opts;
+		use cargo::RunsOn;
+		use cargo::Target;
+
+		// Test that all enums implement required traits
+		fn test_enum_traits<T,>(_value: T,)
+		where T: Clone + Copy + PartialEq + Eq + std::fmt::Debug + Default {
+			// If this compiles, the traits are implemented
+		}
+
+		test_enum_traits(BuildMode::Debug,);
+		test_enum_traits(RunsOn::Oso,);
+		test_enum_traits(Arch::Aarch64,);
+
+		// Test that Target implements required traits
+		fn test_target_traits<T,>(_value: T,)
+		where T: Clone + Default {
+			// If this compiles, the traits are implemented
+		}
+
+		test_target_traits(Target::default(),);
+
+		// Test that Opts can be constructed with all combinations
+		let all_build_modes = [BuildMode::Debug, BuildMode::Relese,];
+		let all_runs_on = [RunsOn::Oso, RunsOn::Linux, RunsOn::Mac, RunsOn::Uefi,];
+		let all_archs = [Arch::Aarch64, Arch::Riscv64,];
+
+		for &build_mode in &all_build_modes {
+			for &runs_on in &all_runs_on {
+				for &arch in &all_archs {
+					let opts = Opts {
+						build_mode,
+						feature_flags: Vec::<Feature,>::new(),
+						target: Target { runs_on, arch, },
+					};
+
+					// Test CompileOpt trait methods
+					let _build_mode_str: String = opts.build_mode().into();
+					let _runs_on_str: String = opts.runs_on().into();
+					let _arch_str: String = opts.arch().into();
+					let _target_str: String = opts.target().into();
+					let _features = opts.feature_flags();
+				}
+			}
+		}
+	}
+
+	#[test]
+	fn test_path_handling() {
+		// Test path handling throughout the crate
+		use std::path::Path;
+		use std::path::PathBuf;
+
+		// Test that OSO_DEV_UTIL_PATH is a valid path
+		let manifest_path = Path::new(OSO_DEV_UTIL_PATH,);
+		assert!(manifest_path.exists());
+		assert!(manifest_path.is_file());
+
+		// Test path operations
+		let parent = manifest_path.parent().expect("Should have parent directory",);
+		assert!(parent.exists());
+		assert!(parent.is_dir());
+
+		// Test that we can construct relative paths
+		let relative_path = PathBuf::from("./Cargo.toml",);
+		assert!(!relative_path.is_absolute());
+
+		// Test path conversion
+		let path_str = manifest_path.to_string_lossy();
+		assert!(path_str.contains("Cargo.toml"));
+	}
+
+	#[test]
+	fn test_string_conversions_comprehensive() {
+		// Test all string conversion patterns used in the crate
+		use cargo::Arch;
+		use cargo::BuildMode;
+		use cargo::RunsOn;
+		use std::str::FromStr;
+
+		// Test round-trip conversions for all enum variants
+		let build_modes = [BuildMode::Debug, BuildMode::Relese,];
+		for mode in build_modes {
+			let as_str = mode.as_ref();
+			let parsed = BuildMode::from_str(as_str,).unwrap();
+			assert_eq!(mode, parsed);
+		}
+
+		let runs_on_variants = [RunsOn::Oso, RunsOn::Linux, RunsOn::Mac, RunsOn::Uefi,];
+		for variant in runs_on_variants {
+			let as_str = variant.as_ref();
+			let parsed = RunsOn::from_str(as_str,).unwrap();
+			assert_eq!(variant, parsed);
+		}
+
+		let arch_variants = [Arch::Aarch64, Arch::Riscv64,];
+		for arch in arch_variants {
+			let as_str = arch.as_ref();
+			let parsed = Arch::from_str(as_str,).unwrap();
+			assert_eq!(arch, parsed);
+		}
+
+		// Test invalid string parsing
+		assert!(BuildMode::from_str("Invalid").is_err());
+		assert!(RunsOn::from_str("Windows").is_err());
+		assert!(Arch::from_str("x86_64").is_err());
+	}
+
+	#[test]
+	fn test_memory_safety() {
+		// Test that the crate handles memory safely
+		use cargo::Arch;
+		use cargo::BuildMode;
+		use cargo::CompileOpt;
+		use cargo::Feature;
+		use cargo::Opts;
+		use cargo::RunsOn;
+		use cargo::Target;
+
+		// Test that we can create and drop many instances without issues
+		let mut opts_vec = Vec::new();
+		for i in 0..1000 {
+			let opts = Opts {
+				build_mode:    if i % 2 == 0 { BuildMode::Debug } else { BuildMode::Relese },
+				feature_flags: Vec::<Feature,>::new(),
+				target:        Target {
+					runs_on: match i % 4 {
+						0 => RunsOn::Oso,
+						1 => RunsOn::Linux,
+						2 => RunsOn::Mac,
+						_ => RunsOn::Uefi,
+					},
+					arch:    if i % 2 == 0 { Arch::Aarch64 } else { Arch::Riscv64 },
+				},
+			};
+			opts_vec.push(opts,);
+		}
+
+		// Test that we can access all instances
+		assert_eq!(opts_vec.len(), 1000);
+		for opts in &opts_vec {
+			let _target: String = opts.target().into();
+		}
+
+		// Vector should be dropped safely when it goes out of scope
+	}
+
+	#[test]
+	fn test_concurrent_access() {
+		// Test that constants and static data can be accessed concurrently
+		use std::thread;
+
+		let handles: Vec<_,> = (0..10)
+			.map(|_| {
+				thread::spawn(|| {
+					// Access the constant from multiple threads
+					let path = OSO_DEV_UTIL_PATH;
+					assert!(path.contains("Cargo.toml"));
+
+					// Create enum instances
+					let build_mode = cargo::BuildMode::Debug;
+					assert!(build_mode.is_debug());
+
+					let runs_on = cargo::RunsOn::Oso;
+					assert!(runs_on.is_oso());
+				},)
+			},)
+			.collect();
+
+		// Wait for all threads to complete
+		for handle in handles {
+			handle.join().unwrap();
+		}
+	}
+
+	#[test]
+	fn test_documentation_examples() {
+		// Test that code examples from documentation work
+		use cargo::Arch;
+		use cargo::BuildMode;
+		use cargo::CompileOpt;
+		use cargo::Feature;
+		use cargo::Opts;
+		use cargo::RunsOn;
+		use cargo::Target;
+
+		// Example from CompileOpt documentation
+		let opts = Opts {
+			build_mode:    BuildMode::Debug,
+			feature_flags: Vec::<Feature,>::new(),
+			target:        Target { runs_on: RunsOn::Oso, arch: Arch::Aarch64, },
+		};
+
+		let build_mode: String = opts.build_mode().into();
+		assert_eq!(build_mode, "Debug");
+
+		let feature_flags = opts.feature_flags();
+		assert!(feature_flags.is_empty());
+
+		let runs_on: String = opts.runs_on().into();
+		assert_eq!(runs_on, "Oso");
+
+		let arch: String = opts.arch().into();
+		assert_eq!(arch, "Aarch64");
+
+		let target: String = opts.target().into();
+		assert_eq!(target, "aarch64-unknown-oso");
 	}
 }

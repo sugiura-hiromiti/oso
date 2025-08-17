@@ -102,7 +102,7 @@ pub struct Firmware {
 	pub vars: PathBuf,
 }
 
-#[derive(Default, Clone,)]
+#[derive(Default, Clone, Debug,)]
 pub struct Target {
 	pub runs_on: RunsOn,
 	pub arch:    Arch,
@@ -147,7 +147,6 @@ pub enum Arch {
 }
 
 #[cfg(test)]
-// #[cfg(false)]
 mod tests {
 	use super::*;
 	use proptest::prelude::*;
@@ -542,5 +541,280 @@ mod tests {
 		assert!(opts.feature_flags.is_empty());
 		assert!(opts.target.runs_on.is_mac());
 		assert!(opts.target.arch.is_aarch_64());
+	}
+
+	#[test]
+	fn test_enum_exhaustiveness() {
+		// Test that we handle all enum variants
+		use clap::ValueEnum;
+
+		// Test that all BuildMode variants are covered
+		for variant in BuildMode::value_variants() {
+			match variant {
+				BuildMode::Debug => assert!(variant.is_debug()),
+				BuildMode::Relese => assert!(variant.is_relese()),
+			}
+		}
+
+		// Test that all RunsOn variants are covered
+		for variant in RunsOn::value_variants() {
+			match variant {
+				RunsOn::Mac => assert!(variant.is_mac()),
+				RunsOn::Uefi => assert!(variant.is_uefi()),
+				RunsOn::Oso => assert!(variant.is_oso()),
+				RunsOn::Linux => assert!(variant.is_linux()),
+			}
+		}
+
+		// Test that all Arch variants are covered
+		for variant in Arch::value_variants() {
+			match variant {
+				Arch::Aarch64 => assert!(variant.is_aarch_64()),
+				Arch::Riscv64 => assert!(variant.is_riscv_64()),
+			}
+		}
+	}
+
+	#[test]
+	fn test_debug_implementations() {
+		// Test that Debug is implemented for all types
+		let build_mode = BuildMode::Debug;
+		let debug_str = format!("{:?}", build_mode);
+		assert!(debug_str.contains("Debug"));
+
+		let runs_on = RunsOn::Oso;
+		let debug_str = format!("{:?}", runs_on);
+		assert!(debug_str.contains("Oso"));
+
+		let arch = Arch::Aarch64;
+		let debug_str = format!("{:?}", arch);
+		assert!(debug_str.contains("Aarch64"));
+
+		let target = Target::default();
+		let debug_str = format!("{:?}", target);
+		assert!(!debug_str.is_empty());
+
+		let firmware =
+			Firmware { code: PathBuf::from("/test/code",), vars: PathBuf::from("/test/vars",), };
+		let debug_str = format!("{:?}", firmware);
+		assert!(debug_str.contains("Firmware"));
+		assert!(debug_str.contains("/test/code"));
+		assert!(debug_str.contains("/test/vars"));
+	}
+
+	#[test]
+	fn test_memory_layout() {
+		// Test that enums have expected memory layout
+		use std::mem;
+
+		// Enums should be small since they're Copy
+		assert!(mem::size_of::<BuildMode,>() <= 8);
+		assert!(mem::size_of::<RunsOn,>() <= 8);
+		assert!(mem::size_of::<Arch,>() <= 8);
+
+		// Structs should have reasonable sizes
+		assert!(mem::size_of::<Target,>() <= 64);
+		assert!(mem::size_of::<Cli,>() <= 256);
+	}
+
+	#[test]
+	fn test_serialization_compatibility() {
+		// Test that string representations are stable
+		// This is important for CLI compatibility
+
+		// BuildMode strings should be stable
+		assert_eq!(BuildMode::Debug.as_ref(), "Debug");
+		assert_eq!(BuildMode::Relese.as_ref(), "Relese");
+
+		// RunsOn strings should be stable
+		assert_eq!(RunsOn::Mac.as_ref(), "Mac");
+		assert_eq!(RunsOn::Uefi.as_ref(), "Uefi");
+		assert_eq!(RunsOn::Oso.as_ref(), "Oso");
+		assert_eq!(RunsOn::Linux.as_ref(), "Linux");
+
+		// Arch strings should be stable
+		assert_eq!(Arch::Aarch64.as_ref(), "Aarch64");
+		assert_eq!(Arch::Riscv64.as_ref(), "Riscv64");
+	}
+
+	#[test]
+	fn test_target_tuple_format_stability() {
+		// Test that target tuple format is stable
+		let test_cases = vec![
+			(Arch::Aarch64, RunsOn::Oso, "aarch64-unknown-oso",),
+			(Arch::Aarch64, RunsOn::Linux, "aarch64-unknown-linux",),
+			(Arch::Riscv64, RunsOn::Mac, "riscv64-unknown-mac",),
+			(Arch::Riscv64, RunsOn::Uefi, "riscv64-unknown-uefi",),
+		];
+
+		for (arch, runs_on, expected,) in test_cases {
+			let opts = Opts {
+				build_mode:    BuildMode::Debug,
+				feature_flags: vec![],
+				target:        Target { runs_on, arch, },
+			};
+
+			let target: String = opts.target().into();
+			assert_eq!(target, expected);
+		}
+	}
+
+	#[test]
+	fn test_concurrent_access() {
+		// Test that enums can be used concurrently
+		use std::sync::Arc;
+		use std::thread;
+
+		let build_mode = Arc::new(BuildMode::Debug,);
+		let runs_on = Arc::new(RunsOn::Oso,);
+		let arch = Arc::new(Arch::Aarch64,);
+
+		let handles: Vec<_,> = (0..10)
+			.map(|_| {
+				let bm = Arc::clone(&build_mode,);
+				let ro = Arc::clone(&runs_on,);
+				let a = Arc::clone(&arch,);
+
+				thread::spawn(move || {
+					assert!(bm.is_debug());
+					assert!(ro.is_oso());
+					assert!(a.is_aarch_64());
+
+					let target = Target { runs_on: *ro, arch: *a, };
+					let opts = Opts { build_mode: *bm, feature_flags: vec![], target, };
+
+					let _target_str: String = opts.target().into();
+				},)
+			},)
+			.collect();
+
+		for handle in handles {
+			handle.join().unwrap();
+		}
+	}
+
+	#[test]
+	fn test_cli_parser_integration() {
+		// Test that CLI parsing works with clap
+		use clap::CommandFactory;
+
+		// Test that we can create a parser
+		let _parser = Cli::command();
+
+		// Test default CLI
+		let cli = Cli {
+			build_mode:    None,
+			feature_flags: None,
+			runs_on:       None,
+			arch:          None,
+		};
+
+		let opts = cli.to_opts();
+		assert!(opts.build_mode.is_debug());
+		assert!(opts.target.runs_on.is_oso());
+		assert!(opts.target.arch.is_aarch_64());
+	}
+
+	#[test]
+	fn test_error_handling() {
+		// Test error handling in string parsing
+		use std::str::FromStr;
+
+		// Test invalid BuildMode
+		let result = BuildMode::from_str("InvalidMode",);
+		assert!(result.is_err());
+
+		// Test invalid RunsOn
+		let result = RunsOn::from_str("Windows",);
+		assert!(result.is_err());
+
+		// Test invalid Arch
+		let result = Arch::from_str("x86_64",);
+		assert!(result.is_err());
+
+		// Test case sensitivity
+		let result = BuildMode::from_str("debug",);
+		assert!(result.is_err());
+
+		let result = RunsOn::from_str("oso",);
+		assert!(result.is_err());
+
+		let result = Arch::from_str("aarch64",);
+		assert!(result.is_err());
+	}
+
+	#[test]
+	fn test_feature_flags_empty() {
+		// Test that Feature enum is empty as expected
+		// Note: Feature enum doesn't implement ValueEnum since it's empty
+
+		// Test that we can create empty vectors
+		let features: Vec<Feature,> = vec![];
+		assert!(features.is_empty());
+
+		// Test in Opts
+		let opts = Opts {
+			build_mode:    BuildMode::Debug,
+			feature_flags: features,
+			target:        Target::default(),
+		};
+
+		let returned_features = opts.feature_flags();
+		assert!(returned_features.is_empty());
+	}
+
+	#[test]
+	fn test_assets_and_firmware() {
+		// Test Assets and Firmware structs
+		let firmware = Firmware {
+			code: PathBuf::from("/ovmf/OVMF_CODE.fd",),
+			vars: PathBuf::from("/ovmf/OVMF_VARS.fd",),
+		};
+
+		let assets = Assets { firmware, };
+
+		// Test field access
+		assert_eq!(assets.firmware.code, PathBuf::from("/ovmf/OVMF_CODE.fd"));
+		assert_eq!(assets.firmware.vars, PathBuf::from("/ovmf/OVMF_VARS.fd"));
+
+		// Test Debug implementation
+		let debug_str = format!("{:?}", assets.firmware);
+		assert!(debug_str.contains("Firmware"));
+		assert!(debug_str.contains("OVMF_CODE.fd"));
+		assert!(debug_str.contains("OVMF_VARS.fd"));
+	}
+
+	#[test]
+	fn test_compile_opt_trait_edge_cases() {
+		// Test CompileOpt trait with various configurations
+		let test_cases = vec![
+			(BuildMode::Debug, RunsOn::Oso, Arch::Aarch64,),
+			(BuildMode::Relese, RunsOn::Linux, Arch::Riscv64,),
+			(BuildMode::Debug, RunsOn::Mac, Arch::Riscv64,),
+			(BuildMode::Relese, RunsOn::Uefi, Arch::Aarch64,),
+		];
+
+		for (build_mode, runs_on, arch,) in test_cases {
+			let opts =
+				Opts { build_mode, feature_flags: vec![], target: Target { runs_on, arch, }, };
+
+			// Test all trait methods
+			let build_mode_str: String = opts.build_mode().into();
+			let runs_on_str: String = opts.runs_on().into();
+			let arch_str: String = opts.arch().into();
+			let target_str: String = opts.target().into();
+			let features = opts.feature_flags();
+
+			// Verify results
+			assert_eq!(build_mode_str, build_mode.as_ref());
+			assert_eq!(runs_on_str, runs_on.as_ref());
+			assert_eq!(arch_str, arch.as_ref());
+			assert!(features.is_empty());
+
+			// Target should be properly formatted
+			assert!(target_str.contains(&arch.as_ref().to_lowercase()));
+			assert!(target_str.contains(&runs_on.as_ref().to_lowercase()));
+			assert!(target_str.contains("unknown"));
+		}
 	}
 }

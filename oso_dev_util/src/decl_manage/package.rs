@@ -24,7 +24,6 @@ pub trait PackageSurvey: PackageInfo + CrateSurvey {
 pub trait PackageInfo: Sized + CrateInfo {}
 
 #[cfg(test)]
-#[cfg(false)]
 mod tests {
 	use super::*;
 	use crate::cargo::BuildMode;
@@ -48,9 +47,6 @@ mod tests {
 
 		// Test as_survey method
 		let _survey = crate_obj.as_survey();
-
-		// If we get here, the trait hierarchy is correct
-		assert!(true);
 	}
 
 	#[test]
@@ -63,12 +59,12 @@ mod tests {
 		let _action_ref: &OsoCrate = &crate_obj;
 
 		// PackageAction should provide access to CrateAction methods
-		let _build_result = crate_obj.build();
-		let _test_result = crate_obj.test();
-		let _run_result = crate_obj.run();
+		let build_result = crate_obj.build();
+		let format_result = crate_obj.format();
+		let check_result = crate_obj.check();
 
 		// If we get here without compilation errors, PackageAction is working
-		assert!(true);
+		assert!(build_result.is_ok() || format_result.is_ok() || check_result.is_ok());
 	}
 
 	#[test]
@@ -107,15 +103,7 @@ mod tests {
 		};
 
 		let artifact_result = crate_obj.build_artifact(Some(opts,),);
-		match artifact_result {
-			Ok(_artifact_path,) => {
-				assert!(true);
-			},
-			Err(_,) => {
-				// Expected in test environment
-				assert!(true);
-			},
-		}
+		assert!(artifact_result.is_ok());
 	}
 
 	#[test]
@@ -134,7 +122,6 @@ mod tests {
 		let _toml_result = crate_obj.toml();
 
 		// If we get here without compilation errors, PackageInfo is working
-		assert!(true);
 	}
 
 	#[test]
@@ -164,8 +151,6 @@ mod tests {
 		test_package_action(&crate_obj,);
 		test_package_survey(&crate_obj,);
 		test_package_info(&crate_obj,);
-
-		assert!(true);
 	}
 
 	#[test]
@@ -188,8 +173,6 @@ mod tests {
 
 		// Test build_artifact with CompileOpt
 		let _artifact_result = crate_obj.build_artifact(Some(opts,),);
-
-		assert!(true);
 	}
 
 	#[test]
@@ -206,7 +189,5 @@ mod tests {
 		let crate_obj = OsoCrate::from(current_dir,);
 
 		work_with_package(crate_obj,);
-
-		assert!(true);
 	}
 }
