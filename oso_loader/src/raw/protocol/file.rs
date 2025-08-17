@@ -53,21 +53,21 @@ To access the new medium, the volume must be reopened.
 
 # Params
 
-- NewHandle
+***NewHandlee***
 A pointer to the location to return the opened handle for the new file.
 See the type EFI_FILE_PROTOCOL description.
 
-- FileName
+***FileName***
 The Null-terminated string of the name of the file to be opened.
 The file name may contain the following path modifiers: “", “.”, and “..”.
 
-- OpenMode
+***OpenMode***
 The mode to open the file.
 The only valid combinations that the file may be opened with are:
 Read, Read/Write, or Create/Read/Write.
 See “Related Definitions” below.
 
-- Attributes
+***Attributes***
 Only valid for EFI_FILE_MODE_CREATE,
 in which case these are the attribute bits for the newly created file.
 See “Related Definitions” below.
@@ -161,11 +161,11 @@ EFI_FILE_INFO is the structure returned as the directory entry.
 
 # Params
 
-- BufferSize
+***BufferSize***
 On input, the size of the Buffer. On output, the amount of data returned in Buffer.
 In both cases, the size is measured in bytes.
 
-- Buffer
+***Buffer***
 The buffer into which the data is read.
 
 # Return
@@ -205,12 +205,12 @@ Direct writes to opened directories are not supported.
 
 # Params
 
-- BufferSize
+***BufferSize***
 On input, the size of the Buffer.
 On output, the amount of data actually written.
 In both cases, the size is measured in bytes.
 
-- Buffer
+***Buffer***
 The buffer of data to write.
 
 # Return
@@ -247,7 +247,7 @@ An error is returned if This is a directory.
 
 # Params
 
-- Position
+***Position***
 The address to return the file’s current position value.
 
 # Return
@@ -281,7 +281,7 @@ This has the effect of starting the read process of the directory entries over.
 
 # Params
 
-- Position
+***Position***
 The byte position from the start of the file to set.
 
 # Return
@@ -313,16 +313,16 @@ that all file systems must support.
 
 # Params
 
-- InformationType
+***InformationType***
 The type identifier for the information being requested.
 Type EFI_GUID is defined on page 181.
 See the EFI_FILE_INFO and EFI_FILE_SYSTEM_INFO descriptions for the related GUID definitions.
 
-- BufferSize
+***BufferSize***
 On input, the size of Buffer. On output, the amount of data returned in Buffer.
 In both cases, the size is measured in bytes.
 
-- Buffer
+***Buffer***
 A pointer to the data buffer to return. The buffer’s type is indicated by InformationType.
 
 # Return
@@ -364,15 +364,15 @@ may not be used on read-only media.
 
 # Params
 
-- InformationType
+***InformationType***
 The type identifier for the information being set.
 Type EFI_GUID is defined in page 181.
 See the EFI_FILE_INFO and EFI_FILE_SYSTEM_INFO descriptions in this section for the related GUID definitions.
 
-- BufferSize
+***BufferSize***
 The size, in bytes, of Buffer
 
-- Buffer
+***Buffer***
 A pointer to the data buffer to write. The buffer’s type is indicated by InformationType.
 
 # Return
@@ -454,23 +454,23 @@ of the Token once the event is signaled.
 
 # Params
 
-- NewHandle
+***NewHandle***
 A pointer to the location to return the opened handle for the new file.
 See the type EFI_FILE_PROTOCOL description. For asynchronous I/O,
 this pointer must remain valid for the duration of the asynchronous operation.
 
-- FileName
+***FileName***
 The Null-terminated string of the name of the file to be opened.
 The file name may contain the following path modifiers: “", “.”, and “..”.
 
-- OpenMode
+***OpenMode***
 The mode to open the file. The only valid combinations that the file may be opened with are: Read,
 Read/Write, or Create/Read/Write. See “Related Definitions” below.
 
-- Attributes
+***Attributes***
 Only valid for EFI_FILE_MODE_CREATE, in which case these are the attribute bits for the
 
-- Token
+***Token***
 A pointer to the token associated with the transaction.
 Type EFI_FILE_IO_TOKEN is defined in “Related Definitions” below.
 
@@ -593,7 +593,7 @@ from the Status field of the Token once the event is signaled.
 
 # Params
 
-- Token
+***Token***
 A pointer to the token associated with the transaction.
 Type EFI_FILE_IO_TOKEN is defined in “Related Definitions” above.
 
@@ -636,7 +636,7 @@ the Event associated with this request will not be signaled.
 
 # Params
 
-- Token
+**Token**
 A pointer to the token associated with the transaction.
 Type EFI_FILE_IO_TOKEN is defined in “Related Definitions” above.
 The BufferSize and Buffer fields are not used for a FlushEx operation.

@@ -9,6 +9,8 @@ use crate::raw::types::UnsafeHandle;
 use super::Handle;
 
 impl BootServices {
+	/// # Safety
+	/// TODO: fill doc comment
 	pub unsafe fn connect_controller(
 		&self,
 		controller_handle: UnsafeHandle,

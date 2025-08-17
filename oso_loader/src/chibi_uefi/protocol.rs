@@ -54,6 +54,8 @@ impl Protocol for GraphicsOutputProtocol {
 }
 
 impl BootServices {
+	/// # Safety
+	/// TODO: fill doc comment
 	pub unsafe fn locate_handle_buffer(
 		&self, ty: HandleSearchType,
 	) -> RsltU<&mut [UnsafeHandle],> {
@@ -80,11 +82,15 @@ impl BootServices {
 		HandleSearchType::ByProtocol(&P::GUID,)
 	}
 
+	/// # Safety
+	/// TODO: fill doc comment
 	pub unsafe fn handles_for_protocol<P: Protocol,>(&self,) -> RsltU<&mut [UnsafeHandle],> {
 		let search_ty = self.protocol_for::<P>();
 		unsafe { self.locate_handle_buffer(search_ty,) }
 	}
 
+	/// # Safety
+	/// TODO: fill doc comment
 	pub unsafe fn handle_for_protocol<P: Protocol,>(&self,) -> RsltU<Handle,> {
 		let handles = unsafe { self.handles_for_protocol::<P>() }?;
 		let first_handle =
@@ -95,23 +101,26 @@ impl BootServices {
 
 	/// # Parms
 	///
-	/// - handle
+	/// ***handle***
 	/// 開きたいプロトコルのインターフェースハンドラ
 	///
-	/// - agent
+	/// ***agent***
 	/// プロトコルを開くためのエージェントのハンドル
 	/// agentがUEFI Driver
 	/// Modelに従っている場合この引数はEFI_DRIVER_BINDING_PROTOCOLのハンドラということになる
 	/// EFI_DRIVER_BINDING_PROTOCOLのインスタンスはUEFIドライバによって生成される
 	/// UEFIアプリケーションの場合、これはイメージハンドラにあたる
 	///
-	/// - controller
+	/// ***controller***
 	/// agentがUEFI Driver Modelに従っている場合この引数はagentのハンドラとなる
 	/// そうでない場合はこの引数はnullでも良い
 	///
-	/// - attr
+	/// ***attr***
 	/// プロトコルをどの様に開くかを指定する
 	/// 詳細は引数の型定義参照
+	///
+	/// # Safety
+	/// TODO: fill safety section
 	pub unsafe fn open_protocol<P: Protocol,>(
 		&self,
 		necessity: OpenProtoNecessity,
