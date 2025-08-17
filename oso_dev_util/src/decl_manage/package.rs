@@ -73,8 +73,6 @@ mod tests {
 		use crate::cargo::Arch;
 		use crate::cargo::Feature;
 		use crate::cargo::Opts;
-		use crate::cargo::RunsOn;
-		use crate::cargo::Target;
 
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
@@ -99,7 +97,7 @@ mod tests {
 		let opts = Opts {
 			build_mode:    BuildMode::Debug,
 			feature_flags: Vec::<Feature,>::new(),
-			target:        Target { runs_on: RunsOn::Oso, arch: Arch::Aarch64, },
+			arch:          Arch::Aarch64,
 		};
 
 		let artifact_result = crate_obj.build_artifact(Some(opts,),);
@@ -159,8 +157,6 @@ mod tests {
 		use crate::cargo::Arch;
 		use crate::cargo::Feature;
 		use crate::cargo::Opts;
-		use crate::cargo::RunsOn;
-		use crate::cargo::Target;
 
 		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
@@ -168,7 +164,7 @@ mod tests {
 		let opts = Opts {
 			build_mode:    BuildMode::Debug,
 			feature_flags: Vec::<Feature,>::new(),
-			target:        Target { runs_on: RunsOn::Linux, arch: Arch::Riscv64, },
+			arch:          Arch::Aarch64,
 		};
 
 		// Test build_artifact with CompileOpt
