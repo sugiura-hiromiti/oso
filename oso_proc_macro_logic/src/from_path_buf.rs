@@ -52,7 +52,7 @@ impl EnumParts {
 		let paths = &self.paths;
 
 		quote::quote! {
-			#[derive(Default, PartialEq, Eq, Clone,)]
+			#[derive(Default, PartialEq, Eq, Clone, Debug)]
 			pub enum #name {
 				#(
 					#variants_attr

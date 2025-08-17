@@ -82,7 +82,7 @@ pub fn project_root_path() -> Rslt<PathBuf,> {
 
 pub fn current_crate_path() -> Rslt<PathBuf,> {
 	match search_upstream(CARGO_MANIFEST,) {
-		Ok(Some(p,),) => Ok(p,),
+		Ok(Some(p,),) => Ok(p.parent().expect("should have parent directory",).to_path_buf(),),
 		e => Err(anyhow::anyhow!("failed to detect current_crate_path: {e:?}"),),
 	}
 }
