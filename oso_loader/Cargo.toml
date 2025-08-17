@@ -32,3 +32,4 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [lints.clippy]
 tabs_in_doc_comments = "allow"
+mut_from_ref = "allow"
