@@ -1,6 +1,7 @@
 use anyhow::Result as Rslt;
 use anyhow::anyhow;
 use std::env::current_dir;
+use std::fs::DirEntry;
 use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -96,11 +97,19 @@ pub fn search_in(
 	place: &impl AsRef<Path,>,
 	file_name: impl Into<String,> + Clone,
 ) -> Rslt<Option<PathBuf,>,> {
+	let search_strategy = |entry: &Result<DirEntry, std::io::Error,>| {
+		entry.as_ref().expect("failed to get dir entry",).file_name().to_str().unwrap()
+			== file_name.clone().into()
+	};
+	search_in_with(place, search_strategy,)
+}
+
+pub fn search_in_with(
+	place: &impl AsRef<Path,>,
+	search_strategy: impl FnMut(&Result<DirEntry, std::io::Error,>,) -> bool,
+) -> Rslt<Option<PathBuf,>,> {
 	let rslt = std::fs::read_dir(place,)?
-		.find(|entry| {
-			entry.as_ref().expect("failed to get dir entry",).file_name().to_str().unwrap()
-				== file_name.clone().into()
-		},)
+		.find(search_strategy,)
 		.map(|entry| entry.map(|entry| entry.path(),),)
 		.transpose()?;
 	Ok(rslt,)
