@@ -1,9 +1,7 @@
 use crate::Rslt;
-use crate::cargo::CompileOpt;
 use crate::decl_manage::crate_::CrateAction;
 use crate::decl_manage::crate_::CrateInfo;
 use crate::decl_manage::crate_::CrateSurvey;
-use std::path::PathBuf;
 
 pub trait Package: PackageAction + PackageSurvey {
 	fn as_action(&self,) -> &impl PackageAction {
@@ -18,7 +16,6 @@ pub trait Package: PackageAction + PackageSurvey {
 pub trait PackageAction: PackageInfo + CrateAction {}
 pub trait PackageSurvey: PackageInfo + CrateSurvey {
 	fn default_target(&self,) -> Rslt<impl Into<String,>,>;
-	fn build_artifact(&self, target: Option<impl CompileOpt,>,) -> Rslt<PathBuf,>;
 }
 
 pub trait PackageInfo: Sized + CrateInfo {}
@@ -82,26 +79,7 @@ mod tests {
 
 		// Test default_target method
 		let target_result = crate_obj.default_target();
-		match target_result {
-			Ok(target,) => {
-				let _target_string: String = target.into();
-				assert!(true);
-			},
-			Err(_,) => {
-				// Expected in test environment
-				assert!(true);
-			},
-		}
-
-		// Test build_artifact method with proper CompileOpt
-		let opts = Opts {
-			build_mode:    BuildMode::Debug,
-			feature_flags: Vec::<Feature,>::new(),
-			arch:          Arch::Aarch64,
-		};
-
-		let artifact_result = crate_obj.build_artifact(Some(opts,),);
-		assert!(artifact_result.is_ok());
+		assert!(target_result.is_ok());
 	}
 
 	#[test]
@@ -149,26 +127,6 @@ mod tests {
 		test_package_action(&crate_obj,);
 		test_package_survey(&crate_obj,);
 		test_package_info(&crate_obj,);
-	}
-
-	#[test]
-	fn test_compile_opt_integration() {
-		// Test that CompileOpt works with build_artifact
-		use crate::cargo::Arch;
-		use crate::cargo::Feature;
-		use crate::cargo::Opts;
-
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir,);
-
-		let opts = Opts {
-			build_mode:    BuildMode::Debug,
-			feature_flags: Vec::<Feature,>::new(),
-			arch:          Arch::Aarch64,
-		};
-
-		// Test build_artifact with CompileOpt
-		let _artifact_result = crate_obj.build_artifact(Some(opts,),);
 	}
 
 	#[test]

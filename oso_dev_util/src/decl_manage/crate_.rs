@@ -1,6 +1,5 @@
 use crate::Rslt;
-use crate::cargo::BuildMode;
-use crate::cargo::CompileOpt;
+use crate::cargo::host_tuple;
 use crate::decl_manage::package::Package;
 use crate::decl_manage::package::PackageAction;
 use crate::decl_manage::package::PackageInfo;
@@ -9,12 +8,10 @@ use crate::decl_manage::workspace::Workspace;
 use crate::decl_manage::workspace::WorkspaceAction;
 use crate::decl_manage::workspace::WorkspaceInfo;
 use crate::decl_manage::workspace::WorkspaceSurvey;
-use anyhow::Context;
 use oso_dev_util_helper::cli::Run;
 use oso_dev_util_helper::fs::CARGO_CONFIG;
 use oso_dev_util_helper::fs::CARGO_MANIFEST;
 use oso_dev_util_helper::fs::all_crates_in;
-use oso_dev_util_helper::fs::project_root_path;
 use oso_dev_util_helper::fs::read_toml;
 use oso_proc_macro::FromPathBuf;
 use std::ffi::OsStr;
@@ -198,12 +195,14 @@ impl CrateCalled for OsoCrateChart {
 
 impl Workspace for OsoCrate {}
 impl WorkspaceAction for OsoCrate {}
+
 impl WorkspaceSurvey for OsoCrate {
 	fn land_on(&mut self, on: impl CrateCalled,) {
 		let path = on.path_buf();
 		*self = Self::from(path,);
 	}
 }
+
 impl WorkspaceInfo for OsoCrate {
 	#[allow(refining_impl_trait)]
 	fn members(&self,) -> Vec<OsoCrate,> {
@@ -219,33 +218,19 @@ impl WorkspaceInfo for OsoCrate {
 		self.members()
 			.into_iter()
 			.filter(|c| {
-				let dflt_targeet: String =
+				let dflt_target: String =
 					c.default_target().expect("failed to determine default target",).into();
 				let target: String = target.clone().into();
-				dflt_targeet == target
+				dflt_target == target
 			},)
 			.collect()
 	}
 }
+
 impl Package for OsoCrate {}
 impl PackageAction for OsoCrate {}
 impl PackageSurvey for OsoCrate {
 	fn default_target(&self,) -> Rslt<impl Into<String,>,> {
-		let host_tuple = || {
-			let target = Command::new("rustc",).arg("-vV",).output()?.stdout;
-			let target = String::from_utf8(target,)?;
-			target
-				.lines()
-				.find_map(|l| {
-					if l.contains("host: ",) {
-						Some(l.replace("host: ", "",).to_string(),)
-					} else {
-						None
-					}
-				},)
-				.context("can't get host target tuple",)
-		};
-
 		Ok(match self.cargo_conf() {
 			Some(conf,) => {
 				let conf = conf?;
@@ -262,18 +247,8 @@ impl PackageSurvey for OsoCrate {
 			None => host_tuple()?,
 		},)
 	}
-
-	fn build_artifact(&self, opt: Option<impl CompileOpt,>,) -> Rslt<PathBuf,> {
-		let (arch, build_mode,): (String, String,) = match opt {
-			Some(opt,) => (opt.arch().into(), opt.build_mode().into(),),
-			None => (self.default_target()?.into(), BuildMode::default().as_ref().to_string(),),
-		};
-
-		let project_root = project_root_path()?.join("target",).join(arch,).join(build_mode,);
-
-		Ok(project_root,)
-	}
 }
+
 impl PackageInfo for OsoCrate {}
 
 pub trait CrateCalled: Eq + Sized + Clone + From<Self::F,> + Debug {
@@ -470,14 +445,11 @@ mod tests {
 		use crate::cargo::BuildMode;
 		use crate::cargo::Feature;
 		use crate::cargo::Opts;
-		let opts = Opts {
+		let _opts = Opts {
 			build_mode:    BuildMode::Debug,
 			feature_flags: Vec::<Feature,>::new(),
 			arch:          Arch::Aarch64,
 		};
-		let _artifact_result = crate_obj.build_artifact(Some(opts,),);
-
-		// If we get here without compilation errors, the methods exist
 	}
 
 	#[test]
