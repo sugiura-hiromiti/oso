@@ -3,7 +3,6 @@
 
 use oso_dev_util::cargo::Assets;
 use oso_dev_util::cargo::Opts;
-use oso_dev_util::cargo::Target;
 use oso_dev_util::decl_manage::crate_::OsoCrate;
 
 pub mod builder;
@@ -15,5 +14,4 @@ pub struct XtaskInfo {
 	opts:   Opts,
 	ws:     OsoCrate,
 	assets: Assets,
-	host:   Target,
 }
