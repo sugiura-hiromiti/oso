@@ -1,5 +1,8 @@
+use anyhow::Context as _;
+use anyhow::Result as Rslt;
 use oso_proc_macro::features;
 use std::path::PathBuf;
+use std::process::Command;
 
 pub trait CompileOpt {
 	fn build_mode(&self,) -> impl Into<String,>;
@@ -27,7 +30,7 @@ impl CompileOpt for Opts {
 	}
 
 	fn arch(&self,) -> impl Into<String,> {
-		self.arch.as_ref()
+		self.arch.as_ref().replace("_", "",)
 	}
 }
 
@@ -112,6 +115,16 @@ impl Arch {
 			Self::Riscv64 => "bootriscv64.efi",
 		}
 	}
+}
+pub fn host_tuple() -> Rslt<String,> {
+	let target = Command::new("rustc",).arg("-vV",).output()?.stdout;
+	let target = String::from_utf8(target,)?;
+	target
+		.lines()
+		.find_map(|l| {
+			if l.contains("host: ",) { Some(l.replace("host: ", "",).to_string(),) } else { None }
+		},)
+		.context("can't get host target tuple",)
 }
 
 #[cfg(test)]
@@ -233,31 +246,21 @@ mod tests {
 		let cli = Cli {
 			build_mode:    Some(BuildMode::Release,),
 			feature_flags: Some(vec![],),
-			runs_on:       Some(RunsOn::Linux,),
 			arch:          Some(Arch::Riscv64,),
 		};
 
 		let opts = cli.to_opts();
 		assert!(opts.build_mode.is_release());
 		assert!(opts.feature_flags.is_empty());
-		assert!(opts.target.runs_on.is_linux());
-		assert!(opts.target.arch.is_riscv_64());
 	}
 
 	#[test]
 	fn test_cli_to_opts_with_defaults() {
-		let cli = Cli {
-			build_mode:    None,
-			feature_flags: None,
-			runs_on:       None,
-			arch:          None,
-		};
+		let cli = Cli { build_mode: None, feature_flags: None, arch: None, };
 
 		let opts = cli.to_opts();
 		assert!(opts.build_mode.is_debug());
 		assert!(opts.feature_flags.is_empty());
-		assert!(opts.target.runs_on.is_oso());
-		assert!(opts.target.arch.is_aarch_64());
 	}
 
 	#[test]
@@ -265,7 +268,7 @@ mod tests {
 		let opts = Opts {
 			build_mode:    BuildMode::Release,
 			feature_flags: vec![],
-			target:        Target { runs_on: RunsOn::Linux, arch: Arch::Riscv64, },
+			arch:          Arch::Riscv64,
 		};
 
 		let build_mode: String = opts.build_mode().into();
@@ -274,14 +277,8 @@ mod tests {
 		let feature_flags = opts.feature_flags();
 		assert!(feature_flags.is_empty());
 
-		let runs_on: String = opts.runs_on().into();
-		assert_eq!(runs_on, "Linux");
-
 		let arch: String = opts.arch().into();
 		assert_eq!(arch, "Riscv64");
-
-		let target: String = opts.target().into();
-		assert_eq!(target, "riscv64-unknown-linux");
 	}
 
 	#[test]
@@ -294,14 +291,7 @@ mod tests {
 		];
 
 		for (arch, runs_on, expected,) in test_cases {
-			let opts = Opts {
-				build_mode:    BuildMode::Debug,
-				feature_flags: vec![],
-				target:        Target { runs_on, arch, },
-			};
-
-			let target: String = opts.target().into();
-			assert_eq!(target, expected);
+			let opts = Opts { build_mode: BuildMode::Debug, feature_flags: vec![], arch, };
 		}
 	}
 
@@ -373,30 +363,6 @@ mod tests {
 		}
 
 		#[test]
-		fn test_target_tuple_format(
-			arch in prop::sample::select(vec![Arch::Aarch64, Arch::Riscv64]),
-			runs_on in prop::sample::select(vec![RunsOn::Mac, RunsOn::Uefi, RunsOn::Oso, RunsOn::Linux])
-		) {
-			let opts = Opts {
-				build_mode: BuildMode::Debug,
-				feature_flags: vec![],
-				target: Target { runs_on, arch },
-			};
-
-			let target: String = opts.target().into();
-
-			// Should contain arch and runs_on in lowercase
-			assert!(target.contains(&arch.as_ref().to_lowercase()));
-			assert!(target.contains(&runs_on.as_ref().to_lowercase()));
-			assert!(target.contains("unknown"));
-
-			// Should follow the pattern: arch-unknown-os
-			let parts: Vec<&str> = target.split('-').collect();
-			assert_eq!(parts.len(), 3);
-			assert_eq!(parts[1], "unknown");
-		}
-
-		#[test]
 		fn test_cli_opts_conversion_preserves_values(
 			build_mode in prop::option::of(prop::sample::select(vec![BuildMode::Debug, BuildMode::Release])),
 			runs_on in prop::option::of(prop::sample::select(vec![RunsOn::Mac, RunsOn::Uefi, RunsOn::Oso, RunsOn::Linux])),
@@ -405,7 +371,6 @@ mod tests {
 			let cli = Cli {
 				build_mode,
 				feature_flags: Some(vec![]),
-				runs_on,
 				arch,
 			};
 
@@ -417,14 +382,10 @@ mod tests {
 				None => assert_eq!(opts.build_mode, BuildMode::default()),
 			}
 
-			match runs_on {
-				Some(ro) => assert_eq!(opts.target.runs_on, ro),
-				None => assert_eq!(opts.target.runs_on, RunsOn::default()),
-			}
 
 			match arch {
-				Some(a) => assert_eq!(opts.target.arch, a),
-				None => assert_eq!(opts.target.arch, Arch::default()),
+				Some(a) => assert_eq!(opts.arch, a),
+				None => assert_eq!(opts.arch, Arch::default()),
 			}
 		}
 	}
@@ -473,15 +434,11 @@ mod tests {
 		let opts = Opts {
 			build_mode:    BuildMode::Debug,
 			feature_flags: vec![],
-			target:        Target::default(),
+			arch:          Arch::default(),
 		};
 
 		let flags = opts.feature_flags();
 		assert!(flags.is_empty());
-
-		// Test target tuple with default values
-		let target: String = opts.target().into();
-		assert_eq!(target, "aarch64-unknown-oso");
 	}
 
 	#[test]
@@ -490,25 +447,22 @@ mod tests {
 		let cli = Cli {
 			build_mode:    Some(BuildMode::Debug,),
 			feature_flags: Some(vec![],),
-			runs_on:       Some(RunsOn::Linux,),
 			arch:          Some(Arch::Riscv64,),
 		};
 
 		assert!(cli.build_mode.unwrap().is_debug());
 		assert!(cli.feature_flags.unwrap().is_empty());
-		assert!(cli.runs_on.unwrap().is_linux());
 		assert!(cli.arch.unwrap().is_riscv_64());
 
 		let opts = Opts {
 			build_mode:    BuildMode::Release,
 			feature_flags: vec![],
-			target:        Target { runs_on: RunsOn::Mac, arch: Arch::Aarch64, },
+			arch:          Arch::Aarch64,
 		};
 
 		assert!(opts.build_mode.is_release());
 		assert!(opts.feature_flags.is_empty());
-		assert!(opts.target.runs_on.is_mac());
-		assert!(opts.target.arch.is_aarch_64());
+		assert!(opts.arch.is_aarch_64());
 	}
 
 	#[test]
@@ -606,28 +560,6 @@ mod tests {
 	}
 
 	#[test]
-	fn test_target_tuple_format_stability() {
-		// Test that target tuple format is stable
-		let test_cases = vec![
-			(Arch::Aarch64, RunsOn::Oso, "aarch64-unknown-oso",),
-			(Arch::Aarch64, RunsOn::Linux, "aarch64-unknown-linux",),
-			(Arch::Riscv64, RunsOn::Mac, "riscv64-unknown-mac",),
-			(Arch::Riscv64, RunsOn::Uefi, "riscv64-unknown-uefi",),
-		];
-
-		for (arch, runs_on, expected,) in test_cases {
-			let opts = Opts {
-				build_mode:    BuildMode::Debug,
-				feature_flags: vec![],
-				target:        Target { runs_on, arch, },
-			};
-
-			let target: String = opts.target().into();
-			assert_eq!(target, expected);
-		}
-	}
-
-	#[test]
 	fn test_concurrent_access() {
 		// Test that enums can be used concurrently
 		use std::sync::Arc;
@@ -648,10 +580,8 @@ mod tests {
 					assert!(ro.is_oso());
 					assert!(a.is_aarch_64());
 
-					let target = Target { runs_on: *ro, arch: *a, };
-					let opts = Opts { build_mode: *bm, feature_flags: vec![], target, };
-
-					let _target_str: String = opts.target().into();
+					let opts =
+						Opts { build_mode: *bm, feature_flags: vec![], arch: *a, };
 				},)
 			},)
 			.collect();
@@ -670,17 +600,11 @@ mod tests {
 		let _parser = Cli::command();
 
 		// Test default CLI
-		let cli = Cli {
-			build_mode:    None,
-			feature_flags: None,
-			runs_on:       None,
-			arch:          None,
-		};
+		let cli = Cli { build_mode: None, feature_flags: None, arch: None, };
 
 		let opts = cli.to_opts();
 		assert!(opts.build_mode.is_debug());
-		assert!(opts.target.runs_on.is_oso());
-		assert!(opts.target.arch.is_aarch_64());
+		assert!(opts.arch.is_aarch_64());
 	}
 
 	#[test]
@@ -724,7 +648,7 @@ mod tests {
 		let opts = Opts {
 			build_mode:    BuildMode::Debug,
 			feature_flags: features,
-			target:        Target::default(),
+			arch:          Arch::default(),
 		};
 
 		let returned_features = opts.feature_flags();
@@ -763,26 +687,17 @@ mod tests {
 		];
 
 		for (build_mode, runs_on, arch,) in test_cases {
-			let opts =
-				Opts { build_mode, feature_flags: vec![], target: Target { runs_on, arch, }, };
+			let opts = Opts { build_mode, feature_flags: vec![], arch, };
 
 			// Test all trait methods
 			let build_mode_str: String = opts.build_mode().into();
-			let runs_on_str: String = opts.runs_on().into();
 			let arch_str: String = opts.arch().into();
-			let target_str: String = opts.target().into();
 			let features = opts.feature_flags();
 
 			// Verify results
 			assert_eq!(build_mode_str, build_mode.as_ref());
-			assert_eq!(runs_on_str, runs_on.as_ref());
 			assert_eq!(arch_str, arch.as_ref());
 			assert!(features.is_empty());
-
-			// Target should be properly formatted
-			assert!(target_str.contains(&arch.as_ref().to_lowercase()));
-			assert!(target_str.contains(&runs_on.as_ref().to_lowercase()));
-			assert!(target_str.contains("unknown"));
 		}
 	}
 }
