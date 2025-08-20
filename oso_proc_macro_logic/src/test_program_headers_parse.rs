@@ -215,9 +215,9 @@ pub fn readelf_l() -> Rslt<Vec<ReadElfL,>,> {
 
 	let program_header_count = program_headers_count(&program_headers_info[0],)?;
 
-	let program_headers_info = program_headers_fields(&program_headers_info, program_header_count,)
+	program_headers_fields(&program_headers_info, program_header_count,)
 		.map(|s| {
-			let fields_info: Vec<_,> = s.split(" ",).filter(|s| *s != "",).collect();
+			let fields_info: Vec<_,> = s.split(" ",).filter(|s| !s.is_empty(),).collect();
 
 			let ty = fields_info[0].to_string();
 			let offset = parse_str_hex_repr(fields_info[1],)?;
@@ -238,9 +238,7 @@ pub fn readelf_l() -> Rslt<Vec<ReadElfL,>,> {
 				align,
 			},)
 		},)
-		.try_collect();
-
-	program_headers_info
+		.try_collect()
 }
 
 fn readelf_l_out() -> Rslt<Vec<String,>,> {
@@ -253,7 +251,7 @@ fn readelf_l_out() -> Rslt<Vec<String,>,> {
 	Ok(program_headers_info,)
 }
 
-fn program_headers_count(info: &String,) -> Rslt<usize,> {
+fn program_headers_count(info: &str,) -> Rslt<usize,> {
 	let desc_lines_count = info.lines().count();
 	if desc_lines_count < 2 {
 		return Err(anyhow::anyhow!("Insufficient lines to parse program header count"),);
@@ -273,7 +271,7 @@ fn program_headers_count(info: &String,) -> Rslt<usize,> {
 /// }
 /// ```
 fn program_headers_fields(
-	infos: &Vec<String,>,
+	infos: &[String],
 	count: usize,
 ) -> impl Iterator<Item = std::string::String,> {
 	infos[1].lines().skip(3,).array_chunks::<2>().map(|s| s.concat(),).take(count,)
@@ -305,7 +303,7 @@ fn parse_str_hex_repr<I: IntField,>(hex: &str,) -> Rslt<I,> {
 	I::parse(hex_repr,)
 }
 
-fn parse_flags_and_align(fields_info: &Vec<&str,>,) -> Rslt<(u32, u64,),> {
+fn parse_flags_and_align(fields_info: &[&str],) -> Rslt<(u32, u64,),> {
 	let rslt = if fields_info.len() == 8 {
 		let flags_str = fields_info[6];
 		let mut flags = 0;

@@ -48,7 +48,6 @@ use core::ops::Shl;
 use core::ops::Shr;
 use core::ops::Sub;
 use core::ops::SubAssign;
-use core::usize;
 use oso_error::OsoError;
 use oso_error::loader::EfiParseError;
 use oso_error::loader::EfiParseStage;
@@ -221,7 +220,7 @@ impl Elf {
 		let mut symbol_table = SymbolTable::default();
 		let mut string_table_for_symbol_table = StringTable::default();
 		if let Some(section_header,) =
-			section_headers.iter().rfind(|section_header| section_header.ty as u32 == SHT_SYMTAB,)
+			section_headers.iter().rfind(|section_header| section_header.ty == SHT_SYMTAB,)
 		{
 			let size = section_header.entry_size;
 			let count = if size == 0 { 0 } else { section_header.size / size };
@@ -267,10 +266,10 @@ impl Elf {
 					if let Some(path,) = dynamic_string_table.get_at(dynamic.val as usize,) {
 						runtime_search_path_deprecated.push(path,);
 					}
-				} else if dynamic.tag == Dynamic::DT_RUNPATH {
-					if let Some(path,) = dynamic_string_table.get_at(dynamic.val as usize,) {
-						runtime_search_path.push(path,);
-					}
+				} else if dynamic.tag == Dynamic::DT_RUNPATH
+					&& let Some(path,) = dynamic_string_table.get_at(dynamic.val as usize,)
+				{
+					runtime_search_path.push(path,);
 				}
 			}
 
@@ -643,7 +642,6 @@ impl ElfHeader {
 	/// Andes Tech. compact code emb. RISC
 	pub const EM_NDS32: u16 = 167;
 	/// TODO: use Enum with explicit discriminant and get debug printer for free?
-
 	/// No machine
 	pub const EM_NONE: u16 = 0;
 	/// Nanoradio Optimized RISC
@@ -1044,16 +1042,11 @@ impl AbiVersion {
 	pub const ONE: Self = Self(0,);
 }
 
+#[derive(Default,)]
 pub struct StringTable {
 	pub delimitor: StringContext,
 	pub bytes:     Vec<u8,>,
 	pub strings:   Vec<(usize, String,),>,
-}
-
-impl Default for StringTable {
-	fn default() -> Self {
-		Self { delimitor: StringContext::default(), bytes: vec![], strings: vec![], }
-	}
 }
 
 impl StringTable {
@@ -1100,7 +1093,7 @@ impl StringTable {
 	}
 
 	fn get_at(&self, offset: usize,) -> Option<String,> {
-		let rslt = match self.strings.binary_search_by_key(&offset, |(key, _value,)| *key,) {
+		match self.strings.binary_search_by_key(&offset, |(key, _value,)| *key,) {
 			Ok(index,) => Some(self.strings[index].1.clone(),),
 			Err(index,) => {
 				if index == 0 {
@@ -1109,8 +1102,7 @@ impl StringTable {
 				let (string_begin_offset, entire_string,) = &self.strings[index - 1];
 				entire_string.get(offset - string_begin_offset..,).map(|s| s.to_string(),)
 			},
-		};
-		rslt
+		}
 	}
 }
 
@@ -1126,7 +1118,7 @@ impl StringContext {
 			StringContext::Delimiter(delimiter,) => {
 				let mut i = 0;
 				while let a = &bytes[i..=i]
-					&& a != &[*delimiter,]
+					&& a != [*delimiter,]
 				{
 					i += 1;
 					if i >= bytes.len() {
@@ -1176,7 +1168,7 @@ impl SymbolTable {
 				Container::Little => todo!(),
 				Container::Big => Self::SIZE_OF_SYMBOL_64,
 			},)
-			.ok_or_else(|| oso_err!(EfiParseError::TooManySymbolsOffset { offset, count }),)?;
+			.ok_or(oso_err!(EfiParseError::TooManySymbolsOffset { offset, count }),)?;
 
 		let bytes = binary[offset..offset + size].to_vec();
 
@@ -1184,16 +1176,10 @@ impl SymbolTable {
 	}
 }
 
-#[derive(Clone,)]
+#[derive(Clone, Default,)]
 pub struct Context {
 	pub container: Container,
 	pub le:        Endian,
-}
-
-impl Default for Context {
-	fn default() -> Self {
-		Self { container: Container::default(), le: Endian::default(), }
-	}
 }
 
 /// the size of a binary container
@@ -1310,7 +1296,7 @@ impl Dynamic {
 	pub const DF_TEXTREL: u64 = 0x0000_0004;
 	//DT_ADDRTAGIDX(tag)	(DT_ADDRRNGHI - (tag))	/* Reverse order! */
 	pub const DT_ADDRNUM: u64 = 11;
-	///
+	/// --
 	pub const DT_ADDRRNGHI: u64 = 0x6fff_feff;
 	/// DT_* entries which fall between DT_ADDRRNGHI & DT_ADDRRNGLO use the
 	/// Dyn.d_un.d_ptr field of the Elf*_Dyn structure.
@@ -1418,9 +1404,9 @@ impl Dynamic {
 	pub const DT_SYMTAB: u64 = 6;
 	/// Reloc might modify .text
 	pub const DT_TEXTREL: u64 = 22;
-	///
+	/// --
 	pub const DT_TLSDESC_GOT: u64 = 0x6fff_fef7;
-	///
+	/// --
 	pub const DT_TLSDESC_PLT: u64 = 0x6fff_fef6;
 	/// Address of version definition table
 	pub const DT_VERDEF: u64 = 0x6fff_fffc;
@@ -1458,7 +1444,7 @@ impl Dynamic {
 
 				let mut info = DynamicInfo::default();
 				for dynamic in &dyns {
-					info.update(&program_headers, dynamic,);
+					info.update(program_headers, dynamic,);
 				}
 
 				return Ok(Some(Dynamic { dyns, info, },),);
@@ -1472,7 +1458,7 @@ impl Dynamic {
 		let count = self.dyns.len().min(self.info.version_need_count as usize,);
 		let mut needed = Vec::with_capacity(count,);
 		for dynamic in &self.dyns {
-			if dynamic.tag as u64 == Self::DT_NEEDED
+			if dynamic.tag == Self::DT_NEEDED
 				&& let Some(lib,) = string_table.get_at(dynamic.val as usize,)
 			{
 				needed.push(lib,);
@@ -1547,7 +1533,7 @@ pub struct DynamicInfo {
 
 impl DynamicInfo {
 	pub fn update(&mut self, phdrs: &[ProgramHeader], dynamic: &Dyn,) {
-		match u64::from(dynamic.tag,) {
+		match dynamic.tag {
 			Dynamic::DT_RELA => {
 				self.relocation_addend = vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,) as usize
 			}, // .rela.dyn
@@ -1674,7 +1660,7 @@ impl RelocationSection {
 	}
 }
 
-impl<'a,> IntoIterator for &'a RelocationSection {
+impl IntoIterator for &RelocationSection {
 	type IntoIter = RelocationIterator;
 	type Item = <RelocationIterator as Iterator>::Item;
 
@@ -1719,7 +1705,7 @@ pub struct Relocation {
 
 impl Relocation {
 	fn parse(
-		bytes: &Vec<u8,>,
+		bytes: &[u8],
 		offset: &mut usize,
 		(is_relocation_addrend, context,): &RelocationContext,
 	) -> Rslt<Self,> {
@@ -1740,7 +1726,7 @@ pub struct RelocAddend {
 }
 
 impl RelocAddend {
-	fn parse(binary: &Vec<u8,>, offset: &mut usize,) -> Self {
+	fn parse(binary: &[u8], offset: &mut usize,) -> Self {
 		let reloc_offset: u64 = read_le_bytes(offset, binary,).unwrap();
 		let info: u64 = read_le_bytes(offset, binary,).unwrap();
 		let addend: i64 = read_le_bytes(offset, binary,).unwrap();
@@ -1777,7 +1763,7 @@ pub struct Reloc {
 }
 
 impl Reloc {
-	fn parse(binary: &Vec<u8,>, offset: &mut usize,) -> Self {
+	fn parse(binary: &[u8], offset: &mut usize,) -> Self {
 		let reloc_offset: u64 = read_le_bytes(offset, binary,).unwrap();
 		let info: u64 = read_le_bytes(offset, binary,).unwrap();
 		Self { offset: reloc_offset, info, }
@@ -1803,7 +1789,7 @@ pub struct SymbolVersionSection {
 impl SymbolVersionSection {
 	fn parse(
 		binary: &[u8],
-		section_headers: &Vec<SectionHeader,>,
+		section_headers: &[SectionHeader],
 		ctx: &Context,
 	) -> Rslt<Option<Self,>, EfiParseError,> {
 		let (offset, size,) = if let Some(section_header,) =
@@ -1827,7 +1813,7 @@ pub struct VersionDefinitionSection {
 impl VersionDefinitionSection {
 	fn parse(
 		binary: &[u8],
-		section_headers: &Vec<SectionHeader,>,
+		section_headers: &[SectionHeader],
 		ctx: &Context,
 	) -> Rslt<Option<Self,>, EfiParseError,> {
 		let (offset, size, count,) = if let Some(section_header,) =
@@ -1855,7 +1841,7 @@ pub struct VersionNeededSection {
 impl VersionNeededSection {
 	fn parse(
 		binary: &[u8],
-		section_headers: &Vec<SectionHeader,>,
+		section_headers: &[SectionHeader],
 		ctx: &Context,
 	) -> Rslt<Option<Self,>, EfiParseError,> {
 		let (offset, size, count,) = if let Some(section_header,) =
@@ -2001,7 +1987,7 @@ trait AsInt<T: PrimitiveInteger,> {
 
 impl AsInt<u8,> for &[u8] {
 	fn as_int(&self,) -> u8 {
-		*self.get(0,).unwrap()
+		*self.first().unwrap()
 	}
 }
 
@@ -2010,7 +1996,7 @@ impl AsInt<u16,> for &[u8] {
 		// unsafe { *(&self[..2] as *const _ as *const u16) }
 		let mut rslt = 0;
 		for i in (0..size_of::<u16,>()).rev() {
-			rslt = rslt << 8;
+			rslt <<= 8;
 			rslt |= *self.get(i,).unwrap() as u16;
 		}
 
@@ -2023,7 +2009,7 @@ impl AsInt<u32,> for &[u8] {
 		// unsafe { *(&self[..4] as *const _ as *const u32) }
 		let mut rslt = 0;
 		for i in (0..size_of::<u32,>()).rev() {
-			rslt = rslt << 8;
+			rslt <<= 8;
 			rslt |= *self.get(i,).unwrap() as u32;
 		}
 
@@ -2036,7 +2022,7 @@ impl AsInt<u64,> for &[u8] {
 		// unsafe { *(&self[..8] as *const _ as *const u64) }
 		let mut rslt = 0;
 		for i in (0..size_of::<u64,>()).rev() {
-			rslt = rslt << 8;
+			rslt <<= 8;
 			rslt |= *self.get(i,).unwrap() as u64;
 		}
 
@@ -2049,7 +2035,7 @@ impl AsInt<u128,> for &[u8] {
 		// unsafe { *(&self[..16] as *const _ as *const u128) }
 		let mut rslt = 0;
 		for i in (0..size_of::<u128,>()).rev() {
-			rslt = rslt << 8;
+			rslt <<= 8;
 			rslt |= *self.get(i,).unwrap() as u128;
 		}
 
@@ -2062,7 +2048,7 @@ impl AsInt<usize,> for &[u8] {
 		// unsafe { *(&self[..8] as *const _ as *const usize) }
 		let mut rslt = 0;
 		for i in (0..size_of::<usize,>()).rev() {
-			rslt = rslt << 8;
+			rslt <<= 8;
 			rslt |= *self.get(i,).unwrap() as usize;
 		}
 
@@ -2072,7 +2058,7 @@ impl AsInt<usize,> for &[u8] {
 
 impl AsInt<i8,> for &[u8] {
 	fn as_int(&self,) -> i8 {
-		*self.get(0,).unwrap() as i8
+		*self.first().unwrap() as i8
 	}
 }
 
@@ -2081,7 +2067,7 @@ impl AsInt<i16,> for &[u8] {
 		// unsafe { *(&self[..2] as *const _ as *const u16) }
 		let mut rslt = 0;
 		for i in (0..size_of::<i16,>()).rev() {
-			rslt = rslt << 8;
+			rslt <<= 8;
 			rslt |= *self.get(i,).unwrap() as i16;
 		}
 
@@ -2094,7 +2080,7 @@ impl AsInt<i32,> for &[u8] {
 		// unsafe { *(&self[..4] as *const _ as *const u32) }
 		let mut rslt = 0;
 		for i in (0..size_of::<i32,>()).rev() {
-			rslt = rslt << 8;
+			rslt <<= 8;
 			rslt |= *self.get(i,).unwrap() as i32;
 		}
 
@@ -2107,7 +2093,7 @@ impl AsInt<i64,> for &[u8] {
 		// unsafe { *(&self[..8] as *const _ as *const u64) }
 		let mut rslt = 0;
 		for i in (0..size_of::<i64,>()).rev() {
-			rslt = rslt << 8;
+			rslt <<= 8;
 			rslt |= *self.get(i,).unwrap() as i64;
 		}
 
@@ -2120,7 +2106,7 @@ impl AsInt<i128,> for &[u8] {
 		// unsafe { *(&self[..16] as *const _ as *const u128) }
 		let mut rslt = 0;
 		for i in (0..size_of::<i128,>()).rev() {
-			rslt = rslt << 8;
+			rslt <<= 8;
 			rslt |= *self.get(i,).unwrap() as i128;
 		}
 
@@ -2133,7 +2119,7 @@ impl AsInt<isize,> for &[u8] {
 		// unsafe { *(&self[..8] as *const _ as *const usize) }
 		let mut rslt = 0;
 		for i in (0..size_of::<isize,>()).rev() {
-			rslt = rslt << 8;
+			rslt <<= 8;
 			rslt |= *self.get(i,).unwrap() as isize;
 		}
 

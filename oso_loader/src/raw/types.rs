@@ -87,7 +87,7 @@ impl Guid {
 	}
 }
 
-oso_proc_macro::status_from_spec!(2.11);
+oso_proc_macro::status!(2.11);
 
 // #[repr(usize)]
 // #[derive(Eq, PartialEq, Clone, Debug,)]

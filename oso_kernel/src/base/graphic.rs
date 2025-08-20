@@ -362,7 +362,7 @@ impl<P: PixelFormat,> FrameBuffer<P,> {
 
 		let conf = A { base: 0, width: 0, height: 0, stride: 0, size: 0, };
 
-		let buf = conf.base as usize;
+		let buf = conf.base;
 		let width = conf.width;
 		let height = conf.height;
 		let stride = conf.stride;

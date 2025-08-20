@@ -22,53 +22,6 @@ pub enum Architecture {
 	X86_64,
 }
 
-impl Architecture {
-	/// Gets the boot file name for the architecture
-	///
-	/// # Returns
-	///
-	/// The boot file name (e.g., "bootaa64.efi" for aarch64)
-	pub fn boot_file_name(&self,) -> String {
-		match self {
-			Architecture::Aarch64 => "bootaa64.efi",
-			Architecture::Riscv64 => "bootriscv64.efi",
-			Architecture::X86_64 => "bootx64.efi",
-		}
-		.to_string()
-	}
-}
-
-/// Converts a string to an Architecture enum
-impl TryFrom<&String,> for Architecture {
-	type Error = anyhow::Error;
-
-	fn try_from(value: &String,) -> Result<Self, Self::Error,> {
-		let arch = if value.contains("aarch64",) {
-			Self::Aarch64
-		} else if value.contains("riscv64",) {
-			Self::Riscv64
-		} else if value.contains("x86_64",) {
-			Self::X86_64
-		} else {
-			return Err(anyhow!("target {value} is not supported"),);
-		};
-
-		Ok(arch,)
-	}
-}
-
-/// Converts an Architecture enum to a string
-impl ToString for Architecture {
-	fn to_string(&self,) -> String {
-		match self {
-			Architecture::Aarch64 => "aarch64",
-			Architecture::Riscv64 => "riscv64",
-			Architecture::X86_64 => "x86_64",
-		}
-		.to_string()
-	}
-}
-
 /// Build mode (debug or release)
 #[derive(PartialEq, Debug,)]
 pub enum BuildMode {
@@ -76,17 +29,6 @@ pub enum BuildMode {
 	Release,
 	/// Debug build mode (with debug symbols)
 	Debug,
-}
-
-impl BuildMode {
-	/// Checks if the build mode is release
-	///
-	/// # Returns
-	///
-	/// true if the build mode is release, false otherwise
-	pub fn is_release(&self,) -> bool {
-		self == &BuildMode::Release
-	}
 }
 
 /// Converts a BuildMode enum to a string

@@ -16,7 +16,6 @@
 	"post-link-args": {
 		"ld.lld": [
 			"--entry=kernel_main",
-			"-otarget/oso_kernel.elf",
 			"--static",
 			"--image-base=0x40000000"
 		]

@@ -67,7 +67,7 @@
 //! pub extern "C" fn kernel_main() -> ! {
 //!     // Initialize kernel subsystems
 //!     init();
-//!     
+//!
 //!     // Kernel main loop would go here
 //!     loop {
 //!         // Handle interrupts and system calls
@@ -76,6 +76,7 @@
 //! ```
 
 #![no_std]
+#![allow(incomplete_features)]
 #![feature(associated_type_defaults)]
 #![feature(impl_trait_in_assoc_type)]
 #![feature(slice_index_methods)]
@@ -163,7 +164,7 @@ fn panic(info: &core::panic::PanicInfo,) -> ! {
 /// pub extern "C" fn kernel_main() -> ! {
 ///     // Initialize all kernel subsystems
 ///     init();
-///     
+///
 ///     // Start the main kernel loop
 ///     loop {
 ///         // Handle system events

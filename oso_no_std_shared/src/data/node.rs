@@ -39,7 +39,7 @@ impl<T: Copy,> NodeValue for Node<T,> {
 
 	/// this function may have runtime cost when Self::Output is large data
 	fn obtain_value(&self,) -> Self::Output {
-		self.0.clone()
+		self.0
 	}
 }
 

@@ -25,6 +25,7 @@
 //! is `efi_main` which initializes the system, loads the kernel, and transfers control.
 
 #![no_std]
+#![allow(incomplete_features)]
 #![feature(alloc_error_handler)]
 #![feature(ptr_as_ref_unchecked)]
 #![feature(iter_next_chunk)]
@@ -124,7 +125,7 @@ macro_rules! on_error {
 /// - Handle location fails during device connection
 pub fn init(image_handle: UnsafeHandle, syst: *const SystemTable,) {
 	// Clear console output for clean startup
-	unsafe { syst.as_ref().unwrap().stdout.as_mut().unwrap().clear().unwrap() };
+	clear_console(syst,);
 
 	// Initialize UEFI table access
 	chibi_uefi::table::set_system_table_panicking(syst,);
@@ -145,6 +146,10 @@ pub fn init(image_handle: UnsafeHandle, syst: *const SystemTable,) {
 		// Ignore errors from connect_controller intentionally
 		unsafe { bs.connect_controller(*handle, None, None, raw::types::Boolean::TRUE,) };
 	},);
+}
+
+fn clear_console(syst: *const SystemTable,) {
+	unsafe { syst.as_ref().unwrap().stdout.as_mut().unwrap().clear().unwrap() };
 }
 
 /// Converts a string to null-terminated UTF-16 format
@@ -232,7 +237,7 @@ pub fn exec_kernel(kernel_entry: u64, device_tree_ptr: DeviceTreeAddress,) {
 	#[cfg(target_arch = "x86_64")]
 	type KernelEntry = extern "sysv64" fn(DeviceTreeAddress,);
 
-	let entry_point = unsafe { core::mem::transmute::<_, KernelEntry,>(kernel_entry,) };
+	let entry_point = unsafe { core::mem::transmute::<*const (), KernelEntry,>(kernel_entry,) };
 
 	// Architecture-specific preparation for kernel execution
 	#[cfg(target_arch = "aarch64")]

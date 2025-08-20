@@ -10,3 +10,6 @@ toml = { version = "*", features = ["parse"] }
 
 [dev-dependencies]
 proptest = "*"
+
+[lints.clippy]
+tabs_in_doc_comments = "allow"

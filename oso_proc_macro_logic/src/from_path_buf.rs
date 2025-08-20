@@ -17,10 +17,10 @@ pub fn from_path_buf(item: syn::DeriveInput,) -> RsltP {
 pub fn struct_impl(mut struct_def: syn::DeriveInput,) -> RsltP {
 	trim_name(&mut struct_def,);
 
-	let enum_parts = enum_parts(&struct_def.ident,)?;
+	let enum_parts = enum_parts(&struct_def,)?;
 	let enum_name = enum_parts.name.clone();
 	let enum_dumped = enum_parts.dump();
-	let struct_dumped = struct_dump(enum_name, struct_def,)?;
+	let struct_dumped = struct_dump(struct_def, enum_name,)?;
 
 	Ok((
 		quote::quote! {
@@ -38,28 +38,42 @@ fn trim_name(struct_def: &mut syn::DeriveInput,) {
 }
 
 struct EnumParts {
-	name:  syn::Ident,
-	defs:  Vec<proc_macro2::TokenStream,>,
-	impls: Vec<proc_macro2::TokenStream,>,
+	name:          Option<syn::Type,>,
+	variants:      Vec<proc_macro2::TokenStream,>,
+	variants_attr: Vec<Option<proc_macro2::TokenStream,>,>,
+	paths:         Vec<proc_macro2::TokenStream,>,
 }
 
 impl EnumParts {
-	pub fn dump(self,) -> proc_macro2::TokenStream {
-		let name = self.name;
-		let defs = self.defs;
-		let impls = self.impls;
+	pub fn dump(&self,) -> proc_macro2::TokenStream {
+		let name = &self.name;
+		let variants = &self.variants;
+		let variants_attr = &self.variants_attr;
+		let paths = &self.paths;
 
 		quote::quote! {
-			#[derive(Default, PartialEq, Eq, Clone,)]
+			#[derive(Default, PartialEq, Eq, Clone, Debug)]
 			pub enum #name {
-				#(#defs)*
+				#(
+					#variants_attr
+					#variants,
+				)*
+			}
+
+			impl #name {
+				pub fn to_path_buf(&self) -> PathBuf {
+					use std::str::FromStr;
+					match self {
+						#(Self::#variants => PathBuf::from_str(#paths).unwrap(),)*
+					}
+				}
 			}
 
 			impl From<PathBuf,> for #name {
 				fn from(value: PathBuf,) -> Self {
 					let value = value.to_str().expect("failed to convert PathBuf to &str");
 					match value {
-						#(#impls)*
+						#(#paths => Self::#variants,)*
 						a => unreachable!("invalid path {a:#?}"),
 					}
 				}
@@ -68,18 +82,30 @@ impl EnumParts {
 	}
 }
 
-fn enum_parts(struct_name: &syn::Ident,) -> Rslt<EnumParts,> {
-	let name = format_ident!("{struct_name}Chart");
+fn enum_parts(struct_def: &syn::DeriveInput,) -> Rslt<EnumParts,> {
+	let name = detect_chart_type(struct_def,);
 
 	let crate_list = all_crates()?;
-	let (defs, impls,): (Vec<proc_macro2::TokenStream,>, Vec<proc_macro2::TokenStream,>,) =
-		crate_list
-			.iter()
-			.enumerate()
-			.map(|(i, pb,)| -> Rslt<(proc_macro2::TokenStream, proc_macro2::TokenStream,),> {
+	let (variants, variants_attr, paths,): (
+		Vec<proc_macro2::TokenStream,>,
+		Vec<Option<proc_macro2::TokenStream,>,>,
+		Vec<proc_macro2::TokenStream,>,
+	) = crate_list
+		.iter()
+		.enumerate()
+		.map(
+			|(i, pb,)| -> Rslt<(
+				proc_macro2::TokenStream,
+				Option<proc_macro2::TokenStream,>,
+				proc_macro2::TokenStream,
+			),> {
 				let path = pb.to_str().ok_or(anyhow!("failed convert PathBuf to &str"),)?;
+				let path = quote::quote! {#path};
 				let variant: String = pb.to_camel();
 				let variant = format_ident!("{variant}");
+				let variant = quote::quote! {
+					#variant
+				};
 
 				let attr = if i == 0 {
 					Some(quote::quote! {
@@ -89,24 +115,28 @@ fn enum_parts(struct_name: &syn::Ident,) -> Rslt<EnumParts,> {
 					None
 				};
 
-				let enum_impl = quote::quote! {
-					#path => #name::#variant,
-				};
-				let enum_def = quote::quote! {
-					#attr
-					#variant,
-				};
+				Ok((variant, attr, path,),)
+			},
+		)
+		.try_collect()?;
 
-				Ok((enum_def, enum_impl,),)
-			},)
-			.try_collect()?;
+	Ok(EnumParts { name, variants, variants_attr, paths, },)
+}
 
-	Ok(EnumParts { name, defs, impls, },)
+fn detect_chart_type(struct_def: &syn::DeriveInput,) -> Option<syn::Type,> {
+	let syn::Data::Struct(syn::DataStruct { fields, .. },) = &struct_def.data else {
+		panic!("expected struct, found {struct_def:?}")
+	};
+	fields.iter().find(|f| {
+		f.attrs.iter().any(
+			|attr| matches!(attr.meta, syn::Meta::Path(ref p) if p.get_ident() == Some(&format_ident!("chart"))),
+		)
+	},).map(|f| f.ty.clone())
 }
 
 fn struct_dump(
-	enum_name: syn::Ident,
 	mut struct_def: syn::DeriveInput,
+	enum_name: Option<syn::Type,>,
 ) -> Rslt<proc_macro2::TokenStream,> {
 	let syn::Data::Struct(syn::DataStruct { ref mut fields, .. },) = struct_def.data else {
 		bail!("unexpected derive input. this macro only support struct derive");
@@ -118,8 +148,7 @@ fn struct_dump(
 	let generics = &struct_def.generics;
 
 	Ok(quote::quote! {
-		#[derive(Default, PartialEq, Eq, Clone,)]
-		#struct_def
+		// #struct_def
 
 		impl #generics From<PathBuf> for #ident #generics {
 			fn from(value: PathBuf,) -> Self {
@@ -128,11 +157,12 @@ fn struct_dump(
 				}
 			}
 		}
+
 	},)
 }
 
 fn fields_invest(
-	enum_name: &syn::Ident,
+	enum_name: &Option<syn::Type,>,
 	fields: &mut syn::Fields,
 ) -> Rslt<Vec<proc_macro2::TokenStream,>,> {
 	match fields {
@@ -155,7 +185,10 @@ fn fields_invest(
 	}
 }
 
-fn field_construct(enum_name: &syn::Ident, f: syn::Field,) -> Rslt<proc_macro2::TokenStream,> {
+fn field_construct(
+	enum_name: &Option<syn::Type,>,
+	f: syn::Field,
+) -> Rslt<proc_macro2::TokenStream,> {
 	let construct = match f.ty {
 		syn::Type::Path(syn::TypePath { path: syn::Path { segments, .. }, .. },) => {
 			let field_name = &f.ident;
@@ -168,11 +201,19 @@ fn field_construct(enum_name: &syn::Ident, f: syn::Field,) -> Rslt<proc_macro2::
 			};
 
 			if let Some(last,) = segments.last() {
+				let Some(syn::Type::Path(syn::TypePath {
+					path: syn::Path { segments, .. }, ..
+				},),) = enum_name
+				else {
+					unimplemented!()
+				};
+				let enum_last = &segments.last().unwrap().ident;
+
 				if last.ident == "PathBuf" {
 					quote::quote! {
 						#id: value.clone()
 					}
-				} else if &last.ident == enum_name {
+				} else if &last.ident == enum_last {
 					quote::quote! {
 						#id: #enum_name::from(value.clone())
 					}

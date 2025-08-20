@@ -8,7 +8,7 @@ use core::ops::Div;
 use core::ops::Mul;
 use core::ops::Sub;
 use oso_error::Rslt;
-use oso_proc_macro::fonts_data;
+use oso_proc_macro::font;
 use oso_proc_macro::impl_int;
 
 // const SINONOME: &[u8; 256] = {
@@ -19,7 +19,7 @@ use oso_proc_macro::impl_int;
 // };
 
 /// default font until oso gets ability to load file on execution
-pub const SINONOME: &[u128; 256] = fonts_data!("resource/sinonome_font.dat");
+pub const SINONOME: &[u128; 256] = font!("resource/sinonome_font.dat");
 /// maximum number of digits on u128
 pub const MAX_DIGIT: usize = 39;
 static CONSOLE: TextBuf<(usize, usize,),> = TextBuf::new((0, 0,), 8, 16,);

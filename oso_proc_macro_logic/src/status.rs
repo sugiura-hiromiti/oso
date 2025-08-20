@@ -226,7 +226,7 @@ pub fn status_spec_page(status_spec_url: impl Into<String,>,) -> Rslt<StatusCode
 
 	// Set the error bit for all error codes as per UEFI specification
 	error_codes.iter_mut().for_each(|sci| {
-		sci.value = sci.value | StatusCodeInfo::ERROR_BIT;
+		sci.value |= StatusCodeInfo::ERROR_BIT;
 	},);
 
 	Ok(StatusCode { success: success_codes, error: error_codes, warn: warn_codes, },)
@@ -386,19 +386,15 @@ pub fn get_element_by_id(node: Rc<Node,>, id: &str,) -> Option<Rc<Node,>,> {
 	// Check if current node has the target ID
 	let found = if let NodeData::Element { attrs, .. } = &node.data {
 		let attrs_borrow = attrs.borrow();
-		attrs_borrow
-			.iter()
-			.find(|a| {
-				// Create a tendril for the target ID
-				let value = unsafe {
-					tendril::StrTendril::from_byte_slice_without_validating(id.as_bytes(),)
-				};
-				let local_name = local_name!("id");
+		attrs_borrow.iter().any(|a| {
+			// Create a tendril for the target ID
+			let value =
+				unsafe { tendril::StrTendril::from_byte_slice_without_validating(id.as_bytes(),) };
+			let local_name = local_name!("id");
 
-				// Check if this attribute is an ID with the target value
-				*a.name.local == *local_name && a.value == value
-			},)
-			.is_some()
+			// Check if this attribute is an ID with the target value
+			*a.name.local == *local_name && a.value == value
+		},)
 	} else {
 		false
 	};
@@ -435,14 +431,10 @@ fn get_elements_by_attribute(node: Rc<Node,>, attr: &str, value: &str,) -> Vec<R
 
 	// Check if current node matches the attribute criteria
 	let matches = match &node.data {
-		NodeData::Element { attrs, .. } => attrs
-			.borrow()
-			.iter()
-			.find(|a| {
-				let local_name = string_cache::Atom::<LocalNameStaticSet,>::from(attr,);
-				*a.name.local == *local_name && a.value.contains(value,)
-			},)
-			.is_some(),
+		NodeData::Element { attrs, .. } => attrs.borrow().iter().any(|a| {
+			let local_name = string_cache::Atom::<LocalNameStaticSet,>::from(attr,);
+			*a.name.local == *local_name && a.value.contains(value,)
+		},),
 		_ => false,
 	};
 

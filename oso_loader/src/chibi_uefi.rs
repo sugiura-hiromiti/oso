@@ -179,10 +179,8 @@ impl BootServices {
 
 	unsafe fn try_exit_boot_services(&self, buf: &mut [u8],) -> Status {
 		let mem_map = self.get_memory_map(buf,).expect("failed to get memmap",);
-		let status =
-			unsafe { (self.exit_boot_services)(image_handle().as_ptr(), mem_map.map_key,) };
-		core::mem::forget(mem_map,);
-		status
+		// core::mem::forget(mem_map,);
+		unsafe { (self.exit_boot_services)(image_handle().as_ptr(), mem_map.map_key,) }
 	}
 }
 

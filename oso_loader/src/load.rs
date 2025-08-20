@@ -17,7 +17,6 @@ use crate::raw::types::PhysicalAddress;
 use crate::raw::types::file::FileAttributes;
 use crate::raw::types::file::OpenMode;
 use crate::raw::types::memory::AllocateType;
-use alloc::vec::Vec;
 use core::ptr::NonNull;
 use oso_no_std_shared::bridge::graphic::FrameBufConf;
 
@@ -184,7 +183,7 @@ fn elf_address_range(elf: &Elf,) -> (usize, usize,) {
 /// This function uses unsafe operations to write directly to virtual memory
 /// addresses specified in the ELF program headers. The caller must ensure
 /// that the target memory has been properly allocated.
-fn copy_load_segment(elf: &Elf, src: &Vec<u8,>,) {
+fn copy_load_segment(elf: &Elf, src: &[u8],) {
 	for ph in &elf.program_headers {
 		if ph.ty != ProgramHeaderType::Load {
 			continue;
