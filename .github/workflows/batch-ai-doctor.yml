@@ -66,8 +66,8 @@ jobs:
             }
 
             return targetPRs;
-          env:
-            UTC_SINCE: ${{ steps.date.outputs.utc_since }}
+        env:
+          UTC_SINCE: ${{ steps.date.outputs.utc_since }}
 
       - name: Set PR list output
         id: set
