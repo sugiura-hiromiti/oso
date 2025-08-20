@@ -1,5 +1,7 @@
 [日本語版](README.md)
 
+[deep wiki](https://deepwiki.com/sugiura-hiromiti/oso)
+
 > This README contains AI-generated content that has been manually refined
 > Last updated: 250731
 
@@ -80,15 +82,15 @@ Developer auxiliary tool suite.
 
 ### Auxiliary Crates List
 
-| Crate Name                 | Description                                                                    | Status |
-| -------------------------- | ------------------------------------------------------------------------------ | ------ |
-| `oso_no_std_shared`        | Provides basic data structures and utilities shared in no_std environment     | Complete |
-| `oso_proc_macro_logic_2`   | Internal logic implementation and testing for procedural macros (latest)      | Almost Complete |
-| `oso_proc_macro`           | Macro suite supporting kernel struct, parser, and test generation             | Almost Complete |
-| `oso_error`                | Common error types and error handling logic                                   | Complete |
-| `oso_dev_util`             | General-purpose code shared between development tools                         | In Development |
-| `oso_proc_macro_2`         | Procedural macro system (2nd generation)                                     | In Development |
-| `oso_proc_macro_logic`     | Internal logic implementation for procedural macros (legacy)                 | Maintenance |
+| Crate Name               | Description                                                               | Status          |
+| ------------------------ | ------------------------------------------------------------------------- | --------------- |
+| `oso_no_std_shared`      | Provides basic data structures and utilities shared in no_std environment | Complete        |
+| `oso_proc_macro_logic_2` | Internal logic implementation and testing for procedural macros (latest)  | Almost Complete |
+| `oso_proc_macro`         | Macro suite supporting kernel struct, parser, and test generation         | Almost Complete |
+| `oso_error`              | Common error types and error handling logic                               | Complete        |
+| `oso_dev_util`           | General-purpose code shared between development tools                     | In Development  |
+| `oso_proc_macro_2`       | Procedural macro system (2nd generation)                                  | In Development  |
+| `oso_proc_macro_logic`   | Internal logic implementation for procedural macros (legacy)              | Maintenance     |
 
 ## Build
 
