@@ -1,23 +1,21 @@
-[english ver](README-en.md)
+[日本語版](README.md)
 
-> このREADMEはAIによって生成された文章に手直しを入れた物です
-> 最終更新日：250731
+> This README contains AI-generated content that has been manually refined
+> Last updated: 250731
 
-# `oso` — 実験的aarch64向け純Rust製OS
+# `oso` — Experimental Pure Rust OS for aarch64
 
-**`oso`** は、Rustの型安全性と抽象性を最大限に活かしながら低レイヤにおける直接的なハードウェア制御を追求した、外部ツール(QEMU, Rust言語自体等)以外は完全自作のOSです。
-独自のUEFIブートローダからマクロ駆動のカーネル設計に至るまで、低レイヤー開発でも抽象を追い求める事を目標としています。
-また、まだまだネット上の資料が少ないaarch64を主要ターゲットとしています。
-これは
+**`oso`** is a completely self-made OS (except for external tools like QEMU and the Rust language itself) that pursues direct hardware control at the low level while maximizing Rust's type safety and abstraction capabilities.
+From a custom UEFI bootloader to macro-driven kernel design, the goal is to pursue abstraction even in low-level development.
+Additionally, it primarily targets aarch64, which still has limited online resources.
+This is for the following reasons:
 
-- 情報量としてはマイナーだがポテンシャルの高い領域の一つの先駆け・参考資料となること
-- 開発者自身(私の事)の自走能力を鍛える
-
-これらの理由によります。
+- To serve as a pioneer and reference material in a minor but high-potential field
+- To train the developer's (my) self-reliance abilities
 
 ## QuickStart
 
-コマンド実行の前に[必要なツール](#build)がインストールされている事を確認してください
+Please ensure that the [required tools](#build) are installed before running commands
 
 ```bash
 git clone https://github.com/sugiura-hiromiti/oso.git
@@ -25,109 +23,109 @@ cd oso
 cargo xt
 ```
 
-## 開発哲学・特徴
+## Development Philosophy & Features
 
-- [x] aarch64向け
+- [x] aarch64 targeted
 - [x] pure Rust
 - [x] no dependencies
-  - 開発補助クレートである`xtask`では外部クレートを利用しています
-  - その他、自分の技術的好奇心を優先する為に以下の用途で外部クレートを利用しています
-    - webスクレイピング：仕様書を元にproc macroで実装を自動生成する
-- [x] 標準に従順
-  - デファクトスタンダートをリスペクトし、独自規格が0になる様に開発されています
-- [x] 積極的な再発明
-  - 既存の実装の写経はせず一次情報(仕様書やリファレンス)を元に0からコードを構築しています
-  - 開発の中でOSの役割や可能性を再解釈し、OSに出来ることとRustに出来ることを平らな地平から観測する為です
-- [x] Rustの高次な機能を積極的に利用
-  - 既存のプロジェクトが見落として来たOS開発におけるRust特有の利点を探索する為です
+  - External crates are used in the development auxiliary crate `xtask`
+  - Additionally, external crates are used for the following purposes to prioritize my technical curiosity:
+    - Web scraping: Automatically generating implementations with proc macros based on specifications
+- [x] Standards compliant
+  - Developed to respect de facto standards and minimize custom specifications
+- [x] Active reinvention
+  - Code is built from scratch based on primary sources (specifications and references) without copying existing implementations
+  - This is to reinterpret the role and possibilities of OS during development and observe what OS and Rust can do from a level playing field
+- [x] Active use of Rust's higher-order features
+  - To explore Rust-specific advantages in OS development that existing projects have overlooked
 
-## プロジェクト構成
+## Project Structure
 
-このリポジトリは、複数のクレートから構成される [Cargoワークスペース](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html) です
+This repository is a [Cargo workspace](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html) composed of multiple crates:
 
 ### `oso_kernel`
 
-カーネル本体を構成するクレート
+The crate that constitutes the kernel body
 
-**特徴**
+**Features**
 
-- nightly Rust機能を多数利用
-- モジュール構成：
-  - `app`：アプリ実行系
-  - `base`：基本ライブラリ
-  - `driver`：デバイス制御
-- 他クレートとの連携：
-  - `oso_no_std_shared`：no_std環境での共有ライブラリ
-  - `oso_proc_macro`：マクロによる自動コード生成
-  - `oso_error`：エラー処理体系
+- Extensive use of nightly Rust features
+- Module structure:
+  - `app`: Application execution system
+  - `base`: Basic library
+  - `driver`: Device control
+- Integration with other crates:
+  - `oso_no_std_shared`: Shared library for no_std environment
+  - `oso_proc_macro`: Automatic code generation through macros
+  - `oso_error`: Error handling system
 
 ### `oso_loader`
 
-独自実装のUEFI対応ブートローダ。
+Custom UEFI-compatible bootloader implementation.
 
-- ELF形式のカーネル読み込み機能
-- グラフィックス機能サポート（RGB/BGR/Bitmask形式）
-- 使用クレート：
+- ELF format kernel loading functionality
+- Graphics support (RGB/BGR/Bitmask formats)
+- Used crates:
   - `oso_no_std_shared`
   - `oso_proc_macro`
   - `oso_error`
 
 ### `xtask`
 
-開発者向け補助ツール群。
+Developer auxiliary tool suite.
 
-- QEMU・UEFIターゲットのビルド補助
-- 起動用スクリプト
-- デプロイやテストの自動化処理など
+- Build assistance for QEMU and UEFI targets
+- Startup scripts
+- Deployment and test automation processes
 
-### 補助クレート一覧
+### Auxiliary Crates List
 
-| クレート名                  | 説明                                                              | 状態 |
-| -------------------------- | ----------------------------------------------------------------- | ---- |
-| `oso_no_std_shared`        | no_std環境で共有される基本的なデータ構造とユーティリティを提供    | 完成 |
-| `oso_proc_macro_logic_2`   | 手続きマクロの実装内部ロジックとそのテスト（最新版）              | ほぼ完成 |
-| `oso_proc_macro`           | カーネルの構造体やパーサ・テスト生成を支援するマクロ群            | ほぼ完成 |
-| `oso_error`                | 共通エラー型とエラーハンドリングロジック                          | 完成 |
-| `oso_dev_util`             | 開発ツール間で共有される汎用コード                                | 開発中 |
-| `oso_proc_macro_2`         | 手続きマクロシステム（第2世代）                                   | 開発中 |
-| `oso_proc_macro_logic`     | 手続きマクロの実装内部ロジック（レガシー版）                      | 保守 |
+| Crate Name                 | Description                                                                    | Status |
+| -------------------------- | ------------------------------------------------------------------------------ | ------ |
+| `oso_no_std_shared`        | Provides basic data structures and utilities shared in no_std environment     | Complete |
+| `oso_proc_macro_logic_2`   | Internal logic implementation and testing for procedural macros (latest)      | Almost Complete |
+| `oso_proc_macro`           | Macro suite supporting kernel struct, parser, and test generation             | Almost Complete |
+| `oso_error`                | Common error types and error handling logic                                   | Complete |
+| `oso_dev_util`             | General-purpose code shared between development tools                         | In Development |
+| `oso_proc_macro_2`         | Procedural macro system (2nd generation)                                     | In Development |
+| `oso_proc_macro_logic`     | Internal logic implementation for procedural macros (legacy)                 | Maintenance |
 
 ## Build
 
-**前提条件**：
+**Prerequisites**:
 
-- nightly Rust (1.90.0以降)
-- QEMU (バージョン10以降)
-- macOS(`hdiutil`コマンドを利用している為　マルチ対応予定)
+- nightly Rust (1.90.0 or later)
+- QEMU (version 10 or later)
+- macOS (uses `hdiutil` command, multi-platform support planned)
 
-**実行例**：
+**Usage examples**:
 
 ```bash
-# 各クレートのビルド・バイナリのマウント・QEMUの実行
+# Build each crate, mount binaries, and run QEMU
 cargo xt
 
-# x86も部分的にサポートしています
+# x86 is also partially supported
 cargo xt -86
 ```
 
-## 機能
+## Features
 
-### グラフィックス機能
+### Graphics Features
 
-- RGB、BGR、Bitmask形式のピクセルフォーマットサポート
-- Block Transfer Only (BLT) モード（デフォルト）
-- UEFI Graphics Output Protocol (GOP) 対応
+- RGB, BGR, Bitmask pixel format support
+- Block Transfer Only (BLT) mode (default)
+- UEFI Graphics Output Protocol (GOP) support
 
-### アーキテクチャサポート
+### Architecture Support
 
-- **主要ターゲット**: aarch64 (ARM64)
-- **部分サポート**: x86_64
+- **Primary target**: aarch64 (ARM64)
+- **Partial support**: x86_64
 
-## ライセンス
+## License
 
 MIT OR Apache-2.0
 
-## 貢献
+## Contributing
 
-このプロジェクトは実験的な性質を持ちますが、コントリビューションを歓迎します。
-Issue や Pull Request をお気軽にお送りください。
+While this project is experimental in nature, contributions are welcome.
+Please feel free to submit Issues or Pull Requests.
