@@ -121,16 +121,13 @@ jobs:
                  return "no-run";
 
          - name: Fetch logs
-           if: ${{ steps.status.outputs.result == 'failure' }}
            run: |
               gh run view $(gh run list --branch "${{ fromJSON(steps.details.outputs.result).head.ref }}" --json databaseId --jq '.[0].databaseId') --log > ci_logs.txt
 
          - name: AI severity + summary
            id: ai
-           if: ${{ steps.status.outputs.result == 'failure' }}
            uses: actions/ai-inference@v1
            with:
-              model: gpt-5-nano
               messages: |
                  [
                    {"role":"system","content":"You are an expert reviewer. Classify CI failure severity (critical/moderate/minor/none) and summarize issues. Return JSON: {\"severity\":...,\"summary\":...}."},
