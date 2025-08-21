@@ -19,32 +19,39 @@ jobs:
     outputs:
       pr_list: ${{ steps.set.outputs.pr_list }}
     steps:
-      - name: Get start of yesterday in JST as UTC
+      - name: Compute JST window for yesterday
         id: date
         run: |
-          # Start of yesterday in JST (UTC+9) converted to UTC
-          utc_since=$(date -u -d "$(date +%Y-%m-%d --date='yesterday') 15:00:00" +%Y-%m-%dT%H:%M:%SZ)
+          # Compute start of yesterday/today in JST and convert to UTC
+          # Uses tzdata to shift from Asia/Tokyo to UTC
+          utc_since=$(TZ=Asia/Tokyo date -d 'yesterday 00:00' -u +%Y-%m-%dT%H:%M:%SZ)
+          utc_until=$(TZ=Asia/Tokyo date -d 'today 00:00' -u +%Y-%m-%dT%H:%M:%SZ)
           echo "utc_since=$utc_since" >> $GITHUB_OUTPUT
+          echo "utc_until=$utc_until" >> $GITHUB_OUTPUT
 
-      - name: List yesterday’s PRs (JST, including reopened)
+      - name: List yesterday’s PRs (JST window, including reopened)
         id: list_prs
         uses: actions/github-script@v7
         with:
           script: |
             const since = process.env.UTC_SINCE;
+            const until = process.env.UTC_UNTIL;
             const prs = await github.paginate(github.rest.pulls.list, {
               owner: context.repo.owner,
               repo: context.repo.repo,
-              state: "open",
+              state: "all",
               per_page: 100
             });
 
-            const targetPRs = [];
+            const target = new Set();
+            const inWindow = (d) => d && d >= new Date(since) && d < new Date(until);
 
             for (const pr of prs) {
               const created = new Date(pr.created_at);
-              if (created >= new Date(since)) {
-                targetPRs.push(pr.number);
+              const closedAt = pr.closed_at ? new Date(pr.closed_at) : null;
+              const mergedAt = pr.merged_at ? new Date(pr.merged_at) : null;
+              if (inWindow(created) || inWindow(closedAt) || inWindow(mergedAt)) {
+                target.add(pr.number);
                 continue;
               }
 
@@ -56,19 +63,20 @@ jobs:
                 per_page: 100
               });
 
-              const reopened = events.some(e =>
-                e.event === "reopened" &&
-                new Date(e.created_at) >= new Date(since)
+              const matchedEvent = events.some(e =>
+                (e.event === "reopened" || e.event === "closed") &&
+                inWindow(new Date(e.created_at))
               );
 
-              if (reopened) {
-                targetPRs.push(pr.number);
+              if (matchedEvent) {
+                target.add(pr.number);
               }
             }
 
-            return targetPRs;
+            return Array.from(target);
         env:
           UTC_SINCE: ${{ steps.date.outputs.utc_since }}
+          UTC_UNTIL: ${{ steps.date.outputs.utc_until }}
 
       - name: Set PR list output
         id: set
