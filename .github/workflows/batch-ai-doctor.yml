@@ -107,7 +107,9 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const runs = await github.rest.actions.listWorkflowRuns({
+            // List latest workflow runs for the repo on this branch
+            // Note: listWorkflowRuns requires a workflow_id; we want all, so use listWorkflowRunsForRepo
+            const runs = await github.rest.actions.listWorkflowRunsForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
               branch: '${{ fromJSON(steps.details.outputs.result).head.ref }}',
