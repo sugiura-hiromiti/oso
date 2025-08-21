@@ -1,262 +1,262 @@
 name: Daily AI PR Health Sweep
 
 on:
-  schedule:
-    # Midnight JST = 15:00 UTC
-    - cron: "0 15 * * *"
-  workflow_dispatch:
+   schedule:
+      # Midnight JST = 15:00 UTC
+      - cron: "0 15 * * *"
+   workflow_dispatch:
 
 permissions:
-  contents: read
-  issues: write
-  pull-requests: read
-  actions: read
-  models: read
+   contents: read
+   issues: write
+   pull-requests: read
+   actions: read
+   models: read
 
 jobs:
-  scan-prs:
-    runs-on: ubuntu-latest
-    outputs:
-      pr_list: ${{ steps.set.outputs.pr_list }}
-    steps:
-      - name: Compute JST window for yesterday
-        id: date
-        run: |
-          # Compute start of yesterday/today in JST and convert to UTC
-          # Uses tzdata to shift from Asia/Tokyo to UTC
-          utc_since=$(TZ=Asia/Tokyo date -d 'yesterday 00:00' -u +%Y-%m-%dT%H:%M:%SZ)
-          utc_until=$(TZ=Asia/Tokyo date -d 'today 00:00' -u +%Y-%m-%dT%H:%M:%SZ)
-          echo "utc_since=$utc_since" >> $GITHUB_OUTPUT
-          echo "utc_until=$utc_until" >> $GITHUB_OUTPUT
+   scan-prs:
+      runs-on: ubuntu-latest
+      outputs:
+         pr_list: ${{ steps.set.outputs.pr_list }}
+      steps:
+         - name: Compute JST window for yesterday
+           id: date
+           run: |
+              # Compute start of yesterday/today in JST and convert to UTC
+              # Uses tzdata to shift from Asia/Tokyo to UTC
+              utc_since=$(TZ=Asia/Tokyo date -d 'yesterday 00:00' -u +%Y-%m-%dT%H:%M:%SZ)
+              utc_until=$(TZ=Asia/Tokyo date -d 'today 00:00' -u +%Y-%m-%dT%H:%M:%SZ)
+              echo "utc_since=$utc_since" >> $GITHUB_OUTPUT
+              echo "utc_until=$utc_until" >> $GITHUB_OUTPUT
 
-      - name: List yesterday’s PRs (JST window, including reopened)
-        id: list_prs
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const since = process.env.UTC_SINCE;
-            const until = process.env.UTC_UNTIL;
-            const prs = await github.paginate(github.rest.pulls.list, {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: "all",
-              per_page: 100
-            });
+         - name: List yesterday’s PRs (JST window, including reopened)
+           id: list_prs
+           uses: actions/github-script@v7
+           with:
+              script: |
+                 const since = process.env.UTC_SINCE;
+                 const until = process.env.UTC_UNTIL;
+                 const prs = await github.paginate(github.rest.pulls.list, {
+                   owner: context.repo.owner,
+                   repo: context.repo.repo,
+                   state: "all",
+                   per_page: 100
+                 });
 
-            const target = new Set();
-            const inWindow = (d) => d && d >= new Date(since) && d < new Date(until);
+                 const target = new Set();
+                 const inWindow = (d) => d && d >= new Date(since) && d < new Date(until);
 
-            for (const pr of prs) {
-              const created = new Date(pr.created_at);
-              const closedAt = pr.closed_at ? new Date(pr.closed_at) : null;
-              const mergedAt = pr.merged_at ? new Date(pr.merged_at) : null;
-              if (inWindow(created) || inWindow(closedAt) || inWindow(mergedAt)) {
-                target.add(pr.number);
-                continue;
-              }
+                 for (const pr of prs) {
+                   const created = new Date(pr.created_at);
+                   const closedAt = pr.closed_at ? new Date(pr.closed_at) : null;
+                   const mergedAt = pr.merged_at ? new Date(pr.merged_at) : null;
+                   if (inWindow(created) || inWindow(closedAt) || inWindow(mergedAt)) {
+                     target.add(pr.number);
+                     continue;
+                   }
 
-              // Fetch issue events to detect reopen
-              const events = await github.paginate(github.rest.issues.listEvents, {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pr.number,
-                per_page: 100
-              });
+                   // Fetch issue events to detect reopen
+                   const events = await github.paginate(github.rest.issues.listEvents, {
+                     owner: context.repo.owner,
+                     repo: context.repo.repo,
+                     issue_number: pr.number,
+                     per_page: 100
+                   });
 
-              const matchedEvent = events.some(e =>
-                (e.event === "reopened" || e.event === "closed") &&
-                inWindow(new Date(e.created_at))
-              );
+                   const matchedEvent = events.some(e =>
+                     (e.event === "reopened" || e.event === "closed") &&
+                     inWindow(new Date(e.created_at))
+                   );
 
-              if (matchedEvent) {
-                target.add(pr.number);
-              }
-            }
+                   if (matchedEvent) {
+                     target.add(pr.number);
+                   }
+                 }
 
-            return Array.from(target);
-        env:
-          UTC_SINCE: ${{ steps.date.outputs.utc_since }}
-          UTC_UNTIL: ${{ steps.date.outputs.utc_until }}
+                 return Array.from(target);
+           env:
+              UTC_SINCE: ${{ steps.date.outputs.utc_since }}
+              UTC_UNTIL: ${{ steps.date.outputs.utc_until }}
 
-      - name: Set PR list output
-        id: set
-        run: echo "pr_list=${{ steps.list_prs.outputs.result }}" >> $GITHUB_OUTPUT
+         - name: Set PR list output
+           id: set
+           run: echo "pr_list=${{ steps.list_prs.outputs.result }}" >> $GITHUB_OUTPUT
 
-  analyze-prs:
-    needs: scan-prs
-    runs-on: ubuntu-latest
-    if: ${{ needs.scan-prs.outputs.pr_list != '[]' }}
-    strategy:
-      matrix:
-        pr: ${{ fromJSON(needs.scan-prs.outputs.pr_list) }}
-    steps:
-      - name: Get PR details
-        id: details
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const pr = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: ${{ matrix.pr }}
-            });
-            return pr.data;
+   analyze-prs:
+      needs: scan-prs
+      runs-on: ubuntu-latest
+      if: ${{ needs.scan-prs.outputs.pr_list != '[]' }}
+      strategy:
+         matrix:
+            pr: ${{ fromJSON(needs.scan-prs.outputs.pr_list) }}
+      steps:
+         - name: Get PR details
+           id: details
+           uses: actions/github-script@v7
+           with:
+              script: |
+                 const pr = await github.rest.pulls.get({
+                   owner: context.repo.owner,
+                   repo: context.repo.repo,
+                   pull_number: ${{ matrix.pr }}
+                 });
+                 return pr.data;
 
-      - name: Get last CI status
-        id: status
-        uses: actions/github-script@v7
-        with:
-          script: |
-            // List latest workflow runs for the repo on this branch
-            // Note: listWorkflowRuns requires a workflow_id; we want all, so use listWorkflowRunsForRepo
-            const runs = await github.rest.actions.listWorkflowRunsForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              branch: '${{ fromJSON(steps.details.outputs.result).head.ref }}',
-              per_page: 1
-            });
-            if (runs.data.workflow_runs.length) {
-              return runs.data.workflow_runs[0].conclusion || "unknown";
-            }
-            return "no-run";
+         - name: Get last CI status
+           id: status
+           uses: actions/github-script@v7
+           with:
+              script: |
+                 // List latest workflow runs for the repo on this branch
+                 // Note: listWorkflowRuns requires a workflow_id; we want all, so use listWorkflowRunsForRepo
+                 const runs = await github.rest.actions.listWorkflowRunsForRepo({
+                   owner: context.repo.owner,
+                   repo: context.repo.repo,
+                   branch: '${{ fromJSON(steps.details.outputs.result).head.ref }}',
+                   per_page: 1
+                 });
+                 if (runs.data.workflow_runs.length) {
+                   return runs.data.workflow_runs[0].conclusion || "unknown";
+                 }
+                 return "no-run";
 
-      - name: Fetch logs
-        if: ${{ steps.status.outputs.result == 'failure' }}
-        run: |
-          gh run view $(gh run list --branch "${{ fromJSON(steps.details.outputs.result).head.ref }}" --json databaseId --jq '.[0].databaseId') --log > ci_logs.txt
+         - name: Fetch logs
+           if: ${{ steps.status.outputs.result == 'failure' }}
+           run: |
+              gh run view $(gh run list --branch "${{ fromJSON(steps.details.outputs.result).head.ref }}" --json databaseId --jq '.[0].databaseId') --log > ci_logs.txt
 
-      - name: AI severity + summary
-        id: ai
-        if: ${{ steps.status.outputs.result == 'failure' }}
-        uses: actions/ai-inference@v1
-        with:
-          model: openai/gpt-5
-          messages: |
-            [
-              {"role":"system","content":"You are an expert reviewer. Classify CI failure severity (critical/moderate/minor/none) and summarize issues. Return JSON: {\"severity\":...,\"summary\":...}."},
-              {"role":"user","content":"PR Title: ${{ fromJSON(steps.details.outputs.result).title }}\nLogs:\n$(tail -n 200 ci_logs.txt)"}
-            ]
+         - name: AI severity + summary
+           id: ai
+           if: ${{ steps.status.outputs.result == 'failure' }}
+           uses: actions/ai-inference@v1
+           with:
+              model: gpt-5-nano
+              messages: |
+                 [
+                   {"role":"system","content":"You are an expert reviewer. Classify CI failure severity (critical/moderate/minor/none) and summarize issues. Return JSON: {\"severity\":...,\"summary\":...}."},
+                   {"role":"user","content":"PR Title: ${{ fromJSON(steps.details.outputs.result).title }}\nLogs:\n$(tail -n 200 ci_logs.txt)"}
+                 ]
 
-      - name: Parse AI result
-        if: ${{ steps.status.outputs.result == 'failure' }}
-        id: parse
-        run: |
-          echo '${{ steps.ai.outputs.message }}' | jq -r '.severity,.summary' \
-            | awk 'NR==1{print "severity="$0} NR==2{print "summary="$0}' >> $GITHUB_OUTPUT
+         - name: Parse AI result
+           if: ${{ steps.status.outputs.result == 'failure' }}
+           id: parse
+           run: |
+              echo '${{ steps.ai.outputs.message }}' | jq -r '.severity,.summary' \
+                | awk 'NR==1{print "severity="$0} NR==2{print "summary="$0}' >> $GITHUB_OUTPUT
 
-      - name: Search existing issue
-        id: search
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const prNumber = "${{ matrix.pr }}";
-            const issues = await github.rest.search.issuesAndPullRequests({
-              q: `repo:${context.repo.owner}/${context.repo.repo} in:title "AI Review: PR #${prNumber}"`
-            });
-            return issues.data.items.length ? issues.data.items[0] : null;
+         - name: Search existing issue
+           id: search
+           uses: actions/github-script@v7
+           with:
+              script: |
+                 const prNumber = "${{ matrix.pr }}";
+                 const issues = await github.rest.search.issuesAndPullRequests({
+                   q: `repo:${context.repo.owner}/${context.repo.repo} in:title "AI Review: PR #${prNumber}"`
+                 });
+                 return issues.data.items.length ? issues.data.items[0] : null;
 
-      - name: Close and comment on fix
-        if: ${{ steps.status.outputs.result == 'success' && steps.search.outputs.result != 'null' }}
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const issue = JSON.parse('${{ steps.search.outputs.result }}');
-            const now = new Date().toISOString();
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issue.number,
-              body: `### [${now}] CI Passed\nAuto-closing issue.`
-            });
-            await github.rest.issues.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issue.number,
-              state: "closed"
-            });
+         - name: Close and comment on fix
+           if: ${{ steps.status.outputs.result == 'success' && steps.search.outputs.result != 'null' }}
+           uses: actions/github-script@v7
+           with:
+              script: |
+                 const issue = JSON.parse('${{ steps.search.outputs.result }}');
+                 const now = new Date().toISOString();
+                 await github.rest.issues.createComment({
+                   owner: context.repo.owner,
+                   repo: context.repo.repo,
+                   issue_number: issue.number,
+                   body: `### [${now}] CI Passed\nAuto-closing issue.`
+                 });
+                 await github.rest.issues.update({
+                   owner: context.repo.owner,
+                   repo: context.repo.repo,
+                   issue_number: issue.number,
+                   state: "closed"
+                 });
 
-      - name: Create or comment on failure
-        if: ${{ steps.status.outputs.result == 'failure' && steps.parse.outputs.severity != 'none' }}
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const prNumber = "${{ matrix.pr }}";
-            const issue = JSON.parse('${{ steps.search.outputs.result }}');
-            const severity = "${{ steps.parse.outputs.severity }}";
-            const summary = "${{ steps.parse.outputs.summary }}";
-            const now = new Date().toISOString();
-            const commentBody = `### [${now}] CI Failure Analysis\n**Severity:** ${severity}\n\n${summary}`;
+         - name: Create or comment on failure
+           if: ${{ steps.status.outputs.result == 'failure' && steps.parse.outputs.severity != 'none' }}
+           uses: actions/github-script@v7
+           with:
+              script: |
+                 const prNumber = "${{ matrix.pr }}";
+                 const issue = JSON.parse('${{ steps.search.outputs.result }}');
+                 const severity = "${{ steps.parse.outputs.severity }}";
+                 const summary = "${{ steps.parse.outputs.summary }}";
+                 const now = new Date().toISOString();
+                 const commentBody = `### [${now}] CI Failure Analysis\n**Severity:** ${severity}\n\n${summary}`;
 
-            if (issue) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                body: commentBody
-              });
+                 if (issue) {
+                   await github.rest.issues.createComment({
+                     owner: context.repo.owner,
+                     repo: context.repo.repo,
+                     issue_number: issue.number,
+                     body: commentBody
+                   });
 
-              await github.rest.issues.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                state: "open",
-                labels: ["ai-review", "ci-failure", `severity:${severity}`]
-              });
-            } else {
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: `AI Review: PR #${prNumber}`,
-                body: `Tracking CI health for PR #${prNumber}. Auto-updated daily.`,
-                labels: ["ai-review", "ci-failure", `severity:${severity}`]
-              });
+                   await github.rest.issues.update({
+                     owner: context.repo.owner,
+                     repo: context.repo.repo,
+                     issue_number: issue.number,
+                     state: "open",
+                     labels: ["ai-review", "ci-failure", `severity:${severity}`]
+                   });
+                 } else {
+                   await github.rest.issues.create({
+                     owner: context.repo.owner,
+                     repo: context.repo.repo,
+                     title: `AI Review: PR #${prNumber}`,
+                     body: `Tracking CI health for PR #${prNumber}. Auto-updated daily.`,
+                     labels: ["ai-review", "ci-failure", `severity:${severity}`]
+                   });
 
-              const newIssue = await github.rest.issues.listForRepo({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                labels: "ai-review,ci-failure",
-                state: "open",
-                per_page: 1,
-                sort: "created",
-                direction: "desc"
-              });
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: newIssue.data[0].number,
-                body: commentBody
-              });
-            }
+                   const newIssue = await github.rest.issues.listForRepo({
+                     owner: context.repo.owner,
+                     repo: context.repo.repo,
+                     labels: "ai-review,ci-failure",
+                     state: "open",
+                     per_page: 1,
+                     sort: "created",
+                     direction: "desc"
+                   });
+                   await github.rest.issues.createComment({
+                     owner: context.repo.owner,
+                     repo: context.repo.repo,
+                     issue_number: newIssue.data[0].number,
+                     body: commentBody
+                   });
+                 }
 
-  daily-digest:
-    needs: analyze-prs
-    runs-on: ubuntu-latest
-    steps:
-      - name: Create/Update Daily Digest Issue
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const now = new Date().toISOString().slice(0,10);
-            const title = `Daily AI Digest - ${now}`;
-            const digestIssues = await github.rest.search.issuesAndPullRequests({
-              q: `repo:${context.repo.owner}/${context.repo.repo} in:title "${title}"`
-            });
+   daily-digest:
+      needs: analyze-prs
+      runs-on: ubuntu-latest
+      steps:
+         - name: Create/Update Daily Digest Issue
+           uses: actions/github-script@v7
+           with:
+              script: |
+                 const now = new Date().toISOString().slice(0,10);
+                 const title = `Daily AI Digest - ${now}`;
+                 const digestIssues = await github.rest.search.issuesAndPullRequests({
+                   q: `repo:${context.repo.owner}/${context.repo.repo} in:title "${title}"`
+                 });
 
-            const summary = `Daily CI report generated at ${now} (JST midnight).\n- Failed PRs: listed above in their issues.\n- Passed PRs: auto-closed issues.\n\n(See individual AI Review issues for details.)`;
+                 const summary = `Daily CI report generated at ${now} (JST midnight).\n- Failed PRs: listed above in their issues.\n- Passed PRs: auto-closed issues.\n\n(See individual AI Review issues for details.)`;
 
-            if (digestIssues.data.items.length) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: digestIssues.data.items[0].number,
-                body: summary
-              });
-            } else {
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title,
-                body: summary,
-                labels: ["ai-digest"]
-              });
-            }
+                 if (digestIssues.data.items.length) {
+                   await github.rest.issues.createComment({
+                     owner: context.repo.owner,
+                     repo: context.repo.repo,
+                     issue_number: digestIssues.data.items[0].number,
+                     body: summary
+                   });
+                 } else {
+                   await github.rest.issues.create({
+                     owner: context.repo.owner,
+                     repo: context.repo.repo,
+                     title,
+                     body: summary,
+                     labels: ["ai-digest"]
+                   });
+                 }
