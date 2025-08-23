@@ -86,6 +86,8 @@ pub const OSO_DEV_UTIL_PATH: &str = std::env!("CARGO_MANIFEST_PATH");
 
 #[cfg(test)]
 mod tests {
+	use crate::cargo::Arch;
+
 	use super::*;
 
 	#[test]
@@ -106,7 +108,6 @@ mod tests {
 
 		// Test cargo module
 		let _build_mode = cargo::BuildMode::Debug;
-		let _runs_on = cargo::RunsOn::Oso;
 		let _arch = cargo::Arch::Aarch64;
 
 		// Test that we can access the fs module functions
@@ -163,22 +164,12 @@ mod tests {
 		// Verify we can create instances of key types
 		use cargo::Arch;
 		use cargo::BuildMode;
-		use cargo::RunsOn;
-		use cargo::Target;
 
 		let build_mode = BuildMode::Debug;
 		assert!(build_mode.is_debug());
 
-		let runs_on = RunsOn::Oso;
-		assert!(runs_on.is_oso());
-
 		let arch = Arch::Aarch64;
 		assert!(arch.is_aarch_64());
-
-		let target = Target::default();
-		// Target should have default values
-		assert_eq!(target.runs_on.as_ref(), "Oso");
-		assert_eq!(target.arch.as_ref(), "Aarch64");
 	}
 
 	#[test]
@@ -201,12 +192,11 @@ mod tests {
 		use cargo::CompileOpt;
 		use cargo::Feature;
 		use cargo::Opts;
-		use cargo::Target;
 
 		let opts = Opts {
 			build_mode:    BuildMode::Debug,
 			feature_flags: Vec::<Feature,>::new(),
-			target:        Target::default(),
+			arch:          Arch::default(),
 		};
 
 		// Test trait methods
@@ -216,15 +206,8 @@ mod tests {
 		let feature_flags = opts.feature_flags();
 		assert!(feature_flags.is_empty());
 
-		let runs_on: String = opts.runs_on().into();
-		assert_eq!(runs_on, "Oso");
-
 		let arch: String = opts.arch().into();
 		assert_eq!(arch, "Aarch64");
-
-		let target: String = opts.target().into();
-		// Target should be formatted as "arch-vendor-os"
-		assert!(!target.is_empty());
 	}
 
 	#[test]
@@ -233,20 +216,17 @@ mod tests {
 		use cargo::Arch;
 		use cargo::BuildMode;
 		use cargo::Cli;
-		use cargo::RunsOn;
 
 		let cli = Cli {
 			build_mode:    Some(BuildMode::Release,),
 			feature_flags: None,
-			runs_on:       Some(RunsOn::Linux,),
 			arch:          Some(Arch::Riscv64,),
 		};
 
 		let opts = cli.to_opts();
-		assert!(opts.build_mode.is_relese());
+		assert!(opts.build_mode.is_release());
 		assert!(opts.feature_flags.is_empty());
-		assert!(opts.target.runs_on.is_linux());
-		assert!(opts.target.arch.is_riscv_64());
+		assert!(opts.arch.is_riscv_64());
 	}
 
 	#[test]
@@ -254,18 +234,12 @@ mod tests {
 		// Test CLI with default values
 		use cargo::Cli;
 
-		let cli = Cli {
-			build_mode:    None,
-			feature_flags: None,
-			runs_on:       None,
-			arch:          None,
-		};
+		let cli = Cli { build_mode: None, feature_flags: None, arch: None, };
 
 		let opts = cli.to_opts();
 		assert!(opts.build_mode.is_debug()); // Default should be Debug
 		assert!(opts.feature_flags.is_empty());
-		assert!(opts.target.runs_on.is_oso()); // Default should be Oso
-		assert!(opts.target.arch.is_aarch_64()); // Default should be Aarch64
+		assert!(opts.arch.is_aarch_64()); // Default should be Aarch64
 	}
 
 	#[test]
@@ -310,15 +284,9 @@ mod tests {
 		// Test AsRefStr implementations
 		use cargo::Arch;
 		use cargo::BuildMode;
-		use cargo::RunsOn;
 
 		assert_eq!(BuildMode::Debug.as_ref(), "Debug");
-		assert_eq!(BuildMode::Release.as_ref(), "Relese");
-
-		assert_eq!(RunsOn::Oso.as_ref(), "Oso");
-		assert_eq!(RunsOn::Linux.as_ref(), "Linux");
-		assert_eq!(RunsOn::Mac.as_ref(), "Mac");
-		assert_eq!(RunsOn::Uefi.as_ref(), "Uefi");
+		assert_eq!(BuildMode::Release.as_ref(), "Release");
 
 		assert_eq!(Arch::Aarch64.as_ref(), "Aarch64");
 		assert_eq!(Arch::Riscv64.as_ref(), "Riscv64");
@@ -329,20 +297,12 @@ mod tests {
 		// Test EnumIs implementations
 		use cargo::Arch;
 		use cargo::BuildMode;
-		use cargo::RunsOn;
 
 		// BuildMode
 		assert!(BuildMode::Debug.is_debug());
-		assert!(!BuildMode::Debug.is_relese());
-		assert!(BuildMode::Release.is_relese());
+		assert!(!BuildMode::Debug.is_release());
+		assert!(BuildMode::Release.is_release());
 		assert!(!BuildMode::Release.is_debug());
-
-		// RunsOn
-		assert!(RunsOn::Oso.is_oso());
-		assert!(!RunsOn::Oso.is_linux());
-		assert!(RunsOn::Linux.is_linux());
-		assert!(RunsOn::Mac.is_mac());
-		assert!(RunsOn::Uefi.is_uefi());
 
 		// Arch
 		assert!(Arch::Aarch64.is_aarch_64());
@@ -356,25 +316,14 @@ mod tests {
 		// Test Clone implementations
 		use cargo::Arch;
 		use cargo::BuildMode;
-		use cargo::RunsOn;
-		use cargo::Target;
 
 		let build_mode = BuildMode::Debug;
 		let cloned_build_mode = build_mode;
 		assert_eq!(build_mode.as_ref(), cloned_build_mode.as_ref());
 
-		let runs_on = RunsOn::Oso;
-		let cloned_runs_on = runs_on;
-		assert_eq!(runs_on.as_ref(), cloned_runs_on.as_ref());
-
 		let arch = Arch::Aarch64;
 		let cloned_arch = arch;
 		assert_eq!(arch.as_ref(), cloned_arch.as_ref());
-
-		let target = Target::default();
-		let cloned_target = target.clone();
-		assert_eq!(target.runs_on.as_ref(), cloned_target.runs_on.as_ref());
-		assert_eq!(target.arch.as_ref(), cloned_target.arch.as_ref());
 	}
 
 	#[test]
@@ -382,21 +331,12 @@ mod tests {
 		// Test Default implementations
 		use cargo::Arch;
 		use cargo::BuildMode;
-		use cargo::RunsOn;
-		use cargo::Target;
 
 		let default_build_mode = BuildMode::default();
 		assert!(default_build_mode.is_debug());
 
-		let default_runs_on = RunsOn::default();
-		assert!(default_runs_on.is_oso());
-
 		let default_arch = Arch::default();
 		assert!(default_arch.is_aarch_64());
-
-		let default_target = Target::default();
-		assert!(default_target.runs_on.is_oso());
-		assert!(default_target.arch.is_aarch_64());
 	}
 
 	#[test]
@@ -404,7 +344,6 @@ mod tests {
 		// Test that ValueEnum is implemented for CLI enums
 		use cargo::Arch;
 		use cargo::BuildMode;
-		use cargo::RunsOn;
 		use clap::ValueEnum;
 
 		// Test that we can get possible values
@@ -412,13 +351,6 @@ mod tests {
 		assert_eq!(build_mode_values.len(), 2);
 		assert!(build_mode_values.contains(&BuildMode::Debug));
 		assert!(build_mode_values.contains(&BuildMode::Release));
-
-		let runs_on_values = RunsOn::value_variants();
-		assert_eq!(runs_on_values.len(), 4);
-		assert!(runs_on_values.contains(&RunsOn::Oso));
-		assert!(runs_on_values.contains(&RunsOn::Linux));
-		assert!(runs_on_values.contains(&RunsOn::Mac));
-		assert!(runs_on_values.contains(&RunsOn::Uefi));
 
 		let arch_values = Arch::value_variants();
 		assert_eq!(arch_values.len(), 2);
@@ -476,7 +408,6 @@ mod tests {
 
 		// Test that we can create instances of key types
 		let _build_mode = BuildMode::Debug;
-		let _runs_on = RunsOn::Oso;
 		let _arch = Arch::Aarch64;
 
 		// Test that functions are accessible
@@ -534,8 +465,6 @@ mod tests {
 		use cargo::CompileOpt;
 		use cargo::Feature;
 		use cargo::Opts;
-		use cargo::RunsOn;
-		use cargo::Target;
 
 		// Test that all enums implement required traits
 		fn test_enum_traits<T,>(_value: T,)
@@ -544,38 +473,20 @@ mod tests {
 		}
 
 		test_enum_traits(BuildMode::Debug,);
-		test_enum_traits(RunsOn::Oso,);
 		test_enum_traits(Arch::Aarch64,);
-
-		// Test that Target implements required traits
-		fn test_target_traits<T,>(_value: T,)
-		where T: Clone + Default {
-			// If this compiles, the traits are implemented
-		}
-
-		test_target_traits(Target::default(),);
 
 		// Test that Opts can be constructed with all combinations
 		let all_build_modes = [BuildMode::Debug, BuildMode::Release,];
-		let all_runs_on = [RunsOn::Oso, RunsOn::Linux, RunsOn::Mac, RunsOn::Uefi,];
 		let all_archs = [Arch::Aarch64, Arch::Riscv64,];
 
 		for &build_mode in &all_build_modes {
-			for &runs_on in &all_runs_on {
-				for &arch in &all_archs {
-					let opts = Opts {
-						build_mode,
-						feature_flags: Vec::<Feature,>::new(),
-						target: Target { runs_on, arch, },
-					};
+			for &arch in &all_archs {
+				let opts = Opts { build_mode, feature_flags: Vec::<Feature,>::new(), arch, };
 
-					// Test CompileOpt trait methods
-					let _build_mode_str: String = opts.build_mode().into();
-					let _runs_on_str: String = opts.runs_on().into();
-					let _arch_str: String = opts.arch().into();
-					let _target_str: String = opts.target().into();
-					let _features = opts.feature_flags();
-				}
+				// Test CompileOpt trait methods
+				let _build_mode_str: String = opts.build_mode().into();
+				let _arch_str: String = opts.arch().into();
+				let _features = opts.feature_flags();
 			}
 		}
 	}
@@ -610,7 +521,6 @@ mod tests {
 		// Test all string conversion patterns used in the crate
 		use cargo::Arch;
 		use cargo::BuildMode;
-		use cargo::RunsOn;
 		use std::str::FromStr;
 
 		// Test round-trip conversions for all enum variants
@@ -619,13 +529,6 @@ mod tests {
 			let as_str = mode.as_ref();
 			let parsed = BuildMode::from_str(as_str,).unwrap();
 			assert_eq!(mode, parsed);
-		}
-
-		let runs_on_variants = [RunsOn::Oso, RunsOn::Linux, RunsOn::Mac, RunsOn::Uefi,];
-		for variant in runs_on_variants {
-			let as_str = variant.as_ref();
-			let parsed = RunsOn::from_str(as_str,).unwrap();
-			assert_eq!(variant, parsed);
 		}
 
 		let arch_variants = [Arch::Aarch64, Arch::Riscv64,];
@@ -637,7 +540,6 @@ mod tests {
 
 		// Test invalid string parsing
 		assert!(BuildMode::from_str("Invalid").is_err());
-		assert!(RunsOn::from_str("Windows").is_err());
 		assert!(Arch::from_str("x86_64").is_err());
 	}
 
@@ -646,11 +548,8 @@ mod tests {
 		// Test that the crate handles memory safely
 		use cargo::Arch;
 		use cargo::BuildMode;
-		use cargo::CompileOpt;
 		use cargo::Feature;
 		use cargo::Opts;
-		use cargo::RunsOn;
-		use cargo::Target;
 
 		// Test that we can create and drop many instances without issues
 		let mut opts_vec = Vec::new();
@@ -658,26 +557,13 @@ mod tests {
 			let opts = Opts {
 				build_mode:    if i % 2 == 0 { BuildMode::Debug } else { BuildMode::Release },
 				feature_flags: Vec::<Feature,>::new(),
-				target:        Target {
-					runs_on: match i % 4 {
-						0 => RunsOn::Oso,
-						1 => RunsOn::Linux,
-						2 => RunsOn::Mac,
-						_ => RunsOn::Uefi,
-					},
-					arch:    if i % 2 == 0 { Arch::Aarch64 } else { Arch::Riscv64 },
-				},
+				arch:          if i % 2 == 0 { Arch::Aarch64 } else { Arch::Riscv64 },
 			};
 			opts_vec.push(opts,);
 		}
 
 		// Test that we can access all instances
 		assert_eq!(opts_vec.len(), 1000);
-		for opts in &opts_vec {
-			let _target: String = opts.target().into();
-		}
-
-		// Vector should be dropped safely when it goes out of scope
 	}
 
 	#[test]
@@ -695,9 +581,6 @@ mod tests {
 					// Create enum instances
 					let build_mode = cargo::BuildMode::Debug;
 					assert!(build_mode.is_debug());
-
-					let runs_on = cargo::RunsOn::Oso;
-					assert!(runs_on.is_oso());
 				},)
 			},)
 			.collect();
@@ -716,14 +599,12 @@ mod tests {
 		use cargo::CompileOpt;
 		use cargo::Feature;
 		use cargo::Opts;
-		use cargo::RunsOn;
-		use cargo::Target;
 
 		// Example from CompileOpt documentation
 		let opts = Opts {
 			build_mode:    BuildMode::Debug,
 			feature_flags: Vec::<Feature,>::new(),
-			target:        Target { runs_on: RunsOn::Oso, arch: Arch::Aarch64, },
+			arch:          Arch::Aarch64,
 		};
 
 		let build_mode: String = opts.build_mode().into();
@@ -732,13 +613,7 @@ mod tests {
 		let feature_flags = opts.feature_flags();
 		assert!(feature_flags.is_empty());
 
-		let runs_on: String = opts.runs_on().into();
-		assert_eq!(runs_on, "Oso");
-
 		let arch: String = opts.arch().into();
 		assert_eq!(arch, "Aarch64");
-
-		let target: String = opts.target().into();
-		assert_eq!(target, "aarch64-unknown-oso");
 	}
 }
