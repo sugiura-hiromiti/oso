@@ -48,36 +48,6 @@
 // designed for kernel use. It's currently commented out but demonstrates
 // advanced Rust concepts including lifetime management and unsafe operations.
 
-/// A linked list implementation with explicit lifetime management
-///
-/// This linked list is designed for use in kernel environments where precise
-/// control over memory layout and lifetimes is required. It uses explicit
-/// lifetimes to ensure memory safety while allowing efficient operations.
-///
-/// # Type Parameters
-///
-/// * `'a` - Lifetime parameter ensuring all nodes live at least as long as the list
-/// * `T` - The type of data stored in each node
-///
-/// # Design Considerations
-///
-/// - **No Dynamic Allocation**: Uses references to existing nodes rather than allocating
-/// - **Lifetime Safety**: Ensures all referenced nodes remain valid
-/// - **Zero-cost Abstraction**: Minimal runtime overhead compared to raw pointers
-///
-/// # Examples
-///
-/// ```rust,ignore
-/// let mut list = LinkedList::new();
-/// let mut node1 = Node::new(42);
-/// let mut node2 = Node::new(84);
-///
-/// list.append(&mut node1);
-/// list.append(&mut node2);
-///
-/// assert_eq!(list.get(0).unwrap().value, 42);
-/// assert_eq!(list.get(1).unwrap().value, 84);
-/// ```
 // pub struct LinkedList<'a, T,> {
 // 	/// The head node of the linked list
 // 	node: Node<'a, T,>,
@@ -161,26 +131,6 @@
 // 	}
 // }
 
-/// A node in a linked list with explicit lifetime management
-///
-/// This struct represents a single node in the linked list, containing both
-/// the data value and a reference to the next node. It uses explicit lifetimes
-/// to ensure memory safety in kernel environments.
-///
-/// # Type Parameters
-///
-/// * `'a` - Lifetime parameter ensuring the next node reference remains valid
-/// * `T` - The type of data stored in this node
-///
-/// # Fields
-///
-/// * `value` - The data stored in this node
-/// * `next` - Optional reference to the next node in the list
-///
-/// # Memory Layout
-///
-/// The node is designed to be memory-efficient, storing only the essential
-/// data and a single pointer to the next node.
 // pub struct Node<'a, T,> {
 // 	/// The value stored in this node
 // 	pub value: T,

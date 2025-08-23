@@ -215,7 +215,8 @@ pub trait DeviceTreeHeader {
 	/// Byte offset to the strings block
 	fn strings_block_offset(&self,) -> usize;
 
-	/// Returns the byte offset to the memory reservation block from the beginning of the device tree
+	/// Returns the byte offset to the memory reservation block from the beginning of the device
+	/// tree
 	///
 	/// The memory reservation block contains entries describing reserved memory regions.
 	///
