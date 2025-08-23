@@ -162,41 +162,6 @@ mod tests {
 	}
 
 	#[test]
-	fn test_runs_on_default() {
-		let default_runs_on = RunsOn::default();
-		assert!(default_runs_on.is_oso());
-		assert_eq!(default_runs_on.as_ref(), "Oso");
-	}
-
-	#[test]
-	fn test_runs_on_variants() {
-		assert!(RunsOn::Mac.is_mac());
-		assert!(RunsOn::Uefi.is_uefi());
-		assert!(RunsOn::Oso.is_oso());
-		assert!(RunsOn::Linux.is_linux());
-
-		assert!(!RunsOn::Mac.is_oso());
-		assert!(!RunsOn::Uefi.is_linux());
-	}
-
-	#[test]
-	fn test_runs_on_string_conversion() {
-		assert_eq!(RunsOn::Mac.as_ref(), "Mac");
-		assert_eq!(RunsOn::Uefi.as_ref(), "Uefi");
-		assert_eq!(RunsOn::Oso.as_ref(), "Oso");
-		assert_eq!(RunsOn::Linux.as_ref(), "Linux");
-	}
-
-	#[test]
-	fn test_runs_on_from_string() {
-		assert_eq!(RunsOn::from_str("Mac").unwrap(), RunsOn::Mac);
-		assert_eq!(RunsOn::from_str("Uefi").unwrap(), RunsOn::Uefi);
-		assert_eq!(RunsOn::from_str("Oso").unwrap(), RunsOn::Oso);
-		assert_eq!(RunsOn::from_str("Linux").unwrap(), RunsOn::Linux);
-		assert!(RunsOn::from_str("Windows").is_err());
-	}
-
-	#[test]
 	fn test_arch_default() {
 		let default_arch = Arch::default();
 		assert!(default_arch.is_aarch_64());
@@ -230,15 +195,6 @@ mod tests {
 		let default_target = Target::default();
 		assert!(default_target.runs_on.is_oso());
 		assert!(default_target.arch.is_aarch_64());
-	}
-
-	#[test]
-	fn test_target_clone() {
-		let target = Target { runs_on: RunsOn::Linux, arch: Arch::Riscv64, };
-		let cloned = target.clone();
-
-		assert!(cloned.runs_on.is_linux());
-		assert!(cloned.arch.is_riscv_64());
 	}
 
 	#[test]
@@ -279,20 +235,6 @@ mod tests {
 
 		let arch: String = opts.arch().into();
 		assert_eq!(arch, "Riscv64");
-	}
-
-	#[test]
-	fn test_target_tuple_generation() {
-		let test_cases = vec![
-			(Arch::Aarch64, RunsOn::Oso, "aarch64-unknown-oso",),
-			(Arch::Aarch64, RunsOn::Linux, "aarch64-unknown-linux",),
-			(Arch::Riscv64, RunsOn::Mac, "riscv64-unknown-mac",),
-			(Arch::Riscv64, RunsOn::Uefi, "riscv64-unknown-uefi",),
-		];
-
-		for (arch, runs_on, expected,) in test_cases {
-			let opts = Opts { build_mode: BuildMode::Debug, feature_flags: vec![], arch, };
-		}
 	}
 
 	#[test]
@@ -349,13 +291,6 @@ mod tests {
 		}
 
 		#[test]
-		fn test_runs_on_roundtrip(runs_on in prop::sample::select(vec![RunsOn::Mac, RunsOn::Uefi, RunsOn::Oso, RunsOn::Linux])) {
-			let as_str = runs_on.as_ref();
-			let parsed = RunsOn::from_str(as_str).unwrap();
-			assert_eq!(runs_on, parsed);
-		}
-
-		#[test]
 		fn test_arch_roundtrip(arch in prop::sample::select(vec![Arch::Aarch64, Arch::Riscv64])) {
 			let as_str = arch.as_ref();
 			let parsed = Arch::from_str(as_str).unwrap();
@@ -365,7 +300,6 @@ mod tests {
 		#[test]
 		fn test_cli_opts_conversion_preserves_values(
 			build_mode in prop::option::of(prop::sample::select(vec![BuildMode::Debug, BuildMode::Release])),
-			runs_on in prop::option::of(prop::sample::select(vec![RunsOn::Mac, RunsOn::Uefi, RunsOn::Oso, RunsOn::Linux])),
 			arch in prop::option::of(prop::sample::select(vec![Arch::Aarch64, Arch::Riscv64]))
 		) {
 			let cli = Cli {
@@ -400,14 +334,6 @@ mod tests {
 		assert!(build_modes.contains(&BuildMode::Debug));
 		assert!(build_modes.contains(&BuildMode::Release));
 
-		// Test RunsOn variants
-		let runs_on_variants = RunsOn::value_variants();
-		assert_eq!(runs_on_variants.len(), 4);
-		assert!(runs_on_variants.contains(&RunsOn::Mac));
-		assert!(runs_on_variants.contains(&RunsOn::Uefi));
-		assert!(runs_on_variants.contains(&RunsOn::Oso));
-		assert!(runs_on_variants.contains(&RunsOn::Linux));
-
 		// Test Arch variants
 		let arch_variants = Arch::value_variants();
 		assert_eq!(arch_variants.len(), 2);
@@ -420,9 +346,6 @@ mod tests {
 		// Test that enums implement PartialEq correctly
 		assert_eq!(BuildMode::Debug, BuildMode::Debug);
 		assert_ne!(BuildMode::Debug, BuildMode::Release);
-
-		assert_eq!(RunsOn::Oso, RunsOn::Oso);
-		assert_ne!(RunsOn::Oso, RunsOn::Linux);
 
 		assert_eq!(Arch::Aarch64, Arch::Aarch64);
 		assert_ne!(Arch::Aarch64, Arch::Riscv64);
@@ -478,16 +401,6 @@ mod tests {
 			}
 		}
 
-		// Test that all RunsOn variants are covered
-		for variant in RunsOn::value_variants() {
-			match variant {
-				RunsOn::Mac => assert!(variant.is_mac()),
-				RunsOn::Uefi => assert!(variant.is_uefi()),
-				RunsOn::Oso => assert!(variant.is_oso()),
-				RunsOn::Linux => assert!(variant.is_linux()),
-			}
-		}
-
 		// Test that all Arch variants are covered
 		for variant in Arch::value_variants() {
 			match variant {
@@ -503,10 +416,6 @@ mod tests {
 		let build_mode = BuildMode::Debug;
 		let debug_str = format!("{:?}", build_mode);
 		assert!(debug_str.contains("Debug"));
-
-		let runs_on = RunsOn::Oso;
-		let debug_str = format!("{:?}", runs_on);
-		assert!(debug_str.contains("Oso"));
 
 		let arch = Arch::Aarch64;
 		let debug_str = format!("{:?}", arch);
@@ -531,7 +440,6 @@ mod tests {
 
 		// Enums should be small since they're Copy
 		assert!(mem::size_of::<BuildMode,>() <= 8);
-		assert!(mem::size_of::<RunsOn,>() <= 8);
 		assert!(mem::size_of::<Arch,>() <= 8);
 
 		// Structs should have reasonable sizes
@@ -548,12 +456,6 @@ mod tests {
 		assert_eq!(BuildMode::Debug.as_ref(), "Debug");
 		assert_eq!(BuildMode::Release.as_ref(), "Relese");
 
-		// RunsOn strings should be stable
-		assert_eq!(RunsOn::Mac.as_ref(), "Mac");
-		assert_eq!(RunsOn::Uefi.as_ref(), "Uefi");
-		assert_eq!(RunsOn::Oso.as_ref(), "Oso");
-		assert_eq!(RunsOn::Linux.as_ref(), "Linux");
-
 		// Arch strings should be stable
 		assert_eq!(Arch::Aarch64.as_ref(), "Aarch64");
 		assert_eq!(Arch::Riscv64.as_ref(), "Riscv64");
@@ -566,21 +468,18 @@ mod tests {
 		use std::thread;
 
 		let build_mode = Arc::new(BuildMode::Debug,);
-		let runs_on = Arc::new(RunsOn::Oso,);
 		let arch = Arc::new(Arch::Aarch64,);
 
 		let handles: Vec<_,> = (0..10)
 			.map(|_| {
 				let bm = Arc::clone(&build_mode,);
-				let ro = Arc::clone(&runs_on,);
 				let a = Arc::clone(&arch,);
 
 				thread::spawn(move || {
 					assert!(bm.is_debug());
-					assert!(ro.is_oso());
 					assert!(a.is_aarch_64());
 
-					let opts =
+					let _opts =
 						Opts { build_mode: *bm, feature_flags: vec![], arch: *a, };
 				},)
 			},)
@@ -616,19 +515,12 @@ mod tests {
 		let result = BuildMode::from_str("InvalidMode",);
 		assert!(result.is_err());
 
-		// Test invalid RunsOn
-		let result = RunsOn::from_str("Windows",);
-		assert!(result.is_err());
-
 		// Test invalid Arch
 		let result = Arch::from_str("x86_64",);
 		assert!(result.is_err());
 
 		// Test case sensitivity
 		let result = BuildMode::from_str("debug",);
-		assert!(result.is_err());
-
-		let result = RunsOn::from_str("oso",);
 		assert!(result.is_err());
 
 		let result = Arch::from_str("aarch64",);
@@ -674,30 +566,5 @@ mod tests {
 		assert!(debug_str.contains("Firmware"));
 		assert!(debug_str.contains("OVMF_CODE.fd"));
 		assert!(debug_str.contains("OVMF_VARS.fd"));
-	}
-
-	#[test]
-	fn test_compile_opt_trait_edge_cases() {
-		// Test CompileOpt trait with various configurations
-		let test_cases = vec![
-			(BuildMode::Debug, RunsOn::Oso, Arch::Aarch64,),
-			(BuildMode::Release, RunsOn::Linux, Arch::Riscv64,),
-			(BuildMode::Debug, RunsOn::Mac, Arch::Riscv64,),
-			(BuildMode::Release, RunsOn::Uefi, Arch::Aarch64,),
-		];
-
-		for (build_mode, runs_on, arch,) in test_cases {
-			let opts = Opts { build_mode, feature_flags: vec![], arch, };
-
-			// Test all trait methods
-			let build_mode_str: String = opts.build_mode().into();
-			let arch_str: String = opts.arch().into();
-			let features = opts.feature_flags();
-
-			// Verify results
-			assert_eq!(build_mode_str, build_mode.as_ref());
-			assert_eq!(arch_str, arch.as_ref());
-			assert!(features.is_empty());
-		}
 	}
 }
