@@ -358,7 +358,7 @@ impl<C: Coordinal,> TextBuf<C,> {
 
 		// Advance cursor position
 		self.col += 1;
-		
+
 		// Check for line wrapping
 		if self.col_pixel() + self.font_width >= FRAME_BUFFER.width {
 			self.col = 0;
