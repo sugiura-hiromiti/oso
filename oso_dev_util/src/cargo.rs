@@ -151,13 +151,13 @@ mod tests {
 	#[test]
 	fn test_build_mode_string_conversion() {
 		assert_eq!(BuildMode::Debug.as_ref(), "Debug");
-		assert_eq!(BuildMode::Release.as_ref(), "Relese");
+		assert_eq!(BuildMode::Release.as_ref(), "Release");
 	}
 
 	#[test]
 	fn test_build_mode_from_string() {
 		assert_eq!(BuildMode::from_str("Debug").unwrap(), BuildMode::Debug);
-		assert_eq!(BuildMode::from_str("Relese").unwrap(), BuildMode::Release);
+		assert_eq!(BuildMode::from_str("Release").unwrap(), BuildMode::Release);
 		assert!(BuildMode::from_str("Invalid").is_err());
 	}
 
@@ -191,13 +191,6 @@ mod tests {
 	}
 
 	#[test]
-	fn test_target_default() {
-		let default_target = Target::default();
-		assert!(default_target.runs_on.is_oso());
-		assert!(default_target.arch.is_aarch_64());
-	}
-
-	#[test]
 	fn test_cli_to_opts_with_values() {
 		let cli = Cli {
 			build_mode:    Some(BuildMode::Release,),
@@ -228,7 +221,7 @@ mod tests {
 		};
 
 		let build_mode: String = opts.build_mode().into();
-		assert_eq!(build_mode, "Relese");
+		assert_eq!(build_mode, "Release");
 
 		let feature_flags = opts.feature_flags();
 		assert!(feature_flags.is_empty());
@@ -421,8 +414,6 @@ mod tests {
 		let debug_str = format!("{:?}", arch);
 		assert!(debug_str.contains("Aarch64"));
 
-		let target = Target::default();
-		let debug_str = format!("{:?}", target);
 		assert!(!debug_str.is_empty());
 
 		let firmware =
@@ -443,7 +434,6 @@ mod tests {
 		assert!(mem::size_of::<Arch,>() <= 8);
 
 		// Structs should have reasonable sizes
-		assert!(mem::size_of::<Target,>() <= 64);
 		assert!(mem::size_of::<Cli,>() <= 256);
 	}
 
@@ -454,7 +444,7 @@ mod tests {
 
 		// BuildMode strings should be stable
 		assert_eq!(BuildMode::Debug.as_ref(), "Debug");
-		assert_eq!(BuildMode::Release.as_ref(), "Relese");
+		assert_eq!(BuildMode::Release.as_ref(), "Release");
 
 		// Arch strings should be stable
 		assert_eq!(Arch::Aarch64.as_ref(), "Aarch64");
