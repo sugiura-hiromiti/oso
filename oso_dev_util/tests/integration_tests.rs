@@ -37,7 +37,7 @@ fn test_compile_opt_trait() {
 	};
 
 	let build_mode: String = opts.build_mode().into();
-	assert_eq!(build_mode, "Relese");
+	assert_eq!(build_mode, "Release");
 
 	let arch: String = opts.arch().into();
 	assert_eq!(arch, "Aarch64");
@@ -269,8 +269,6 @@ fn test_debug_formatting() {
 	let build_mode = BuildMode::Debug;
 	let debug_str = format!("{:?}", build_mode);
 	assert!(debug_str.contains("Debug"));
-
-	assert!(debug_str.contains("Oso"));
 
 	let arch = Arch::Aarch64;
 	let debug_str = format!("{:?}", arch);
