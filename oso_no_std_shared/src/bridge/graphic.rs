@@ -513,10 +513,10 @@ impl FrameBufConf {
 		}
 
 		// Check if stride is reasonable
-		if let Some(bytes_per_pixel,) = self.pixel_format.bytes_per_pixel() {
-			if self.stride < self.width * bytes_per_pixel {
-				return false;
-			}
+		if let Some(bytes_per_pixel,) = self.pixel_format.bytes_per_pixel()
+			&& self.stride < self.width * bytes_per_pixel
+		{
+			return false;
 		}
 
 		// Check if size is sufficient
