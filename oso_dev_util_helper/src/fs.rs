@@ -129,7 +129,15 @@ pub fn get_upstream(file_name: impl Into<String,> + Clone,) -> Rslt<PathBuf,> {
 }
 
 pub fn search_upstream(file_name: impl Into<String,> + Clone,) -> Rslt<Option<PathBuf,>,> {
-	let mut place = current_dir()?;
+	let place = current_dir()?;
+	search_upstream_at(&place, file_name,)
+}
+
+pub fn search_upstream_at(
+	path: &Path,
+	file_name: impl Into<String,> + Clone,
+) -> Rslt<Option<PathBuf,>,> {
+	let mut place = path.to_path_buf();
 	loop {
 		if place.pop() {
 			if let Some(p,) = search_in(&place, file_name.clone(),)? {
