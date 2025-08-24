@@ -146,15 +146,20 @@ jobs:
            run: |
               set -euo pipefail
               TITLE="${{ fromJSON(steps.details.outputs.result).title }}"
+              # Sanitize logs: strip non-printable/ANSI, then hard-cap size to avoid model 8k token limit
+              if [ -f ci_logs.txt ]; then
+                sed -E 's/[^[:print:]\t]//g' ci_logs.txt > ci_logs_clean.txt || cp ci_logs.txt ci_logs_clean.txt
+                # Keep only the last ~15KB to stay well under token limits
+                tail -c 15000 ci_logs_clean.txt > ci_logs_cropped.txt || cp ci_logs_clean.txt ci_logs_cropped.txt
+              else
+                echo "ci_logs.txt not found." > ci_logs_cropped.txt
+              fi
+
               {
                 echo "PR Title: ${TITLE}"
                 echo
-                echo "Logs (last 200 lines):"
-                if [ -f ci_logs.txt ]; then
-                  tail -n 200 ci_logs.txt
-                else
-                  echo "ci_logs.txt not found."
-                fi
+                echo "Logs (cropped to last ~15KB):"
+                cat ci_logs_cropped.txt
               } > ai_prompt.txt
 
          - name: AI severity + summary
