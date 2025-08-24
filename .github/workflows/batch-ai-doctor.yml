@@ -287,31 +287,53 @@ jobs:
 
         - name: Collect PR activity stats
           id: pr_stats
-          run: |
-             set -euo pipefail
-             REPO="$GITHUB_REPOSITORY"
-             SINCE="${{ steps.date_digest.outputs.utc_since }}"
-             UNTIL="${{ steps.date_digest.outputs.utc_until }}"
+          uses: actions/github-script@v7
+          with:
+            script: |
+              const since = "${{ steps.date_digest.outputs.utc_since }}";
+              const until = "${{ steps.date_digest.outputs.utc_until }}";
+              const repo = `${context.repo.owner}/${context.repo.repo}`;
 
-             opened=$(gh api search/issues -f q="repo:$REPO is:pr created:>=$SINCE created:<$UNTIL" --jq .total_count)
-             merged=$(gh api search/issues -f q="repo:$REPO is:pr is:merged merged:>=$SINCE merged:<$UNTIL" --jq .total_count)
-             closed_not_merged=$(gh api search/issues -f q="repo:$REPO is:pr is:closed -is:merged closed:>=$SINCE closed:<$UNTIL" --jq .total_count)
+              const qOpened = `repo:${repo} is:pr created:>=${since} created:<${until}`;
+              const qMerged = `repo:${repo} is:pr is:merged merged:>=${since} merged:<${until}`;
+              const qClosedNotMerged = `repo:${repo} is:pr is:closed -is:merged closed:>=${since} closed:<${until}`;
 
-             echo "opened=$opened" >> $GITHUB_OUTPUT
-             echo "merged=$merged" >> $GITHUB_OUTPUT
-             echo "closed_not_merged=$closed_not_merged" >> $GITHUB_OUTPUT
+              const [opened, merged, closed] = await Promise.all([
+                github.rest.search.issuesAndPullRequests({ q: qOpened }),
+                github.rest.search.issuesAndPullRequests({ q: qMerged }),
+                github.rest.search.issuesAndPullRequests({ q: qClosedNotMerged }),
+              ]);
+
+              return {
+                opened: opened.data.total_count,
+                merged: merged.data.total_count,
+                closed_not_merged: closed.data.total_count,
+              };
 
         - name: Collect CI failure issues (window)
           id: ci_failures
-          run: |
-             set -euo pipefail
-             REPO="$GITHUB_REPOSITORY"
-             SINCE="${{ steps.date_digest.outputs.utc_since }}"
-             UNTIL="${{ steps.date_digest.outputs.utc_until }}"
-             # Use REST search API to list issues labeled as CI failures in window
-             gh api search/issues -f q="repo:$REPO is:issue label:ai-review label:ci-failure updated:>=$SINCE updated:<$UNTIL" \
-               --jq '[.items[] | {number: .number, title: .title, url: .html_url, updatedAt: .updated_at, severity: ((.labels // []) | map(.name) | map(select(startswith("severity:"))) | first // "severity:unknown")}]' > ci_failures.json || echo '[]' > ci_failures.json
-             echo "count=$(jq length ci_failures.json)" >> $GITHUB_OUTPUT
+          uses: actions/github-script@v7
+          with:
+            script: |
+              const since = "${{ steps.date_digest.outputs.utc_since }}";
+              const until = "${{ steps.date_digest.outputs.utc_until }}";
+              const repo = `${context.repo.owner}/${context.repo.repo}`;
+              const q = `repo:${repo} is:issue label:ai-review label:ci-failure updated:>=${since} updated:<${until}`;
+              const res = await github.rest.search.issuesAndPullRequests({ q });
+              const items = res.data.items.map(it => {
+                const labels = it.labels || [];
+                const severity = (labels.find(l => (l.name || '').startsWith('severity:'))?.name) || 'severity:unknown';
+                return {
+                  number: it.number,
+                  title: it.title,
+                  url: it.html_url,
+                  updatedAt: it.updated_at,
+                  severity,
+                };
+              });
+              require('fs').writeFileSync('ci_failures.json', JSON.stringify(items));
+              core.setOutput('count', String(items.length));
+              return items;
 
         - name: Compute git activity (since/until)
           id: git_stats
@@ -341,9 +363,9 @@ jobs:
              SINCE="${{ steps.date_digest.outputs.utc_since }}"
              UNTIL="${{ steps.date_digest.outputs.utc_until }}"
              DATE_JST=$(TZ=Asia/Tokyo date -d "${SINCE}" +%Y-%m-%d)
-             OPENED='${{ steps.pr_stats.outputs.opened }}'
-             MERGED='${{ steps.pr_stats.outputs.merged }}'
-             CLOSED='${{ steps.pr_stats.outputs.closed_not_merged }}'
+             OPENED='${{ fromJSON(steps.pr_stats.outputs.result).opened }}'
+             MERGED='${{ fromJSON(steps.pr_stats.outputs.result).merged }}'
+             CLOSED='${{ fromJSON(steps.pr_stats.outputs.result).closed_not_merged }}'
              COMMITS='${{ steps.git_stats.outputs.commits }}'
              CI_FAIL_COUNT='${{ steps.ci_failures.outputs.count }}'
 
