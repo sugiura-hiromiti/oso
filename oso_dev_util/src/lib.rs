@@ -66,6 +66,7 @@
 
 #![feature(exit_status_error)]
 #![feature(proc_macro_hygiene)]
+#![feature(if_let_guard)]
 
 use anyhow::Result as Rslt;
 

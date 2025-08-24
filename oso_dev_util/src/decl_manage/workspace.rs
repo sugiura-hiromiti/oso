@@ -85,9 +85,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction {
 	}
 }
 
-pub trait WorkspaceSurvey: WorkspaceInfo + CrateSurvey {
-	fn land_on(&mut self, on: impl CrateCalled,);
-}
+pub trait WorkspaceSurvey: WorkspaceInfo + CrateSurvey {}
 
 /// Trait for managing OSO workspace operations
 ///
