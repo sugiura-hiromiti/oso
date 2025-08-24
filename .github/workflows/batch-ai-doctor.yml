@@ -85,6 +85,8 @@ jobs:
    analyze-prs:
       needs: scan-prs
       runs-on: ubuntu-latest
+      env:
+         GH_TOKEN: ${{ github.token }}
       if: ${{ needs.scan-prs.outputs.pr_list != '[]' }}
       strategy:
          matrix:
