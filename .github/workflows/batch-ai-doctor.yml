@@ -134,15 +134,33 @@ jobs:
                 echo "No workflow runs found for branch '$BRANCH'" > ci_logs.txt
               fi
 
+         - name: Build AI prompt
+           run: |
+              set -euo pipefail
+              TITLE="${{ fromJSON(steps.details.outputs.result).title }}"
+              {
+                echo "PR Title: ${TITLE}"
+                echo
+                echo "Logs (last 200 lines):"
+                if [ -f ci_logs.txt ]; then
+                  tail -n 200 ci_logs.txt
+                else
+                  echo "ci_logs.txt not found."
+                fi
+              } > ai_prompt.txt
+
          - name: AI severity + summary
            id: ai
            uses: actions/ai-inference@v1
            with:
-              messages: |
-                 [
-                   {"role":"system","content":"You are an expert reviewer. Classify CI failure severity (critical/moderate/minor/none) and summarize issues. Return JSON: {\"severity\":...,\"summary\":...}."},
-                   {"role":"user","content":"PR Title: ${{ fromJSON(steps.details.outputs.result).title }}\nLogs:\n$(tail -n 200 ci_logs.txt)"}
-                 ]
+              system-prompt: >-
+                You are an expert reviewer. Classify CI failure severity (critical/moderate/minor/none)
+                and summarize issues. Return JSON: {"severity":...,"summary":...}.
+              prompt-file: ai_prompt.txt
+              model: openai/gpt-4o
+              endpoint: https://models.github.ai/inference
+              max-tokens: 200
+              token: ${{ github.token }}
 
          - name: Parse AI result
            if: ${{ steps.status.outputs.result == 'failure' }}
