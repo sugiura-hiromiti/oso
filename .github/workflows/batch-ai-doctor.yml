@@ -129,7 +129,15 @@ jobs:
               BRANCH="${{ fromJSON(steps.details.outputs.result).head.ref }}"
               RUN_ID=$(gh run list --repo "$REPO" --branch "$BRANCH" --json databaseId --jq '.[0].databaseId' || true)
               if [ -n "${RUN_ID:-}" ]; then
-                gh run view --repo "$REPO" "$RUN_ID" --log > ci_logs.txt
+                # Try to fetch logs; if unavailable (expired/no-access), write a friendly placeholder.
+                if ! gh run view --repo "$REPO" "$RUN_ID" --log > ci_logs.txt 2> gh_err.txt; then
+                  echo "Warning: failed to fetch logs for run '$RUN_ID' on branch '$BRANCH'" >&2 || true
+                  if [ -s gh_err.txt ]; then
+                    echo "gh error: $(head -n1 gh_err.txt)" >&2 || true
+                  fi
+                  echo "Logs unavailable for run '$RUN_ID' on branch '$BRANCH' (may be expired or inaccessible)." > ci_logs.txt || true
+                fi
+                rm -f gh_err.txt || true
               else
                 echo "No workflow runs found for branch '$BRANCH'" > ci_logs.txt
               fi
