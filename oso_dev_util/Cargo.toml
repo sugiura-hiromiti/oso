@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "*"
+aquamarine = "*"
 clap = { version = "*", features = ["derive"] }
 clap_derive = { version = "4.0.0-rc.1" }
 colored = "*"
@@ -16,4 +17,3 @@ toml = { version = "*", features = ["parse"] }
 
 [dev-dependencies]
 proptest = "*"
-aquamarine = "*"
