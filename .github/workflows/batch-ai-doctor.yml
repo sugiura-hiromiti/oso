@@ -266,35 +266,155 @@ jobs:
                    });
                  }
 
-   daily-digest:
-      needs: analyze-prs
-      runs-on: ubuntu-latest
-      steps:
-         - name: Create/Update Daily Digest Issue
-           uses: actions/github-script@v7
-           with:
-              script: |
-                 const now = new Date().toISOString().slice(0,10);
-                 const title = `Daily AI Digest - ${now}`;
-                 const digestIssues = await github.rest.search.issuesAndPullRequests({
-                   q: `repo:${context.repo.owner}/${context.repo.repo} in:title "${title}"`
-                 });
+  daily-digest:
+     needs: analyze-prs
+     runs-on: ubuntu-latest
+     env:
+        GH_TOKEN: ${{ github.token }}
+     steps:
+        - name: Compute JST window for yesterday (digest)
+          id: date_digest
+          run: |
+             utc_since=$(TZ=Asia/Tokyo date -d 'yesterday 00:00' -u +%Y-%m-%dT%H:%M:%SZ)
+             utc_until=$(TZ=Asia/Tokyo date -d 'today 00:00' -u +%Y-%m-%dT%H:%M:%SZ)
+             echo "utc_since=$utc_since" >> $GITHUB_OUTPUT
+             echo "utc_until=$utc_until" >> $GITHUB_OUTPUT
 
-                 const summary = `Daily CI report generated at ${now} (JST midnight).\n- Failed PRs: listed above in their issues.\n- Passed PRs: auto-closed issues.\n\n(See individual AI Review issues for details.)`;
+        - name: Checkout repository
+          uses: actions/checkout@v4
+          with:
+             fetch-depth: 0
 
-                 if (digestIssues.data.items.length) {
-                   await github.rest.issues.createComment({
-                     owner: context.repo.owner,
-                     repo: context.repo.repo,
-                     issue_number: digestIssues.data.items[0].number,
-                     body: summary
-                   });
-                 } else {
-                   await github.rest.issues.create({
-                     owner: context.repo.owner,
-                     repo: context.repo.repo,
-                     title,
-                     body: summary,
-                     labels: ["ai-digest"]
-                   });
-                 }
+        - name: Collect PR activity stats
+          id: pr_stats
+          run: |
+             set -euo pipefail
+             REPO="$GITHUB_REPOSITORY"
+             SINCE="${{ steps.date_digest.outputs.utc_since }}"
+             UNTIL="${{ steps.date_digest.outputs.utc_until }}"
+
+             opened=$(gh api search/issues -f q="repo:$REPO is:pr created:>=$SINCE created:<$UNTIL" --jq .total_count)
+             merged=$(gh api search/issues -f q="repo:$REPO is:pr is:merged merged:>=$SINCE merged:<$UNTIL" --jq .total_count)
+             closed_not_merged=$(gh api search/issues -f q="repo:$REPO is:pr is:closed -is:merged closed:>=$SINCE closed:<$UNTIL" --jq .total_count)
+
+             echo "opened=$opened" >> $GITHUB_OUTPUT
+             echo "merged=$merged" >> $GITHUB_OUTPUT
+             echo "closed_not_merged=$closed_not_merged" >> $GITHUB_OUTPUT
+
+        - name: Collect CI failure issues (window)
+          id: ci_failures
+          run: |
+             set -euo pipefail
+             REPO="$GITHUB_REPOSITORY"
+             SINCE="${{ steps.date_digest.outputs.utc_since }}"
+             UNTIL="${{ steps.date_digest.outputs.utc_until }}"
+             # Use REST search API to list issues labeled as CI failures in window
+             gh api search/issues -f q="repo:$REPO is:issue label:ai-review label:ci-failure updated:>=$SINCE updated:<$UNTIL" \
+               --jq '[.items[] | {number: .number, title: .title, url: .html_url, updatedAt: .updated_at, severity: ((.labels // []) | map(.name) | map(select(startswith("severity:"))) | first // "severity:unknown")}]' > ci_failures.json || echo '[]' > ci_failures.json
+             echo "count=$(jq length ci_failures.json)" >> $GITHUB_OUTPUT
+
+        - name: Compute git activity (since/until)
+          id: git_stats
+          run: |
+             set -euo pipefail
+             SINCE="${{ steps.date_digest.outputs.utc_since }}"
+             UNTIL="${{ steps.date_digest.outputs.utc_until }}"
+             # Commits count
+             commits=$(git log --since="$SINCE" --until="$UNTIL" --pretty=format:'%H' | wc -l | tr -d ' ')
+             echo "commits=$commits" >> $GITHUB_OUTPUT
+
+             # Top authors (name and count) - top 5
+             git log --since="$SINCE" --until="$UNTIL" --pretty=format:'%an' | \
+               awk '{a[$0]++} END {for (k in a) printf "%s\t%s\n", a[k], k}' | \
+               sort -rn | head -5 > top_authors.txt || true
+
+             # Top-level directories with most changes (top 5)
+             git log --since="$SINCE" --until="$UNTIL" --name-only --pretty=format: | \
+               grep -v '^$' | awk -F/ '{print $1}' | \
+               grep -vE '^(\.|README(\..*)?|LICENSE(\..*)?)$' | \
+               awk '{d[$0]++} END {for (k in d) printf "%s\t%s\n", d[k], k}' | \
+               sort -rn | head -5 > top_dirs.txt || true
+
+        - name: Build digest markdown
+          run: |
+             set -euo pipefail
+             SINCE="${{ steps.date_digest.outputs.utc_since }}"
+             UNTIL="${{ steps.date_digest.outputs.utc_until }}"
+             DATE_JST=$(TZ=Asia/Tokyo date -d "${SINCE}" +%Y-%m-%d)
+             OPENED='${{ steps.pr_stats.outputs.opened }}'
+             MERGED='${{ steps.pr_stats.outputs.merged }}'
+             CLOSED='${{ steps.pr_stats.outputs.closed_not_merged }}'
+             COMMITS='${{ steps.git_stats.outputs.commits }}'
+             CI_FAIL_COUNT='${{ steps.ci_failures.outputs.count }}'
+
+             {
+               echo "### Daily Activity Summary (${DATE_JST} JST Window)"
+               echo
+               echo "- PRs opened: ${OPENED}"
+               echo "- PRs merged: ${MERGED}"
+               echo "- PRs closed (unmerged): ${CLOSED}"
+               echo "- Commits: ${COMMITS}"
+               echo "- CI failure issues updated: ${CI_FAIL_COUNT}"
+               echo
+               echo "### Top Authors"
+               if [ -s top_authors.txt ]; then
+                 awk -F '\t' '{printf "- %s commits: %s\n", $1, $2}' top_authors.txt
+               else
+                 echo "- None"
+               fi
+               echo
+               echo "### Hot Directories"
+               if [ -s top_dirs.txt ]; then
+                 awk -F '\t' '{printf "- %s files changed: %s\n", $1, $2}' top_dirs.txt
+               else
+                 echo "- None"
+               fi
+               echo
+               echo "### CI Failures"
+               if [ -s ci_failures.json ] && [ "$(jq length ci_failures.json)" -gt 0 ]; then
+                 jq -r '.[] | "- [" + .severity + "] " + .title + " (" + .url + ")"' ci_failures.json
+               else
+                 echo "- None"
+               fi
+               echo
+               echo "### TODOs"
+               echo "- [ ] Review CI failures above and assign owners"
+               if [ -s ci_failures.json ] && [ "$(jq length ci_failures.json)" -gt 0 ]; then
+                 jq -r '.[] | "- [ ] Investigate PR from: " + (.title | capture("PR #(?<num>\\d+)").num // "unknown") + " — " + .severity + " — " + .url' ci_failures.json || true
+               fi
+               if [ -s top_dirs.txt ]; then
+                 awk -F '\t' '{printf "- [ ] Review changes in %s (%s files)\n", $2, $1}' top_dirs.txt
+               fi
+               if [ -s top_authors.txt ]; then
+                 awk -F '\t' '{printf "- [ ] Review commits by %s (%s commits)\n", $2, $1}' top_authors.txt
+               fi
+             } > digest.md
+
+        - name: Create/Update Daily Digest Issue
+          uses: actions/github-script@v7
+          with:
+             script: |
+                const fs = require('fs');
+                const now = new Date().toISOString().slice(0,10);
+                const title = `Daily AI Digest - ${now}`;
+                const digestIssues = await github.rest.search.issuesAndPullRequests({
+                  q: `repo:${context.repo.owner}/${context.repo.repo} in:title "${title}"`
+                });
+                const body = fs.readFileSync('digest.md', 'utf8');
+                if (digestIssues.data.items.length) {
+                  await github.rest.issues.update({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: digestIssues.data.items[0].number,
+                    body,
+                    labels: ["ai-digest"]
+                  });
+                } else {
+                  await github.rest.issues.create({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    title,
+                    body,
+                    labels: ["ai-digest"]
+                  });
+                }
