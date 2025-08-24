@@ -266,7 +266,7 @@ jobs:
                    });
                  }
 
-  daily-digest:
+   daily-digest:
      needs: analyze-prs
      runs-on: ubuntu-latest
      env:
