@@ -124,7 +124,15 @@ jobs:
 
          - name: Fetch logs
            run: |
-              gh run view $(gh run list --branch "${{ fromJSON(steps.details.outputs.result).head.ref }}" --json databaseId --jq '.[0].databaseId') --log > ci_logs.txt
+              set -euo pipefail
+              REPO="$GITHUB_REPOSITORY"
+              BRANCH="${{ fromJSON(steps.details.outputs.result).head.ref }}"
+              RUN_ID=$(gh run list --repo "$REPO" --branch "$BRANCH" --json databaseId --jq '.[0].databaseId' || true)
+              if [ -n "${RUN_ID:-}" ]; then
+                gh run view --repo "$REPO" "$RUN_ID" --log > ci_logs.txt
+              else
+                echo "No workflow runs found for branch '$BRANCH'" > ci_logs.txt
+              fi
 
          - name: AI severity + summary
            id: ai
