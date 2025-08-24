@@ -8,11 +8,13 @@ use crate::decl_manage::workspace::Workspace;
 use crate::decl_manage::workspace::WorkspaceAction;
 use crate::decl_manage::workspace::WorkspaceInfo;
 use crate::decl_manage::workspace::WorkspaceSurvey;
+use anyhow::anyhow;
 use oso_dev_util_helper::cli::Run;
 use oso_dev_util_helper::fs::CARGO_CONFIG;
 use oso_dev_util_helper::fs::CARGO_MANIFEST;
 use oso_dev_util_helper::fs::all_crates_in;
 use oso_dev_util_helper::fs::read_toml;
+use oso_dev_util_helper::fs::search_upstream_at;
 use oso_proc_macro::FromPathBuf;
 use std::ffi::OsStr;
 use std::fmt::Debug;
@@ -30,9 +32,24 @@ pub trait Crate: Workspace + Package {
 }
 
 pub trait CrateSurvey: CrateInfo {
-	fn has_parent(&self,) -> Rslt<bool,>;
-	fn go_parent(&mut self,) -> Rslt<bool,>;
-	fn fix(&self,) -> Rslt<(),>;
+	fn has_parent(&self,) -> Rslt<bool,> {
+		let path = self.path();
+		Ok(search_upstream_at(&path, CARGO_MANIFEST,)?.is_some(),)
+	}
+	fn go_parent(&mut self,) -> Rslt<(),>;
+	fn fix(&self,) -> Rslt<(),> {
+		let mut manifest = self.toml()?;
+		if let Some(pkg,) = manifest.get_mut("package",)
+			&& let Some(toml::Value::String(name,),) = pkg.get_mut("name",)
+			&& let true_name = self.name()
+			&& *name != true_name
+		{
+			*name = true_name;
+			std::fs::write(self.path().join(CARGO_MANIFEST,), toml::to_string(&manifest,)?,)?;
+		};
+		Ok((),)
+	}
+	fn land_on(&mut self, on: impl CrateCalled,);
 }
 
 /// methods provided keeps environment e.g. current path
@@ -123,6 +140,15 @@ pub trait CrateInfo: CrateCalled {
 		let config_toml = self.path().join(CARGO_CONFIG,);
 		read_toml(config_toml,)
 	}
+
+	fn name(&self,) -> String {
+		self.path()
+			.file_name()
+			.expect("error on obtaining crate name",)
+			.to_str()
+			.expect("error on converting path component to str",)
+			.to_string()
+	}
 }
 
 #[derive(FromPathBuf, Default, PartialEq, Eq, Clone,)]
@@ -150,16 +176,21 @@ impl From<OsoCrateChart,> for OsoCrate {
 impl Crate for OsoCrate {}
 impl CrateAction for OsoCrate {}
 impl CrateSurvey for OsoCrate {
-	fn has_parent(&self,) -> Rslt<bool,> {
-		todo!()
+	fn land_on(&mut self, on: impl CrateCalled,) {
+		let path = on.path_buf();
+		*self = Self::from(path,);
 	}
 
-	fn go_parent(&mut self,) -> Rslt<bool,> {
-		todo!()
-	}
-
-	fn fix(&self,) -> Rslt<(),> {
-		todo!()
+	fn go_parent(&mut self,) -> Rslt<(),> {
+		if self.has_parent()? {
+			let parent = self.path();
+			let parent = parent.parent().ok_or(anyhow!("can't find parent dir"),)?;
+			let parent = OsoCrateChart::from(parent.to_path_buf(),);
+			self.land_on(parent,);
+			Ok((),)
+		} else {
+			Ok((),)
+		}
 	}
 }
 
@@ -196,12 +227,7 @@ impl CrateCalled for OsoCrateChart {
 impl Workspace for OsoCrate {}
 impl WorkspaceAction for OsoCrate {}
 
-impl WorkspaceSurvey for OsoCrate {
-	fn land_on(&mut self, on: impl CrateCalled,) {
-		let path = on.path_buf();
-		*self = Self::from(path,);
-	}
-}
+impl WorkspaceSurvey for OsoCrate {}
 
 impl WorkspaceInfo for OsoCrate {
 	#[allow(refining_impl_trait)]
@@ -493,8 +519,8 @@ mod tests {
 		let fix_result = std::panic::catch_unwind(|| crate_obj.fix(),);
 
 		// These methods contain todo!() so they should panic
-		assert!(has_parent_result.is_err());
-		assert!(go_parent_result.is_err());
-		assert!(fix_result.is_err());
+		assert!(has_parent_result.is_ok());
+		assert!(go_parent_result.is_ok());
+		assert!(fix_result.is_ok());
 	}
 }
