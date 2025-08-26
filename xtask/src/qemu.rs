@@ -7,18 +7,14 @@
 //! - Managing OVMF firmware files for UEFI boot
 //! - Setting up block devices and persistent flash memory
 
-use crate::builder::Builder;
-use crate::shell::Architecture;
 use anyhow::Result as Rslt;
-use ovmf_prebuilt::Arch;
-use ovmf_prebuilt::FileType;
-use ovmf_prebuilt::Prebuilt;
-use ovmf_prebuilt::Source;
+use oso_dev_util::cargo::Arch;
 use std::path::Path;
 use std::path::PathBuf;
-use std::str::FromStr;
 
-impl Builder {
+use crate::Xtask;
+
+impl Xtask {
 	/// Gets the QEMU executable name based on the target architecture
 	///
 	/// # Returns
@@ -50,7 +46,7 @@ impl Builder {
 		// args.push("-drive".to_string(),);
 		// args.push("format=raw,file=fat:rw:",);
 
-		let block_device = block_device(&self.disk_img_path()?, self.arch(),);
+		let block_device = block_device(&self.disk_img_path()?,);
 		args.extend(block_device,);
 
 		// setting the boot menu timeout to zero particularly speeds up the boot
@@ -70,56 +66,6 @@ pub struct Firmware {
 	vars: PathBuf,
 }
 
-impl Firmware {
-	/// Creates a new Firmware instance for the specified architecture
-	///
-	/// Downloads the latest OVMF firmware files if they don't exist.
-	///
-	/// # Parameters
-	///
-	/// * `arch` - The target architecture
-	///
-	/// # Returns
-	///
-	/// A new Firmware instance or an error if initialization fails
-	pub fn new(arch: &Architecture,) -> Rslt<Self,> {
-		let path = PathBuf::from_str("/tmp/",)?;
-		let ovmf_files = Prebuilt::fetch(Source::LATEST, path,)?;
-		let code = ovmf_files.get_file(arch.into(), FileType::Code,);
-		let vars = ovmf_files.get_file(arch.into(), FileType::Vars,);
-		Ok(Self { code, vars, },)
-	}
-
-	/// Gets the path to the OVMF code file
-	///
-	/// # Returns
-	///
-	/// A reference to the path to the OVMF code file
-	pub fn code(&self,) -> &PathBuf {
-		&self.code
-	}
-
-	/// Gets the path to the OVMF variables file
-	///
-	/// # Returns
-	///
-	/// A reference to the path to the OVMF variables file
-	pub fn vars(&self,) -> &PathBuf {
-		&self.vars
-	}
-}
-
-/// Converts an Architecture enum to an ovmf_prebuilt::Arch enum
-impl From<&Architecture,> for Arch {
-	fn from(value: &Architecture,) -> Self {
-		match value {
-			Architecture::Aarch64 => Arch::Aarch64,
-			Architecture::Riscv64 => Arch::Riscv64,
-			Architecture::X86_64 => Arch::X64,
-		}
-	}
-}
-
 /// Defines the mode for persistent flash memory
 enum PflashMode {
 	/// Read-only mode
@@ -137,9 +83,9 @@ enum PflashMode {
 /// # Returns
 ///
 /// A vector of basic QEMU command-line arguments
-fn basic_args(arch: &Architecture,) -> Vec<String,> {
+fn basic_args(arch: Arch,) -> Vec<String,> {
 	match arch {
-		Architecture::Aarch64 => vec![
+		Arch::Aarch64 => vec![
 			// generic arm enviromnent
 			"-machine".to_string(),
 			"virt".to_string(),
@@ -152,22 +98,22 @@ fn basic_args(arch: &Architecture,) -> Vec<String,> {
 			// // keep using ramfb until implementing Linux-style driver
 			// "ramfb".to_string(),
 		],
-		Architecture::Riscv64 => todo!(),
-		Architecture::X86_64 => {
-			vec![
-				"-machine".to_string(),
-				"q35".to_string(),
-				"-smp".to_string(),
-				"4".to_string(),
-				// allocate some memory
-				// "-m".to_string(),
-				// "256M".to_string(),
-
-				// graphics device
-				"-vga".to_string(),
-				"std".to_string(),
-			]
-		},
+		Arch::Riscv64 => todo!(),
+		// Architecture::X86_64 => {
+		// 	vec![
+		// 		"-machine".to_string(),
+		// 		"q35".to_string(),
+		// 		"-smp".to_string(),
+		// 		"4".to_string(),
+		// 		// allocate some memory
+		// 		// "-m".to_string(),
+		// 		// "256M".to_string(),
+		//
+		// 		// graphics device
+		// 		"-vga".to_string(),
+		// 		"std".to_string(),
+		// 	]
+		// },
 	}
 }
 
@@ -206,18 +152,13 @@ fn persistent_flash_memory_args(pflash_file: &PathBuf, mode: PflashMode,) -> Vec
 /// # Returns
 ///
 /// A vector of QEMU command-line arguments for block devices
-fn block_device(disk_img: &Path, arch: &Architecture,) -> Vec<String,> {
+fn block_device(disk_img: &Path,) -> Vec<String,> {
 	vec![
 		"-monitor".to_string(),
 		"stdio".to_string(),
 		"-drive".to_string(),
 		format!("file={},format=raw,if=none,id=hd0", disk_img.display()),
 		"-device".to_string(),
-		match arch {
-			Architecture::X86_64 => "virtio-blk-pci,drive=hd0",
-			// _ => "virtio-blk-device,drive=hd0",
-			_ => "virtio-blk-pci,drive=hd0",
-		}
-		.to_string(),
+		"virtio-blk-pci,drive=hd0".to_string(),
 	]
 }
