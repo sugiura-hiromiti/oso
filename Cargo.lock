@@ -668,6 +668,7 @@ dependencies = [
  "colored",
  "oso_dev_util_helper",
  "oso_proc_macro",
+ "ovmf-prebuilt",
  "proptest",
  "strum",
  "strum_macros",
