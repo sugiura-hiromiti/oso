@@ -7,10 +7,8 @@ use oso_dev_util::decl_manage::crate_::OsoCrate;
 
 pub mod builder;
 pub mod qemu;
-pub mod shell;
-pub mod workspace;
 
-pub struct XtaskInfo {
+pub struct Xtask {
 	opts:   Opts,
 	ws:     OsoCrate,
 	assets: Assets,

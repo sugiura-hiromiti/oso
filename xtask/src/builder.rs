@@ -10,77 +10,27 @@
 //! - Configuring and running QEMU with the appropriate firmware and disk image
 //! - Cleanup of temporary files and unmounting disk images
 
-use crate::qemu::Firmware;
-use crate::shell::Architecture;
-use crate::shell::Opts;
-use crate::workspace;
-use crate::workspace::LOADER;
-use crate::workspace::OsoWorkSpace;
 use anyhow::Result as Rslt;
-use anyhow::anyhow;
+use anyhow::bail;
 use colored::Colorize;
+use oso_dev_util::cargo::Arch;
+use oso_dev_util::cargo::Assets;
+use oso_dev_util::cargo::Opts;
+use oso_dev_util::fs::project_root;
 use oso_dev_util_helper::cli::Run;
 use std::env::set_current_dir;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
+use crate::Xtask;
+
 /// Directory path for EFI boot files
 const BOOT_DIR: &str = "efi/boot";
 /// Filename for the OSO kernel
 const KERNEL_FILE: &str = "oso_kernel.elf";
 
-/// Main builder struct that orchestrates the build and run process
-///
-/// The `Builder` struct is the central component of the OSO build system. It manages
-/// the entire workflow from building the kernel and loader to creating disk images
-/// and running QEMU. It encapsulates all the necessary configuration and state
-/// needed for the build process.
-///
-/// # Architecture Support
-///
-/// The builder supports multiple target architectures:
-/// - **AArch64**: ARM 64-bit architecture (primary target)
-/// - **x86_64**: Intel/AMD 64-bit architecture (partial support)
-/// - **RISC-V 64**: RISC-V 64-bit architecture (planned)
-///
-/// # Build Process
-///
-/// The typical build process involves:
-/// 1. **Initialization**: Set up workspace, firmware, and host OS detection
-/// 2. **Building**: Compile the kernel and loader for the target architecture
-/// 3. **Disk Image Creation**: Create and format a FAT32 disk image
-/// 4. **File Deployment**: Mount the disk image and copy built artifacts
-/// 5. **QEMU Execution**: Launch QEMU with appropriate firmware and configuration
-/// 6. **Cleanup**: Unmount disk images and clean up temporary files
-///
-/// # Examples
-///
-/// ```rust,ignore
-/// use xtask::builder::Builder;
-///
-/// // Create a new builder with default options
-/// let builder = Builder::new()?;
-///
-/// // Build the kernel and loader
-/// builder.build()?;
-///
-/// // Run in QEMU
-/// builder.run()?;
-/// ```
-#[derive(Debug,)]
-pub struct Builder {
-	/// Command-line options and build configuration
-	opts:      Opts,
-	/// OSO workspace information and paths
-	workspace: OsoWorkSpace,
-	/// OVMF firmware configuration for UEFI boot
-	firmware:  Firmware,
-	/// Host operating system detection for platform-specific operations
-	host_os:   HostOs,
-}
-
-impl Builder {
+impl Xtask {
 	/// Creates a new Builder instance with the specified options
 	///
 	/// This constructor initializes all the necessary components for the build process:
@@ -124,10 +74,9 @@ impl Builder {
 	/// - **Network Error**: If firmware download requires internet access and fails
 	pub fn new() -> Rslt<Self,> {
 		let opts = Opts::new();
-		let workspace = OsoWorkSpace::new()?;
-		let ovmf = Firmware::new(&opts.arch,)?;
-		let host_os = HostOs::new()?;
-		Ok(Self { opts, workspace, firmware: ovmf, host_os, },)
+		let ws = project_root()?;
+		let assets = Assets::new(opts.arch,)?;
+		Ok(Self { opts, ws, assets, },)
 	}
 
 	/// Builds the OSO loader and kernel for the target architecture
@@ -270,8 +219,8 @@ impl Builder {
 	/// # Returns
 	///
 	/// A reference to the Architecture enum
-	pub fn arch(&self,) -> &Architecture {
-		&self.opts.arch
+	pub fn arch(&self,) -> Arch {
+		self.opts.arch
 	}
 
 	/// Gets the command-line options
@@ -293,7 +242,7 @@ impl Builder {
 	pub fn firmware_code(&self,) -> Rslt<PathBuf,> {
 		let tmp_path = self.firmware_tmp_code()?;
 		if !tmp_path.exists() {
-			let original = self.firmware.code();
+			let original = self.assets.firmware.code();
 			fs_err::copy(original, &tmp_path,)?;
 		}
 		Ok(tmp_path,)
@@ -318,7 +267,7 @@ impl Builder {
 	pub fn firmware_vars(&self,) -> Rslt<PathBuf,> {
 		let tmp_file = self.firmware_tmp_vars()?;
 		if !tmp_file.exists() {
-			let orignal = self.firmware.vars();
+			let orignal = self.assets.firmware.vars();
 			fs_err::copy(orignal, &tmp_file,)?;
 		}
 
@@ -351,17 +300,15 @@ impl Builder {
 		let qemu_system = self.qemu();
 		let qemu_args = self.qemu_args()?;
 
-		if self.opts().debug {
-			let mut qemu_args = qemu_args;
-			let dbg_args = ["-gdb", "tcp::12345", "-S",];
-			dbg_args.iter().for_each(|s| {
-				qemu_args.push(s.to_string(),);
-			},);
-
-			Command::new(qemu_system,).args(qemu_args,).run()?;
-		} else {
-			Command::new(qemu_system,).args(qemu_args,).run()?;
-		}
+		// if self.opts().debug {
+		// 	let mut qemu_args = qemu_args;
+		// 	let dbg_args = ["-gdb", "tcp::12345", "-S",];
+		// 	dbg_args.iter().for_each(|s| {
+		// 		qemu_args.push(s.to_string(),);
+		// 	},);
+		//
+		// }
+		Command::new(qemu_system,).args(qemu_args,).run()?;
 		Ok((),)
 	}
 
@@ -591,7 +538,7 @@ impl Builder {
 }
 
 /// Automatically cleans up temporary files and unmounts disk images when the Builder is dropped
-impl Drop for Builder {
+impl Drop for Xtask {
 	fn drop(&mut self,) {
 		match self.build_dir() {
 			Ok(p,) => {
@@ -700,14 +647,13 @@ impl HostOs {
 	/// - Windows (not supported due to different disk mounting mechanisms)
 	/// - FreeBSD, OpenBSD, NetBSD (not currently supported)
 	/// - Other Unix-like systems not explicitly handled
-	pub fn new() -> Rslt<Self,> {
+	pub fn host_os() -> Rslt<String,> {
 		let a = Command::new("uname",).arg("-s",).output()?;
 		let os_name = String::from_utf8(a.stdout,)?;
-		let os_name = os_name.trim();
-		match os_name {
-			"Linux" => Ok(Self::Linux,),
-			"Darwin" => Ok(Self::Mac,),
-			_ => Err(anyhow!("building on {os_name} does not supported"),),
+		let os_name_str = os_name.trim();
+		match os_name_str {
+			"Darwin" | "Linux" => Ok(os_name,),
+			_ => bail!("building on {os_name_str} does not supported"),
 		}
 	}
 }
