@@ -1,8 +1,14 @@
 use anyhow::Context as _;
 use anyhow::Result as Rslt;
+use clap::Parser;
 use oso_proc_macro::features;
+use ovmf_prebuilt::FileType;
+use ovmf_prebuilt::Prebuilt;
+use ovmf_prebuilt::Source;
 use std::path::PathBuf;
 use std::process::Command;
+use std::str::FromStr;
+use strum_macros::Display;
 
 pub trait CompileOpt {
 	fn build_mode(&self,) -> impl Into<String,>;
@@ -18,6 +24,18 @@ pub struct Opts {
 	pub build_mode:    BuildMode,
 	pub feature_flags: Vec<Feature,>,
 	pub arch:          Arch,
+}
+
+impl Default for Opts {
+	fn default() -> Self {
+		Self::new()
+	}
+}
+
+impl Opts {
+	pub fn new() -> Self {
+		Cli::parse().to_opts()
+	}
 }
 
 impl CompileOpt for Opts {
@@ -65,6 +83,7 @@ impl Cli {
 	PartialEq,
 	Eq,
 	Debug,
+	Display,
 )]
 pub enum BuildMode {
 	Release,
@@ -72,8 +91,45 @@ pub enum BuildMode {
 	Debug,
 }
 
+pub enum Runtime {
+	Mac,
+	Linux,
+	Efi,
+	Oso,
+}
+
+impl Runtime {
+	pub fn host() -> Rslt<Self,> {
+		host_tuple()?
+			.split('-',)
+			.next()
+			.context("target tuple for host does not include `-`. that is not usual.",)
+			.map(Runtime::from_str,)
+	}
+}
+
+impl Runtime {
+	fn from_str(value: &str,) -> Self {
+		match value {
+			"mac" | "darwin" => Self::Mac,
+			"linux" => Self::Linux,
+			"oso" => Self::Oso,
+			"efi" => Self::Efi,
+			a => unimplemented!("{a} is not supported runtime"),
+		}
+	}
+}
+
 pub struct Assets {
 	pub firmware: Firmware,
+	pub host:     Runtime,
+}
+
+impl Assets {
+	pub fn new(arch: Arch,) -> Rslt<Self,> {
+		let firmware = Firmware::new(arch,)?;
+		Ok(Self { firmware, host: Runtime::host()?, },)
+	}
 }
 
 /// Manages OVMF firmware files for UEFI boot
@@ -83,6 +139,54 @@ pub struct Firmware {
 	pub code: PathBuf,
 	/// Path to the OVMF variables file
 	pub vars: PathBuf,
+}
+
+impl Firmware {
+	/// Creates a new Firmware instance for the specified architecture
+	///
+	/// Downloads the latest OVMF firmware files if they don't exist.
+	///
+	/// # Parameters
+	///
+	/// * `arch` - The target architecture
+	///
+	/// # Returns
+	///
+	/// A new Firmware instance or an error if initialization fails
+	pub fn new(arch: Arch,) -> Rslt<Self,> {
+		let path = PathBuf::from_str("/tmp/",)?;
+		let ovmf_files = Prebuilt::fetch(Source::LATEST, path,)?;
+		let code = ovmf_files.get_file(arch.into(), FileType::Code,);
+		let vars = ovmf_files.get_file(arch.into(), FileType::Vars,);
+		Ok(Self { code, vars, },)
+	}
+
+	/// Gets the path to the OVMF code file
+	///
+	/// # Returns
+	///
+	/// A reference to the path to the OVMF code file
+	pub fn code(&self,) -> &PathBuf {
+		&self.code
+	}
+
+	/// Gets the path to the OVMF variables file
+	///
+	/// # Returns
+	///
+	/// A reference to the path to the OVMF variables file
+	pub fn vars(&self,) -> &PathBuf {
+		&self.vars
+	}
+}
+
+impl From<Arch,> for ovmf_prebuilt::Arch {
+	fn from(value: Arch,) -> Self {
+		match value {
+			Arch::Aarch64 => ovmf_prebuilt::Arch::Aarch64,
+			Arch::Riscv64 => ovmf_prebuilt::Arch::Riscv64,
+		}
+	}
 }
 
 #[derive(
@@ -96,6 +200,7 @@ pub struct Firmware {
 	PartialEq,
 	Eq,
 	Debug,
+	Display,
 )]
 pub enum Arch {
 	#[default]
@@ -116,6 +221,7 @@ impl Arch {
 		}
 	}
 }
+
 pub fn host_tuple() -> Rslt<String,> {
 	let target = Command::new("rustc",).arg("-vV",).output()?.stdout;
 	let target = String::from_utf8(target,)?;
@@ -258,6 +364,7 @@ mod tests {
 				code: PathBuf::from("/ovmf/code",),
 				vars: PathBuf::from("/ovmf/vars",),
 			},
+			host:     Runtime::Mac,
 		};
 
 		assert_eq!(assets.firmware.code, PathBuf::from("/ovmf/code"));
@@ -545,7 +652,7 @@ mod tests {
 			vars: PathBuf::from("/ovmf/OVMF_VARS.fd",),
 		};
 
-		let assets = Assets { firmware, };
+		let assets = Assets { firmware, host: Runtime::host().unwrap(), };
 
 		// Test field access
 		assert_eq!(assets.firmware.code, PathBuf::from("/ovmf/OVMF_CODE.fd"));
