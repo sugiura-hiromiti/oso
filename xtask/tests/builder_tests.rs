@@ -37,8 +37,10 @@ version = "0.1.0"
 edition = "2021"
 "#;
 
-	fs::write(oso_root.join("oso_loader",).join("Cargo.toml",), loader_toml,).unwrap();
-	fs::write(oso_root.join("oso_kernel",).join("Cargo.toml",), kernel_toml,).unwrap();
+	fs::write(oso_root.join("oso_loader",).join("Cargo.toml",), loader_toml,)
+		.unwrap();
+	fs::write(oso_root.join("oso_kernel",).join("Cargo.toml",), kernel_toml,)
+		.unwrap();
 
 	temp_dir
 }
@@ -50,7 +52,8 @@ fn test_disk_image_path_generation() {
 	let oso_root = temp_workspace.path().join("oso",);
 
 	// Test that disk image path follows expected pattern
-	let expected_path = oso_root.join("target",).join("xtask",).join("disk.img",);
+	let expected_path =
+		oso_root.join("target",).join("xtask",).join("disk.img",);
 
 	// Since we can't easily instantiate Builder without side effects,
 	// we test the path construction logic directly
@@ -129,7 +132,8 @@ fn test_build_artifact_paths() {
 	let oso_root = temp_workspace.path().join("oso",);
 
 	// Test loader artifact path
-	let loader_target_dir = oso_root.join("target",).join("aarch64-unknown-uefi",).join("debug",);
+	let loader_target_dir =
+		oso_root.join("target",).join("aarch64-unknown-uefi",).join("debug",);
 	let loader_artifact = loader_target_dir.join("oso_loader.efi",);
 
 	assert!(loader_artifact.to_string_lossy().contains("aarch64-unknown-uefi"));
@@ -137,11 +141,15 @@ fn test_build_artifact_paths() {
 	assert_eq!(loader_artifact.file_name().unwrap(), "oso_loader.efi");
 
 	// Test kernel artifact path
-	let kernel_target_dir =
-		oso_root.join("target",).join("aarch64-unknown-none-elf",).join("debug",);
+	let kernel_target_dir = oso_root
+		.join("target",)
+		.join("aarch64-unknown-none-elf",)
+		.join("debug",);
 	let kernel_artifact = kernel_target_dir.join("oso_kernel",);
 
-	assert!(kernel_artifact.to_string_lossy().contains("aarch64-unknown-none-elf"));
+	assert!(
+		kernel_artifact.to_string_lossy().contains("aarch64-unknown-none-elf")
+	);
 	assert!(kernel_artifact.to_string_lossy().contains("debug"));
 	assert_eq!(kernel_artifact.file_name().unwrap(), "oso_kernel");
 }

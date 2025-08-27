@@ -54,8 +54,10 @@ fn test_fs_functions_exist() {
 
 #[test]
 fn test_firmware_struct() {
-	let firmware =
-		Firmware { code: PathBuf::from("/test/code",), vars: PathBuf::from("/test/vars",), };
+	let firmware = Firmware {
+		code: PathBuf::from("/test/code",),
+		vars: PathBuf::from("/test/vars",),
+	};
 
 	assert_eq!(firmware.code, PathBuf::from("/test/code"));
 	assert_eq!(firmware.vars, PathBuf::from("/test/vars"));
@@ -133,8 +135,11 @@ fn test_comprehensive_enum_combinations() {
 
 	for build_mode in BuildMode::value_variants() {
 		for arch in Arch::value_variants() {
-			let opts =
-				Opts { build_mode: *build_mode, feature_flags: vec![], arch: *arch, };
+			let opts = Opts {
+				build_mode:    *build_mode,
+				feature_flags: vec![],
+				arch:          *arch,
+			};
 
 			// Test CompileOpt trait methods
 			let build_mode_str: String = opts.build_mode().into();
@@ -151,7 +156,9 @@ fn test_comprehensive_enum_combinations() {
 fn test_cli_all_combinations() {
 	// Test CLI with all possible combinations
 
-	for build_mode in [None, Some(BuildMode::Debug,), Some(BuildMode::Release,),] {
+	for build_mode in
+		[None, Some(BuildMode::Debug,), Some(BuildMode::Release,),]
+	{
 		for arch in [None, Some(Arch::Aarch64,), Some(Arch::Riscv64,),] {
 			let cli = Cli { build_mode, feature_flags: Some(vec![],), arch, };
 
@@ -215,7 +222,11 @@ fn test_thread_safety() {
 				assert!(bm.is_debug());
 				assert!(a.is_aarch_64());
 
-				let _opts = Opts { build_mode: *bm, feature_flags: vec![], arch: *a, };
+				let _opts = Opts {
+					build_mode:    *bm,
+					feature_flags: vec![],
+					arch:          *a,
+				};
 			},)
 		},)
 		.collect();
@@ -276,8 +287,10 @@ fn test_debug_formatting() {
 
 	assert!(!debug_str.is_empty());
 
-	let firmware =
-		Firmware { code: PathBuf::from("/test/code.fd",), vars: PathBuf::from("/test/vars.fd",), };
+	let firmware = Firmware {
+		code: PathBuf::from("/test/code.fd",),
+		vars: PathBuf::from("/test/vars.fd",),
+	};
 	let debug_str = format!("{:?}", firmware);
 	assert!(debug_str.contains("Firmware"));
 	assert!(debug_str.contains("code.fd"));
@@ -327,7 +340,8 @@ fn test_path_handling() {
 	let code_path = PathBuf::from("/usr/share/ovmf/OVMF_CODE.fd",);
 	let vars_path = PathBuf::from("/usr/share/ovmf/OVMF_VARS.fd",);
 
-	let firmware = Firmware { code: code_path.clone(), vars: vars_path.clone(), };
+	let firmware =
+		Firmware { code: code_path.clone(), vars: vars_path.clone(), };
 
 	let assets = Assets { firmware, };
 

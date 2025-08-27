@@ -14,7 +14,8 @@ use tempfile::NamedTempFile;
 #[test]
 fn test_crate_modules_are_accessible() {
 	// Test that all public modules are accessible
-	// This is a compilation test - if it compiles, the modules are properly exposed
+	// This is a compilation test - if it compiles, the modules are properly
+	// exposed
 
 	// We can't directly instantiate types from proc macro logic modules
 	// without proper macro contexts, but we can verify they exist
@@ -37,10 +38,15 @@ fn test_gen_wrapper_fn_integration() {
 		let args: Vec<_,> = wrapper::method_args(&sig,).collect();
 
 		// Verify that receiver arguments are filtered out
-		let _has_receiver =
-			sig.inputs.iter().any(|input| matches!(input, syn::FnArg::Receiver(_)),);
-		let typed_args_count =
-			sig.inputs.iter().filter(|input| matches!(input, syn::FnArg::Typed(_)),).count();
+		let _has_receiver = sig
+			.inputs
+			.iter()
+			.any(|input| matches!(input, syn::FnArg::Receiver(_)),);
+		let typed_args_count = sig
+			.inputs
+			.iter()
+			.filter(|input| matches!(input, syn::FnArg::Typed(_)),)
+			.count();
 
 		assert_eq!(args.len(), typed_args_count);
 	}
@@ -52,13 +58,16 @@ fn test_fonts_data_integration() {
 	// Create a temporary font file
 	let temp_file = NamedTempFile::new().expect("Failed to create temp file",);
 
-	// Create minimal valid font data (16 lines per character, 8 chars per line, 256 characters)
-	let single_char_pattern = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@.\
-	                           .\n..@..@..\n..@..@..\n..@..@..\n........\n........\n........\n....\
-	                           ....\n........\n........\n";
+	// Create minimal valid font data (16 lines per character, 8 chars per line,
+	// 256 characters)
+	let single_char_pattern = "........\n...@@...\n..@..@..\n..@..@..\n..@..@.\
+	                           .\n..@@@@..\n..@..@..\n..@..@..\n..@..@..\n..@.\
+	                           .@..\n........\n........\n........\n........\n.\
+	                           .......\n........\n";
 	let font_data = single_char_pattern.repeat(256,);
 
-	fs::write(temp_file.path(), font_data,).expect("Failed to write font data",);
+	fs::write(temp_file.path(), font_data,)
+		.expect("Failed to write font data",);
 
 	let path_str = temp_file.path().to_str().unwrap();
 	let lit_str = syn::LitStr::new(path_str, proc_macro2::Span::call_site(),);
@@ -81,9 +90,11 @@ fn test_impl_init_integration() {
 
 	// Test parsing and implementation generation for multiple types
 	let input = quote! { u8, u16, u32, u64, i8, i16, i32, i64 };
-	let types: impl_int::Types = syn::parse2(input,).expect("Failed to parse types",);
+	let types: impl_int::Types =
+		syn::parse2(input,).expect("Failed to parse types",);
 
-	let implementations: Vec<_,> = types.iter().map(|ty| impl_int::implement(ty,),).collect();
+	let implementations: Vec<_,> =
+		types.iter().map(|ty| impl_int::implement(ty,),).collect();
 
 	assert_eq!(implementations.len(), 8);
 
@@ -138,8 +149,11 @@ fn test_status_from_spec_html_parsing_integration() {
 </html>"#;
 
 	// Parse the HTML
-	let dom = html5ever::parse_document(markup5ever_rcdom::RcDom::default(), Default::default(),)
-		.one(test_html,);
+	let dom = html5ever::parse_document(
+		markup5ever_rcdom::RcDom::default(),
+		Default::default(),
+	)
+	.one(test_html,);
 
 	// Test that we can find elements by ID
 	let main_section = get_element_by_id(dom.document.clone(), "status-codes",);

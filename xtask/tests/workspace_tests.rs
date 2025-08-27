@@ -42,8 +42,10 @@ edition = "2021"
 [dependencies]
 "#;
 
-	fs::write(oso_root.join(LOADER,).join("Cargo.toml",), loader_toml,).unwrap();
-	fs::write(oso_root.join(KERNEL,).join("Cargo.toml",), kernel_toml,).unwrap();
+	fs::write(oso_root.join(LOADER,).join("Cargo.toml",), loader_toml,)
+		.unwrap();
+	fs::write(oso_root.join(KERNEL,).join("Cargo.toml",), kernel_toml,)
+		.unwrap();
 
 	temp_dir
 }
@@ -102,7 +104,8 @@ anyhow = "*"
 #[test]
 fn test_crate_name_extraction() {
 	let temp_workspace = create_mock_workspace();
-	let loader_toml_path = temp_workspace.path().join("oso",).join(LOADER,).join("Cargo.toml",);
+	let loader_toml_path =
+		temp_workspace.path().join("oso",).join(LOADER,).join("Cargo.toml",);
 
 	// Read and parse the TOML file
 	let toml_str = fs::read_to_string(&loader_toml_path,).unwrap();
@@ -156,7 +159,8 @@ fn test_json_loading() {
 	// Test JSON loading
 	let file = fs_err::File::open(&json_path,).unwrap();
 	let reader = std::io::BufReader::new(file,);
-	let parsed_json: serde_json::Value = serde_json::from_reader(reader,).unwrap();
+	let parsed_json: serde_json::Value =
+		serde_json::from_reader(reader,).unwrap();
 
 	assert_eq!(parsed_json["arch"], "aarch64");
 	assert_eq!(parsed_json["target-triple"], "aarch64-unknown-none-elf");
@@ -292,8 +296,10 @@ fn test_path_iteration() {
 	let test_path = PathBuf::from("/home/user/projects/oso/xtask/src",);
 
 	// Test taking path components until we find "oso"
-	let components: Vec<_,> =
-		test_path.iter().take_while(|s| s.to_str().unwrap() != "oso",).collect();
+	let components: Vec<_,> = test_path
+		.iter()
+		.take_while(|s| s.to_str().unwrap() != "oso",)
+		.collect();
 
 	let reconstructed: PathBuf = components.iter().collect();
 	let oso_root = reconstructed.join("oso",);

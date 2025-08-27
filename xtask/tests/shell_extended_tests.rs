@@ -6,8 +6,8 @@
 use std::env;
 use std::ffi::OsStr;
 
-// We'll test the logic without importing the actual types since they're in the main crate
-// These tests focus on the behavior and edge cases
+// We'll test the logic without importing the actual types since they're in the
+// main crate These tests focus on the behavior and edge cases
 
 /// Test command-line argument parsing logic
 #[test]
@@ -117,8 +117,11 @@ fn test_architecture_validation() {
 		"riscv64gc-unknown-linux-gnu",
 	];
 
-	let invalid_arch_strings =
-		["arm-unknown-linux-gnueabihf", "i686-pc-windows-gnu", "powerpc64-unknown-linux-gnu",];
+	let invalid_arch_strings = [
+		"arm-unknown-linux-gnueabihf",
+		"i686-pc-windows-gnu",
+		"powerpc64-unknown-linux-gnu",
+	];
 
 	// Test valid architectures
 	for arch_str in &valid_arch_strings {
@@ -150,7 +153,9 @@ fn test_boot_file_patterns() {
 		assert!(boot_file.starts_with("boot"));
 		assert!(boot_file.ends_with(".efi"));
 		assert!(
-			boot_file.contains(arch) || boot_file.contains("aa64") || boot_file.contains("x64")
+			boot_file.contains(arch)
+				|| boot_file.contains("aa64")
+				|| boot_file.contains("x64")
 		);
 	}
 }
@@ -205,7 +210,11 @@ fn test_env_args_usage() {
 	assert!(!args.is_empty());
 
 	// First argument should be the program name
-	assert!(args[0].contains("test") || args[0].contains("cargo") || args[0].ends_with("xtask"));
+	assert!(
+		args[0].contains("test")
+			|| args[0].contains("cargo")
+			|| args[0].ends_with("xtask")
+	);
 }
 
 /// Test feature zone parsing state

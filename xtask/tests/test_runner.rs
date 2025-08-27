@@ -18,9 +18,11 @@ pub struct TestConfig {
 impl TestConfig {
 	/// Creates a new test configuration with a temporary workspace
 	pub fn new() -> Self {
-		let temp_dir = TempDir::new().expect("Failed to create temp directory",);
+		let temp_dir =
+			TempDir::new().expect("Failed to create temp directory",);
 		let oso_root = temp_dir.path().join("oso",);
-		let original_dir = env::current_dir().expect("Failed to get current directory",);
+		let original_dir =
+			env::current_dir().expect("Failed to get current directory",);
 
 		// Create basic workspace structure
 		std::fs::create_dir_all(&oso_root,).unwrap();
@@ -63,13 +65,23 @@ anyhow = "*"
 colored = "*"
 "#;
 
-		std::fs::write(self.oso_root.join("oso_loader",).join("Cargo.toml",), loader_toml,)
-			.unwrap();
+		std::fs::write(
+			self.oso_root.join("oso_loader",).join("Cargo.toml",),
+			loader_toml,
+		)
+		.unwrap();
 
-		std::fs::write(self.oso_root.join("oso_kernel",).join("Cargo.toml",), kernel_toml,)
-			.unwrap();
+		std::fs::write(
+			self.oso_root.join("oso_kernel",).join("Cargo.toml",),
+			kernel_toml,
+		)
+		.unwrap();
 
-		std::fs::write(self.oso_root.join("xtask",).join("Cargo.toml",), xtask_toml,).unwrap();
+		std::fs::write(
+			self.oso_root.join("xtask",).join("Cargo.toml",),
+			xtask_toml,
+		)
+		.unwrap();
 	}
 
 	/// Creates mock target JSON files
@@ -104,9 +116,10 @@ colored = "*"
 		.unwrap();
 
 		std::fs::write(
-            target_dir.join("x86_64-unknown-none-elf.json"),
-            x86_64_target.to_string(),
-        ).unwrap();
+			target_dir.join("x86_64-unknown-none-elf.json",),
+			x86_64_target.to_string(),
+		)
+		.unwrap();
 	}
 
 	/// Creates mock build artifacts
@@ -114,23 +127,39 @@ colored = "*"
 		let target_dir = self.oso_root.join("target",);
 
 		// Create loader artifacts
-		let loader_debug_dir = target_dir.join("aarch64-unknown-uefi",).join("debug",);
+		let loader_debug_dir =
+			target_dir.join("aarch64-unknown-uefi",).join("debug",);
 		std::fs::create_dir_all(&loader_debug_dir,).unwrap();
-		std::fs::write(loader_debug_dir.join("oso_loader.efi",), b"mock loader",).unwrap();
+		std::fs::write(
+			loader_debug_dir.join("oso_loader.efi",),
+			b"mock loader",
+		)
+		.unwrap();
 
-		let loader_release_dir = target_dir.join("aarch64-unknown-uefi",).join("release",);
+		let loader_release_dir =
+			target_dir.join("aarch64-unknown-uefi",).join("release",);
 		std::fs::create_dir_all(&loader_release_dir,).unwrap();
-		std::fs::write(loader_release_dir.join("oso_loader.efi",), b"mock loader release",)
-			.unwrap();
+		std::fs::write(
+			loader_release_dir.join("oso_loader.efi",),
+			b"mock loader release",
+		)
+		.unwrap();
 
 		// Create kernel artifacts
-		let kernel_debug_dir = target_dir.join("aarch64-unknown-none-elf",).join("debug",);
+		let kernel_debug_dir =
+			target_dir.join("aarch64-unknown-none-elf",).join("debug",);
 		std::fs::create_dir_all(&kernel_debug_dir,).unwrap();
-		std::fs::write(kernel_debug_dir.join("oso_kernel",), b"mock kernel",).unwrap();
+		std::fs::write(kernel_debug_dir.join("oso_kernel",), b"mock kernel",)
+			.unwrap();
 
-		let kernel_release_dir = target_dir.join("aarch64-unknown-none-elf",).join("release",);
+		let kernel_release_dir =
+			target_dir.join("aarch64-unknown-none-elf",).join("release",);
 		std::fs::create_dir_all(&kernel_release_dir,).unwrap();
-		std::fs::write(kernel_release_dir.join("oso_kernel",), b"mock kernel release",).unwrap();
+		std::fs::write(
+			kernel_release_dir.join("oso_kernel",),
+			b"mock kernel release",
+		)
+		.unwrap();
 	}
 }
 
@@ -149,7 +178,8 @@ impl TestUtils {
 
 	/// Checks if QEMU is available for testing
 	pub fn qemu_available() -> bool {
-		Self::command_exists("qemu-system-aarch64",) || Self::command_exists("qemu-system-x86_64",)
+		Self::command_exists("qemu-system-aarch64",)
+			|| Self::command_exists("qemu-system-x86_64",)
 	}
 
 	/// Checks if required build tools are available
@@ -189,13 +219,16 @@ mod tests {
 		let config = TestConfig::new();
 		config.create_cargo_manifests();
 
-		let loader_manifest = config.oso_root.join("oso_loader",).join("Cargo.toml",);
-		let kernel_manifest = config.oso_root.join("oso_kernel",).join("Cargo.toml",);
+		let loader_manifest =
+			config.oso_root.join("oso_loader",).join("Cargo.toml",);
+		let kernel_manifest =
+			config.oso_root.join("oso_kernel",).join("Cargo.toml",);
 
 		assert!(loader_manifest.exists());
 		assert!(kernel_manifest.exists());
 
-		let loader_content = std::fs::read_to_string(&loader_manifest,).unwrap();
+		let loader_content =
+			std::fs::read_to_string(&loader_manifest,).unwrap();
 		assert!(loader_content.contains("oso_loader"));
 	}
 
@@ -204,8 +237,14 @@ mod tests {
 		let config = TestConfig::new();
 		config.create_target_files();
 
-		let aarch64_target = config.oso_root.join("target",).join("aarch64-unknown-none-elf.json",);
-		let x86_64_target = config.oso_root.join("target",).join("x86_64-unknown-none-elf.json",);
+		let aarch64_target = config
+			.oso_root
+			.join("target",)
+			.join("aarch64-unknown-none-elf.json",);
+		let x86_64_target = config
+			.oso_root
+			.join("target",)
+			.join("x86_64-unknown-none-elf.json",);
 
 		assert!(aarch64_target.exists());
 		assert!(x86_64_target.exists());
@@ -232,10 +271,14 @@ mod tests {
 	#[test]
 	fn test_command_existence_check() {
 		// Test with a command that should exist
-		assert!(TestUtils::command_exists("ls") || TestUtils::command_exists("dir"));
+		assert!(
+			TestUtils::command_exists("ls") || TestUtils::command_exists("dir")
+		);
 
 		// Test with a command that shouldn't exist
-		assert!(!TestUtils::command_exists("definitely_not_a_real_command_12345"));
+		assert!(!TestUtils::command_exists(
+			"definitely_not_a_real_command_12345"
+		));
 	}
 
 	#[test]
