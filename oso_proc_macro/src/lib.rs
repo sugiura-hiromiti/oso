@@ -2,7 +2,8 @@
 //!
 //! This crate provides procedural macros for the OSO operating system project.
 //! It includes macros for font data processing, integer type implementations,
-//! wrapper function generation, UEFI status code generation, and ELF parsing utilities.
+//! wrapper function generation, UEFI status code generation, and ELF parsing
+//! utilities.
 //!
 //! ## Features
 //!
@@ -10,13 +11,14 @@
 //! - **Integer Implementation**: Generate implementations for integer types
 //! - **Wrapper Functions**: Generate wrapper functions for traits
 //! - **UEFI Status Codes**: Generate status code enums from UEFI specifications
-//! - **ELF Testing**: Utilities for testing ELF header and program header parsing
+//! - **ELF Testing**: Utilities for testing ELF header and program header
+//!   parsing
 //!
 //! ## Usage
 //!
-//! This crate is designed to be used as a procedural macro dependency in OSO kernel
-//! and related projects. The macros are compile-time code generators that help
-//! reduce boilerplate and ensure consistency across the codebase.
+//! This crate is designed to be used as a procedural macro dependency in OSO
+//! kernel and related projects. The macros are compile-time code generators
+//! that help reduce boilerplate and ensure consistency across the codebase.
 
 #![feature(proc_macro_diagnostic)]
 
@@ -42,10 +44,18 @@ impl<T,> ErrorDiagnose for anyhow::Result<(T, Vec<Diag,>,),> {
 		match self {
 			Self::Ok((o, diag,),) => {
 				diag.iter().for_each(|d| match d {
-					Diag::Err(msg,) => Diagnostic::new(Level::Error, msg,).emit(),
-					Diag::Warn(msg,) => Diagnostic::new(Level::Warning, msg,).emit(),
-					Diag::Note(msg,) => Diagnostic::new(Level::Note, msg,).emit(),
-					Diag::Help(msg,) => Diagnostic::new(Level::Help, msg,).emit(),
+					Diag::Err(msg,) => {
+						Diagnostic::new(Level::Error, msg,).emit()
+					},
+					Diag::Warn(msg,) => {
+						Diagnostic::new(Level::Warning, msg,).emit()
+					},
+					Diag::Note(msg,) => {
+						Diagnostic::new(Level::Note, msg,).emit()
+					},
+					Diag::Help(msg,) => {
+						Diagnostic::new(Level::Help, msg,).emit()
+					},
 				},);
 
 				o
@@ -374,9 +384,12 @@ mod tests {
 
 	#[test]
 	fn test_error_diagnose_trait_ok_with_diagnostics() {
-		let diags =
-			vec![Diag::Note("Test note".to_string(),), Diag::Help("Test help".to_string(),)];
-		let result: anyhow::Result<(String, Vec<Diag,>,),> = Ok(("success".to_string(), diags,),);
+		let diags = vec![
+			Diag::Note("Test note".to_string(),),
+			Diag::Help("Test help".to_string(),),
+		];
+		let result: anyhow::Result<(String, Vec<Diag,>,),> =
+			Ok(("success".to_string(), diags,),);
 
 		// We can't test the actual emission outside of proc_macro context,
 		// but we can test that the result structure is correct
@@ -400,7 +413,8 @@ mod tests {
 	#[test]
 	#[should_panic]
 	fn test_error_diagnose_trait_err() {
-		let result: anyhow::Result<(i32, Vec<Diag,>,),> = Err(anyhow!("Test error"),);
+		let result: anyhow::Result<(i32, Vec<Diag,>,),> =
+			Err(anyhow!("Test error"),);
 		let _value = result.unwrap_or_emit();
 	}
 
@@ -456,7 +470,8 @@ mod tests {
 
 	#[test]
 	fn test_error_diagnose_empty_diagnostics() {
-		let result: anyhow::Result<(Vec<i32,>, Vec<Diag,>,),> = Ok((vec![1, 2, 3], vec![],),);
+		let result: anyhow::Result<(Vec<i32,>, Vec<Diag,>,),> =
+			Ok((vec![1, 2, 3], vec![],),);
 		let value = result.unwrap_or_emit();
 		assert_eq!(value, vec![1, 2, 3]);
 	}
@@ -469,10 +484,12 @@ mod tests {
 			Ok(("test".to_string(), vec![],),);
 		assert_eq!(string_result.unwrap_or_emit(), "test");
 
-		let vec_result: anyhow::Result<(Vec<u8,>, Vec<Diag,>,),> = Ok((vec![1, 2, 3], vec![],),);
+		let vec_result: anyhow::Result<(Vec<u8,>, Vec<Diag,>,),> =
+			Ok((vec![1, 2, 3], vec![],),);
 		assert_eq!(vec_result.unwrap_or_emit(), vec![1, 2, 3]);
 
-		let option_result: anyhow::Result<(Option<i32,>, Vec<Diag,>,),> = Ok((Some(42,), vec![],),);
+		let option_result: anyhow::Result<(Option<i32,>, Vec<Diag,>,),> =
+			Ok((Some(42,), vec![],),);
 		assert_eq!(option_result.unwrap_or_emit(), Some(42));
 	}
 
@@ -532,7 +549,8 @@ mod tests {
 		}
 
 		let test_struct = TestStruct { value: 100, };
-		let result: anyhow::Result<(TestStruct, Vec<Diag,>,),> = Ok((test_struct, vec![],),);
+		let result: anyhow::Result<(TestStruct, Vec<Diag,>,),> =
+			Ok((test_struct, vec![],),);
 		let value = result.unwrap_or_emit();
 		assert_eq!(value.value, 100);
 	}
