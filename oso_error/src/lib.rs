@@ -1,7 +1,8 @@
 //! # oso_error
 //!
-//! A minimalist, no_std compatible error handling library designed for embedded systems,
-//! operating systems, and other environments where the standard library is unavailable.
+//! A minimalist, no_std compatible error handling library designed for embedded
+//! systems, operating systems, and other environments where the standard
+//! library is unavailable.
 //!
 //! ## Features
 //!
@@ -12,9 +13,9 @@
 //!
 //! ## Usage
 //!
-//! The crate provides a simple error type `OsoError<V>` that can be used to represent errors
-//! in your application. The type parameter `V` allows you to attach additional context to your
-//! errors.
+//! The crate provides a simple error type `OsoError<V>` that can be used to
+//! represent errors in your application. The type parameter `V` allows you to
+//! attach additional context to your errors.
 //!
 //! ### Basic Example
 //!
@@ -81,9 +82,9 @@
 //!
 //! ## Design Philosophy
 //!
-//! The `oso_error` crate is designed to be minimal yet flexible, providing just enough
-//! functionality for error handling in constrained environments without pulling in
-//! unnecessary dependencies or requiring the standard library.
+//! The `oso_error` crate is designed to be minimal yet flexible, providing just
+//! enough functionality for error handling in constrained environments without
+//! pulling in unnecessary dependencies or requiring the standard library.
 
 #![no_std]
 #![feature(type_alias_impl_trait)]
@@ -98,7 +99,8 @@ pub mod parser;
 
 /// A type alias for commonly used Result type with OsoError as the error type.
 ///
-/// This provides a convenient shorthand for functions that return Results with OsoError.
+/// This provides a convenient shorthand for functions that return Results with
+/// OsoError.
 ///
 /// # Type Parameters
 ///
@@ -120,17 +122,20 @@ pub type Rslt<T = (), V = (),> = Result<T, OsoError<V,>,>;
 
 /// A flexible error type for representing errors in no_std environments.
 ///
-/// `OsoError` provides a lightweight error representation that includes the source module
-/// and an optional descriptive payload of type `V`.
+/// `OsoError` provides a lightweight error representation that includes the
+/// source module and an optional descriptive payload of type `V`.
 ///
 /// # Type Parameters
 ///
-/// * `V` - The type of the descriptive payload, must implement `Debug` and `Default`
+/// * `V` - The type of the descriptive payload, must implement `Debug` and
+///   `Default`
 ///
 /// # Fields
 ///
-/// * `from` - A static string identifying the source of the error (typically the module path)
-/// * `desc` - An optional descriptive payload providing additional context about the error
+/// * `from` - A static string identifying the source of the error (typically
+///   the module path)
+/// * `desc` - An optional descriptive payload providing additional context
+///   about the error
 ///
 /// # Examples
 ///
@@ -159,8 +164,12 @@ pub type Rslt<T = (), V = (),> = Result<T, OsoError<V,>,>;
 /// }
 ///
 /// // Create an error with a custom description
-/// let mut error = OsoError::<NetworkError,> { from: module_path!(), desc: None, };
-/// error.desc(NetworkError { status_code: 404, message: "Resource not found".into(), },);
+/// let mut error =
+/// 	OsoError::<NetworkError,> { from: module_path!(), desc: None, };
+/// error.desc(NetworkError {
+/// 	status_code: 404,
+/// 	message:     "Resource not found".into(),
+/// },);
 /// ```
 #[derive(Debug, Default,)]
 pub struct OsoError<V,>
@@ -177,12 +186,13 @@ where V: Debug
 ///
 /// # Parameters
 ///
-/// * `$causal` - An expression describing the cause of the error (currently unused in the
-///   implementation)
+/// * `$causal` - An expression describing the cause of the error (currently
+///   unused in the implementation)
 ///
 /// # Returns
 ///
-/// An instance of `OsoError` with the `from` field set to the current module path.
+/// An instance of `OsoError` with the `from` field set to the current module
+/// path.
 ///
 /// # Examples
 ///
@@ -210,7 +220,8 @@ macro_rules! oso_err {
 impl<V: Debug + Default,> OsoError<V,> {
 	/// Adds a descriptive payload to the error.
 	///
-	/// This method allows you to attach additional context to an error after creation.
+	/// This method allows you to attach additional context to an error after
+	/// creation.
 	///
 	/// # Parameters
 	///
@@ -237,7 +248,10 @@ impl<V: Debug + Default,> OsoError<V,> {
 	/// fn read_file(path: &str,) -> Rslt<String, FileError,> {
 	/// 	// Simulate a file operation failure
 	/// 	let mut err = OsoError { from: module_path!(), desc: None, };
-	/// 	err.desc(FileError { path: path.into(), operation: "read".into(), },);
+	/// 	err.desc(FileError {
+	/// 		path:      path.into(),
+	/// 		operation: "read".into(),
+	/// 	},);
 	/// 	Err(err,)
 	/// }
 	/// ```
