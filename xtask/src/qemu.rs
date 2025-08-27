@@ -24,7 +24,8 @@ impl Xtask {
 		format!("qemu-system-{}", self.arch().to_string())
 	}
 
-	/// Generates QEMU command-line arguments based on the target architecture and configuration
+	/// Generates QEMU command-line arguments based on the target architecture
+	/// and configuration
 	///
 	/// # Returns
 	///
@@ -33,10 +34,14 @@ impl Xtask {
 		let mut args = basic_args(self.arch(),);
 
 		// configure persistent flash memory
-		let pflash_code =
-			persistent_flash_memory_args(&self.firmware_code()?, PflashMode::ReadOnly,);
-		let pflash_var =
-			persistent_flash_memory_args(&self.firmware_vars()?, PflashMode::ReadWrite,);
+		let pflash_code = persistent_flash_memory_args(
+			&self.firmware_code()?,
+			PflashMode::ReadOnly,
+		);
+		let pflash_var = persistent_flash_memory_args(
+			&self.firmware_vars()?,
+			PflashMode::ReadWrite,
+		);
 		args.extend(pflash_code,);
 		args.extend(pflash_var,);
 
@@ -127,7 +132,10 @@ fn basic_args(arch: Arch,) -> Vec<String,> {
 /// # Returns
 ///
 /// A vector of QEMU command-line arguments for persistent flash memory
-fn persistent_flash_memory_args(pflash_file: &PathBuf, mode: PflashMode,) -> Vec<String,> {
+fn persistent_flash_memory_args(
+	pflash_file: &PathBuf,
+	mode: PflashMode,
+) -> Vec<String,> {
 	let mut args = vec!["-drive".to_string()];
 	let mut arg = String::from("if=pflash,format=raw,readonly=",);
 	arg.push_str(match mode {

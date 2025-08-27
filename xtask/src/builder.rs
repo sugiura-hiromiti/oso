@@ -1,7 +1,7 @@
 //! # Builder Module
 //!
-//! Core functionality for building the OSO loader and kernel, creating disk images,
-//! and running QEMU.
+//! Core functionality for building the OSO loader and kernel, creating disk
+//! images, and running QEMU.
 //!
 //! This module handles:
 //! - Building the OSO loader and kernel for the target architecture
@@ -25,7 +25,8 @@ const MOUNT_DIR: &str = "xtask/mnt";
 impl Xtask {
 	/// Creates a new Builder instance with the specified options
 	///
-	/// This constructor initializes all the necessary components for the build process:
+	/// This constructor initializes all the necessary components for the build
+	/// process:
 	/// - Parses command-line options and build configuration
 	/// - Sets up the OSO workspace with project paths
 	/// - Downloads and configures OVMF firmware for the target architecture
@@ -33,10 +34,14 @@ impl Xtask {
 	///
 	/// # Initialization Process
 	///
-	/// 1. **Options Parsing**: Reads command-line arguments for architecture, build mode, etc.
-	/// 2. **Workspace Setup**: Locates project root and validates workspace structure
-	/// 3. **Firmware Download**: Fetches appropriate OVMF firmware files for UEFI boot
-	/// 4. **Host Detection**: Identifies the host OS (macOS, Linux) for mount operations
+	/// 1. **Options Parsing**: Reads command-line arguments for architecture,
+	///    build mode, etc.
+	/// 2. **Workspace Setup**: Locates project root and validates workspace
+	///    structure
+	/// 3. **Firmware Download**: Fetches appropriate OVMF firmware files for
+	///    UEFI boot
+	/// 4. **Host Detection**: Identifies the host OS (macOS, Linux) for mount
+	///    operations
 	///
 	/// # Returns
 	///
@@ -60,10 +65,14 @@ impl Xtask {
 	/// # Errors
 	///
 	/// This method can fail in several scenarios:
-	/// - **Workspace Error**: If the OSO project structure is invalid or incomplete
-	/// - **Firmware Error**: If OVMF firmware files cannot be downloaded or accessed
-	/// - **Host OS Error**: If the host operating system is not supported (Windows)
-	/// - **Network Error**: If firmware download requires internet access and fails
+	/// - **Workspace Error**: If the OSO project structure is invalid or
+	///   incomplete
+	/// - **Firmware Error**: If OVMF firmware files cannot be downloaded or
+	///   accessed
+	/// - **Host OS Error**: If the host operating system is not supported
+	///   (Windows)
+	/// - **Network Error**: If firmware download requires internet access and
+	///   fails
 	pub fn new() -> Rslt<Self,> {
 		let opts = Opts::new();
 		let ws = project_root()?;
