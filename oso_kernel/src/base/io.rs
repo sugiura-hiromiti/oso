@@ -1,8 +1,9 @@
 //! # Input/Output Operations and Text Display
 //!
-//! This module provides the fundamental I/O interface for the OSO kernel, including
-//! text rendering, console output, and character display functionality. It serves as
-//! the primary interface for kernel debugging and user interaction.
+//! This module provides the fundamental I/O interface for the OSO kernel,
+//! including text rendering, console output, and character display
+//! functionality. It serves as the primary interface for kernel debugging and
+//! user interaction.
 //!
 //! ## Features
 //!
@@ -43,7 +44,8 @@
 //!
 //! The [`TextBuf`] struct manages text positioning, wrapping, and rendering:
 //!
-//! - **Automatic Wrapping**: Text wraps to the next line when reaching screen edge
+//! - **Automatic Wrapping**: Text wraps to the next line when reaching screen
+//!   edge
 //! - **Scrolling**: Screen clears and resets when reaching the bottom
 //! - **Positioning**: Tracks current cursor position for continuous text output
 //!
@@ -142,7 +144,8 @@ pub const SINONOME: &[u128; 256] = font!("resource/sinonome_font.dat");
 /// Maximum number of digits that can be represented in a u128
 ///
 /// This constant is used for buffer sizing when converting integers to strings.
-/// A u128 can have at most 39 decimal digits (2^128 - 1 = 340282366920938463463374607431768211455).
+/// A u128 can have at most 39 decimal digits (2^128 - 1 =
+/// 340282366920938463463374607431768211455).
 pub const MAX_DIGIT: usize = 39;
 
 /// Global console text buffer for kernel output
@@ -159,9 +162,9 @@ static CONSOLE: TextBuf<(usize, usize,),> = TextBuf::new((0, 0,), 8, 16,);
 
 /// Text buffer for managing character display and positioning
 ///
-/// This struct handles the layout and rendering of text characters on the screen.
-/// It maintains the current cursor position, handles line wrapping, and manages
-/// the conversion from characters to pixel operations.
+/// This struct handles the layout and rendering of text characters on the
+/// screen. It maintains the current cursor position, handles line wrapping, and
+/// manages the conversion from characters to pixel operations.
 ///
 /// # Type Parameters
 ///
@@ -227,7 +230,11 @@ impl<C: Coordinal,> TextBuf<C,> {
 	/// // Create a text buffer at a specific position
 	/// let text_buf = TextBuf::new((100, 200), 12, 20);
 	/// ```
-	pub const fn new(init_pos: C, font_width: usize, font_height: usize,) -> Self {
+	pub const fn new(
+		init_pos: C,
+		font_width: usize,
+		font_height: usize,
+	) -> Self {
 		Self { init_pos, row: 0, col: 0, font_width, font_height, }
 	}
 
@@ -307,9 +314,12 @@ impl<C: Coordinal,> TextBuf<C,> {
 	///
 	/// # Automatic Behaviors
 	///
-	/// - **Line Wrapping**: When text reaches the right edge, cursor moves to next line
-	/// - **Screen Clearing**: When text reaches the bottom, screen is cleared and cursor resets
-	/// - **Cursor Advancement**: After each character, cursor moves to the next position
+	/// - **Line Wrapping**: When text reaches the right edge, cursor moves to
+	///   next line
+	/// - **Screen Clearing**: When text reaches the bottom, screen is cleared
+	///   and cursor resets
+	/// - **Cursor Advancement**: After each character, cursor moves to the next
+	///   position
 	///
 	/// # Examples
 	///
@@ -410,7 +420,8 @@ impl<C: Coordinal,> Write for TextBuf<C,> {
 /// Prints formatted text to the console with a newline
 ///
 /// This macro provides a convenient way to output formatted text to the kernel
-/// console. It automatically appends a newline character after the formatted output.
+/// console. It automatically appends a newline character after the formatted
+/// output.
 ///
 /// # Arguments
 ///
@@ -444,9 +455,9 @@ macro_rules! println {
 
 /// Prints formatted text to the console
 ///
-/// This macro provides the primary interface for outputting text from the kernel.
-/// It supports all of Rust's standard formatting options and directs output
-/// to the global console text buffer.
+/// This macro provides the primary interface for outputting text from the
+/// kernel. It supports all of Rust's standard formatting options and directs
+/// output to the global console text buffer.
 ///
 /// # Arguments
 ///
@@ -462,7 +473,8 @@ macro_rules! println {
 ///
 /// # Implementation
 ///
-/// The macro expands to a call to the `print` function with formatted arguments:
+/// The macro expands to a call to the `print` function with formatted
+/// arguments:
 ///
 /// ```rust,ignore
 /// print!("Hello") // expands to:
@@ -488,8 +500,8 @@ macro_rules! print {
 /// # Safety
 ///
 /// This function uses unsafe operations to obtain a mutable reference to the
-/// static `CONSOLE` text buffer. This is necessary to provide interior mutability
-/// for the global console state.
+/// static `CONSOLE` text buffer. This is necessary to provide interior
+/// mutability for the global console state.
 ///
 /// # Panics
 ///
@@ -523,7 +535,8 @@ pub fn print(args: core::fmt::Arguments,) {
 		// 2. We're not creating multiple mutable references simultaneously
 		// 3. The operation is atomic (single-threaded kernel context)
 		// TODO: Add proper synchronization for multi-threaded environments
-		(&CONSOLE as *const TextBuf<(usize, usize,),> as *mut TextBuf<(usize, usize,),>)
+		(&CONSOLE as *const TextBuf<(usize, usize,),>
+			as *mut TextBuf<(usize, usize,),>)
 			.as_mut()
 			.unwrap()
 			.write_fmt(args,)

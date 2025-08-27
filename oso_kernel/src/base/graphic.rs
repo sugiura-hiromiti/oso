@@ -1,17 +1,20 @@
 //! # Graphics and Display Management
 //!
-//! This module provides comprehensive graphics functionality for the OSO kernel,
-//! including framebuffer management, pixel manipulation, and drawing operations.
-//! It supports multiple pixel formats through compile-time feature flags and
-//! provides a safe abstraction over raw framebuffer memory.
+//! This module provides comprehensive graphics functionality for the OSO
+//! kernel, including framebuffer management, pixel manipulation, and drawing
+//! operations. It supports multiple pixel formats through compile-time feature
+//! flags and provides a safe abstraction over raw framebuffer memory.
 //!
 //! ## Features
 //!
-//! - **Multiple Pixel Formats**: Support for RGB, BGR, Bitmask, and BLT-only formats
-//! - **Safe Memory Access**: Memory-safe framebuffer operations with bounds checking
+//! - **Multiple Pixel Formats**: Support for RGB, BGR, Bitmask, and BLT-only
+//!   formats
+//! - **Safe Memory Access**: Memory-safe framebuffer operations with bounds
+//!   checking
 //! - **Drawing Primitives**: Pixel, rectangle, and outline drawing operations
 //! - **Coordinate System**: Flexible coordinate representation and validation
-//! - **Static Framebuffer**: Global framebuffer instance for system-wide graphics
+//! - **Static Framebuffer**: Global framebuffer instance for system-wide
+//!   graphics
 //!
 //! ## Pixel Format Support
 //!
@@ -60,9 +63,9 @@ pub mod position;
 /// Global framebuffer instance for RGB pixel format
 ///
 /// This static framebuffer is available when the `rgb` feature is enabled.
-/// It provides system-wide access to graphics operations using the RGB color format.
-/// The framebuffer is initialized with default values and must be properly configured
-/// using the `init()` method before use.
+/// It provides system-wide access to graphics operations using the RGB color
+/// format. The framebuffer is initialized with default values and must be
+/// properly configured using the `init()` method before use.
 ///
 /// # Safety
 ///
@@ -90,57 +93,85 @@ pub mod position;
 //  TODO: use `MaybeUninit`
 //  - support multi thread like using atomic
 #[cfg(feature = "rgb")]
-pub static FRAME_BUFFER: FrameBuffer<Rgb,> =
-	FrameBuffer { drawer: Rgb, buf: 0, size: 0, width: 0, height: 0, stride: 0, };
+pub static FRAME_BUFFER: FrameBuffer<Rgb,> = FrameBuffer {
+	drawer: Rgb,
+	buf:    0,
+	size:   0,
+	width:  0,
+	height: 0,
+	stride: 0,
+};
 
 /// Global framebuffer instance for BGR pixel format
 ///
 /// This static framebuffer is available when the `bgr` feature is enabled.
-/// It provides system-wide access to graphics operations using the BGR color format.
+/// It provides system-wide access to graphics operations using the BGR color
+/// format.
 ///
 /// # Safety
 ///
 /// This static instance uses interior mutability through unsafe operations.
 /// Proper synchronization is required in multi-threaded environments.
 #[cfg(feature = "bgr")]
-pub static FRAME_BUFFER: FrameBuffer<Bgr,> =
-	FrameBuffer { drawer: Bgr, buf: 0, size: 0, width: 0, height: 0, stride: 0, };
+pub static FRAME_BUFFER: FrameBuffer<Bgr,> = FrameBuffer {
+	drawer: Bgr,
+	buf:    0,
+	size:   0,
+	width:  0,
+	height: 0,
+	stride: 0,
+};
 
 /// Global framebuffer instance for Bitmask pixel format
 ///
 /// This static framebuffer is available when the `bitmask` feature is enabled.
-/// It provides system-wide access to graphics operations using custom bitmask color format.
+/// It provides system-wide access to graphics operations using custom bitmask
+/// color format.
 ///
 /// # Safety
 ///
 /// This static instance uses interior mutability through unsafe operations.
 /// Proper synchronization is required in multi-threaded environments.
 #[cfg(feature = "bitmask")]
-pub static FRAME_BUFFER: FrameBuffer<Bitmask,> =
-	FrameBuffer { drawer: Bitmask, buf: 0, size: 0, width: 0, height: 0, stride: 0, };
+pub static FRAME_BUFFER: FrameBuffer<Bitmask,> = FrameBuffer {
+	drawer: Bitmask,
+	buf:    0,
+	size:   0,
+	width:  0,
+	height: 0,
+	stride: 0,
+};
 
 /// Global framebuffer instance for BLT-only pixel format
 ///
-/// This static framebuffer is available when the `bltonly` feature is enabled (default).
-/// It provides system-wide access to graphics operations using Block Transfer Only mode.
+/// This static framebuffer is available when the `bltonly` feature is enabled
+/// (default). It provides system-wide access to graphics operations using Block
+/// Transfer Only mode.
 ///
 /// # Safety
 ///
 /// This static instance uses interior mutability through unsafe operations.
 /// Proper synchronization is required in multi-threaded environments.
 #[cfg(feature = "bltonly")]
-pub static FRAME_BUFFER: FrameBuffer<BltOnly,> =
-	FrameBuffer { drawer: BltOnly, buf: 0, size: 0, width: 0, height: 0, stride: 0, };
+pub static FRAME_BUFFER: FrameBuffer<BltOnly,> = FrameBuffer {
+	drawer: BltOnly,
+	buf:    0,
+	size:   0,
+	width:  0,
+	height: 0,
+	stride: 0,
+};
 
 /// Trait for drawing operations on display devices
 ///
-/// This trait defines the core drawing operations that can be performed on a display,
-/// including pixel manipulation and rectangle drawing. It provides a consistent
-/// interface across different pixel formats and display types.
+/// This trait defines the core drawing operations that can be performed on a
+/// display, including pixel manipulation and rectangle drawing. It provides a
+/// consistent interface across different pixel formats and display types.
 ///
 /// # Associated Types
 ///
-/// * `Output` - The result type for drawing operations, typically `Result<(), GraphicError>`
+/// * `Output` - The result type for drawing operations, typically `Result<(),
+///   GraphicError>`
 ///
 /// # Examples
 ///
@@ -185,12 +216,16 @@ pub trait DisplayDraw {
 	/// let color = Rgb::new(255, 0, 0); // Red pixel
 	/// framebuffer.put_pixel(&coord, &color)?;
 	/// ```
-	fn put_pixel(&self, coord: &impl Coordinal, color: &impl ColorRpr,) -> Self::Output;
+	fn put_pixel(
+		&self,
+		coord: &impl Coordinal,
+		color: &impl ColorRpr,
+	) -> Self::Output;
 
 	/// Fills a rectangular area with the specified color
 	///
-	/// This method fills all pixels within the rectangle defined by the top-left
-	/// and bottom-right coordinates (inclusive) with the given color.
+	/// This method fills all pixels within the rectangle defined by the
+	/// top-left and bottom-right coordinates (inclusive) with the given color.
 	///
 	/// # Arguments
 	///
@@ -201,13 +236,15 @@ pub trait DisplayDraw {
 	/// # Returns
 	///
 	/// * `Ok(())` - If the rectangle was successfully filled
-	/// * `Err(GraphicError::InvalidCoordinate)` - If the coordinates are invalid
+	/// * `Err(GraphicError::InvalidCoordinate)` - If the coordinates are
+	///   invalid
 	///
 	/// # Coordinate Requirements
 	///
 	/// The coordinates must satisfy the following conditions:
 	/// - `left_top.x < right_bottom.x && left_top.y < right_bottom.y`
-	/// - `right_bottom.x <= framebuffer.width && right_bottom.y <= framebuffer.height`
+	/// - `right_bottom.x <= framebuffer.width && right_bottom.y <=
+	///   framebuffer.height`
 	///
 	/// # Examples
 	///
@@ -238,7 +275,8 @@ pub trait DisplayDraw {
 	/// # Returns
 	///
 	/// * `Ok(())` - If the outline was successfully drawn
-	/// * `Err(GraphicError::InvalidCoordinate)` - If the coordinates are invalid
+	/// * `Err(GraphicError::InvalidCoordinate)` - If the coordinates are
+	///   invalid
 	///
 	/// # Coordinate Requirements
 	///
@@ -262,9 +300,10 @@ pub trait DisplayDraw {
 
 /// A framebuffer structure that manages display memory and drawing operations
 ///
-/// The `FrameBuffer` struct encapsulates all the necessary information and functionality
-/// for managing a graphics framebuffer, including memory layout, pixel format handling,
-/// and drawing operations. It is generic over the pixel format type `P`.
+/// The `FrameBuffer` struct encapsulates all the necessary information and
+/// functionality for managing a graphics framebuffer, including memory layout,
+/// pixel format handling, and drawing operations. It is generic over the pixel
+/// format type `P`.
 ///
 /// # Type Parameters
 ///
@@ -272,7 +311,8 @@ pub trait DisplayDraw {
 ///
 /// # Fields
 ///
-/// * `drawer` - The pixel format handler for color conversion and representation
+/// * `drawer` - The pixel format handler for color conversion and
+///   representation
 /// * `buf` - The base memory address of the framebuffer
 /// * `size` - The total size of the framebuffer in bytes
 /// * `width` - The width of the display in pixels
@@ -324,9 +364,9 @@ pub struct FrameBuffer<P: PixelFormat,> {
 impl<P: PixelFormat,> FrameBuffer<P,> {
 	/// Creates a new framebuffer instance with the specified pixel format
 	///
-	/// This constructor creates a framebuffer with default (zero) values for all
-	/// memory-related fields. The framebuffer must be initialized with actual
-	/// hardware parameters using the `init()` method before use.
+	/// This constructor creates a framebuffer with default (zero) values for
+	/// all memory-related fields. The framebuffer must be initialized with
+	/// actual hardware parameters using the `init()` method before use.
 	///
 	/// # Arguments
 	///
@@ -373,10 +413,10 @@ impl<P: PixelFormat,> FrameBuffer<P,> {
 
 	/// Initializes a framebuffer instance with hardware-specific parameters
 	///
-	/// This method provides interior mutability for static framebuffer instances
-	/// by allowing modification of the framebuffer parameters after creation.
-	/// It's typically called during kernel initialization when hardware parameters
-	/// become available.
+	/// This method provides interior mutability for static framebuffer
+	/// instances by allowing modification of the framebuffer parameters after
+	/// creation. It's typically called during kernel initialization when
+	/// hardware parameters become available.
 	///
 	/// # Arguments
 	///
@@ -438,8 +478,8 @@ impl<P: PixelFormat,> FrameBuffer<P,> {
 	/// Calculates the byte offset for a pixel at the given coordinate
 	///
 	/// This method converts 2D pixel coordinates to a linear byte offset
-	/// within the framebuffer memory. It accounts for the stride (bytes per line)
-	/// and assumes 4 bytes per pixel.
+	/// within the framebuffer memory. It accounts for the stride (bytes per
+	/// line) and assumes 4 bytes per pixel.
 	///
 	/// # Arguments
 	///
@@ -511,7 +551,8 @@ impl<P: PixelFormat,> FrameBuffer<P,> {
 	///
 	/// # Arguments
 	///
-	/// * `pos` - The byte position within the framebuffer (will be multiplied by sizeof(u8))
+	/// * `pos` - The byte position within the framebuffer (will be multiplied
+	///   by sizeof(u8))
 	/// * `len` - The length of the slice in bytes
 	///
 	/// # Returns
@@ -584,7 +625,11 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 	/// let red_color = Rgb::new(255, 0, 0);
 	/// framebuffer.put_pixel(&coord, &red_color)?;
 	/// ```
-	fn put_pixel(&self, coord: &impl Coordinal, color: &impl ColorRpr,) -> Self::Output {
+	fn put_pixel(
+		&self,
+		coord: &impl Coordinal,
+		color: &impl ColorRpr,
+	) -> Self::Output {
 		let pos = self.pos(coord,);
 		let pxl = self.slice_mut(pos, 3,);
 		let color = self.drawer.color_repr(color,);
@@ -598,8 +643,9 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 	/// Fills a rectangular area with the specified color
 	///
 	/// This implementation validates the coordinates and then iterates through
-	/// all pixels within the rectangle, setting each one to the specified color.
-	/// The color conversion is performed once before the loop for efficiency.
+	/// all pixels within the rectangle, setting each one to the specified
+	/// color. The color conversion is performed once before the loop for
+	/// efficiency.
 	///
 	/// # Arguments
 	///
@@ -672,8 +718,9 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 
 	/// Draws the outline of a rectangle with the specified color
 	///
-	/// This implementation draws a single-pixel-wide border around the rectangle
-	/// defined by the coordinates. It draws four lines: top, right, bottom, and left.
+	/// This implementation draws a single-pixel-wide border around the
+	/// rectangle defined by the coordinates. It draws four lines: top, right,
+	/// bottom, and left.
 	///
 	/// # Arguments
 	///

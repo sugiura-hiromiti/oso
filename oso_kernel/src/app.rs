@@ -6,10 +6,12 @@
 //!
 //! ## Features
 //!
-//! - **Application Lifecycle**: Management of application startup, execution, and termination
+//! - **Application Lifecycle**: Management of application startup, execution,
+//!   and termination
 //! - **Process Management**: Creation and management of application processes
 //! - **User Interface**: Application-level UI components and utilities
-//! - **Resource Management**: Application-specific resource allocation and cleanup
+//! - **Resource Management**: Application-specific resource allocation and
+//!   cleanup
 //!
 //! ## Modules
 //!

@@ -66,7 +66,8 @@ impl MouseCursorDraw for CursorBuf {
 		(0..self.height).for_each(|y| {
 			for x in 0..self.width {
 				match MOUSE_CURSOR[y][x] {
-					'@' => todo!(), //put_pixel(&coord, &self.outline_color,)?,
+					'@' => todo!(), //put_pixel(&coord,
+					// &self.outline_color,)?,
 					'.' => todo!(), //put_pixel(&coord, &self.body_color,)?,
 					_ => (),
 				}

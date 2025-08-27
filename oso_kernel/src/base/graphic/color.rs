@@ -107,15 +107,18 @@ impl ColorRpr for (u8, u8, u8,) {
 /// this impl assumes format such as `#012345`
 impl ColorRpr for &str {
 	fn red(&self,) -> u8 {
-		u8::from_str_radix(&self[1..3], 16,).expect("incorrect representation of color format",)
+		u8::from_str_radix(&self[1..3], 16,)
+			.expect("incorrect representation of color format",)
 	}
 
 	fn green(&self,) -> u8 {
-		u8::from_str_radix(&self[3..5], 16,).expect("incorrect representation of color format",)
+		u8::from_str_radix(&self[3..5], 16,)
+			.expect("incorrect representation of color format",)
 	}
 
 	fn blue(&self,) -> u8 {
-		u8::from_str_radix(&self[5..7], 16,).expect("incorrect representation of color format",)
+		u8::from_str_radix(&self[5..7], 16,)
+			.expect("incorrect representation of color format",)
 	}
 
 	fn red_mut(&mut self, _val: u8,) {
