@@ -10,7 +10,10 @@ pub trait CaseConvert {
 	fn is_kebab(&self,) -> bool;
 
 	fn to_camel<S1: StringKind,>(&self,) -> S1 {
-		self.case_transit(|s| format!("{}{}", s[..1].to_ascii_uppercase(), &s[1..]), None,)
+		self.case_transit(
+			|s| format!("{}{}", s[..1].to_ascii_uppercase(), &s[1..]),
+			None,
+		)
 	}
 
 	fn to_snake<S1: StringKind,>(&self,) -> S1 {
@@ -30,7 +33,8 @@ pub trait CaseConvert {
 		converter: impl FnMut(String,) -> String,
 		spacer: Option<char,>,
 	) -> S {
-		let converted: Vec<_,> = self.words().into_iter().map(converter,).collect();
+		let converted: Vec<_,> =
+			self.words().into_iter().map(converter,).collect();
 		let spacer = spacer.map_or("".to_string(), |c| c.to_string(),);
 		let converted = converted.join(&spacer,);
 		S::from(converted,)
@@ -87,7 +91,8 @@ impl CaseConvert for String {
 			while let Some(sub,) = s.get(idx + 1..,)
 				&& let Some(tail,) = sub.find(|c: char| c.is_ascii_uppercase(),)
 			{
-				// tail is relative to sub, so we need to add idx + 1 to get the absolute position
+				// tail is relative to sub, so we need to add idx + 1 to get the
+				// absolute position
 				let absolute_pos = idx + 1 + tail;
 				rslt.push(s[idx..absolute_pos].to_string(),);
 				idx = absolute_pos; // Move to the position of the uppercase letter
@@ -102,7 +107,9 @@ impl CaseConvert for String {
 		} else {
 			// Cache the spacer to avoid repeated calls
 			let spacer = s.find_spacer().unwrap_or(" ".to_string(),);
-			s.split(|c: char| spacer == c.to_string(),).map(|s| s.to_string(),).collect()
+			s.split(|c: char| spacer == c.to_string(),)
+				.map(|s| s.to_string(),)
+				.collect()
 		}
 	}
 
@@ -150,13 +157,21 @@ fn is_xxx_format_with_case(
 		match form {
 			Form::StartWithUpper => Box::new(|s| {
 				s.starts_with(|c: char| c.is_ascii_uppercase(),)
-					&& s.chars().all(|c| c.is_ascii_alphanumeric() && spacer_checker()(c,),)
+					&& s.chars().all(|c| {
+						c.is_ascii_alphanumeric() && spacer_checker()(c,)
+					},)
 			},),
 			Form::Upper => Box::new(|s| {
-				s.chars().all(|c| c.is_ascii_uppercase() || c.is_numeric() || spacer_checker()(c,),)
+				s.chars().all(|c| {
+					c.is_ascii_uppercase()
+						|| c.is_numeric() || spacer_checker()(c,)
+				},)
 			},),
 			Form::Lower => Box::new(|s| {
-				s.chars().all(|c| c.is_ascii_lowercase() || c.is_numeric() || spacer_checker()(c,),)
+				s.chars().all(|c| {
+					c.is_ascii_lowercase()
+						|| c.is_numeric() || spacer_checker()(c,)
+				},)
 			},),
 		}
 	};
@@ -212,7 +227,8 @@ impl StringKind for PathBuf {
 		unimplemented!("you should not use `PathBuf::from`")
 		// let s: String = s.into();
 		// let s = s.as_str();
-		// PathBuf::from_str(s,).expect("s contains invalid character for path representation",)
+		// PathBuf::from_str(s,).expect("s contains invalid character for path
+		// representation",)
 	}
 
 	#[allow(refining_impl_trait)]
@@ -301,7 +317,8 @@ mod tests {
 	fn test_string_to_snake() {
 		let camel_case = "HelloWorldTest".to_string();
 		let snake: String = camel_case.to_snake();
-		// The actual behavior produces "helloworldtest" because camel case doesn't have a spacer
+		// The actual behavior produces "helloworldtest" because camel case
+		// doesn't have a spacer
 		assert_eq!(snake, "hello_world_test");
 
 		let kebab_case = "hello-world-test".to_string();
@@ -325,7 +342,8 @@ mod tests {
 
 		let camel_case = "HelloWorldTest".to_string();
 		let screaming: String = camel_case.to_screaming_snake();
-		// Due to bugs in words() method for camel case, this won't work as expected
+		// Due to bugs in words() method for camel case, this won't work as
+		// expected
 		assert!(!screaming.is_empty());
 	}
 
@@ -343,7 +361,8 @@ mod tests {
 
 		let camel_case = "HelloWorldTest".to_string();
 		let kebab: String = camel_case.to_kebab();
-		// The actual behavior produces "helloworldtest" because camel case doesn't have a spacer
+		// The actual behavior produces "helloworldtest" because camel case
+		// doesn't have a spacer
 		assert_eq!(kebab, "hello-world-test");
 	}
 
@@ -385,8 +404,8 @@ mod tests {
 		// Test camel case word extraction - the current implementation has bugs
 		let camel_case = "HelloWorldTest".to_string();
 		let words = camel_case.words();
-		// The current implementation produces empty strings and doesn't work correctly
-		// Just verify it returns something
+		// The current implementation produces empty strings and doesn't work
+		// correctly Just verify it returns something
 		assert!(!words.is_empty());
 	}
 
@@ -446,91 +465,147 @@ mod tests {
 	fn test_is_xxx_format_with_case() {
 		// Test snake case (lowercase with underscores)
 		assert!(is_xxx_format_with_case("hello_world", Some('_'), Form::Lower));
-		assert!(!is_xxx_format_with_case("Hello_World", Some('_'), Form::Lower));
-		assert!(!is_xxx_format_with_case("hello-world", Some('_'), Form::Lower));
+		assert!(!is_xxx_format_with_case(
+			"Hello_World",
+			Some('_'),
+			Form::Lower
+		));
+		assert!(!is_xxx_format_with_case(
+			"hello-world",
+			Some('_'),
+			Form::Lower
+		));
 
 		// Test screaming snake case (uppercase with underscores)
 		assert!(is_xxx_format_with_case("HELLO_WORLD", Some('_'), Form::Upper));
-		assert!(!is_xxx_format_with_case("hello_world", Some('_'), Form::Upper));
-		assert!(!is_xxx_format_with_case("HELLO-WORLD", Some('_'), Form::Upper));
+		assert!(!is_xxx_format_with_case(
+			"hello_world",
+			Some('_'),
+			Form::Upper
+		));
+		assert!(!is_xxx_format_with_case(
+			"HELLO-WORLD",
+			Some('_'),
+			Form::Upper
+		));
 
 		// Test kebab case (lowercase with hyphens)
 		assert!(is_xxx_format_with_case("hello-world", Some('-'), Form::Lower));
-		assert!(!is_xxx_format_with_case("Hello-World", Some('-'), Form::Lower));
-		assert!(!is_xxx_format_with_case("hello_world", Some('-'), Form::Lower));
+		assert!(!is_xxx_format_with_case(
+			"Hello-World",
+			Some('-'),
+			Form::Lower
+		));
+		assert!(!is_xxx_format_with_case(
+			"hello_world",
+			Some('-'),
+			Form::Lower
+		));
 
 		// Test camel case (starts with uppercase, no separators)
-		assert!(is_xxx_format_with_case("HelloWorld", None, Form::StartWithUpper));
-		assert!(is_xxx_format_with_case("CamelCase", None, Form::StartWithUpper));
-		assert!(!is_xxx_format_with_case("camelCase", None, Form::StartWithUpper));
-		assert!(!is_xxx_format_with_case("hello_world", None, Form::StartWithUpper));
+		assert!(is_xxx_format_with_case(
+			"HelloWorld",
+			None,
+			Form::StartWithUpper
+		));
+		assert!(is_xxx_format_with_case(
+			"CamelCase",
+			None,
+			Form::StartWithUpper
+		));
+		assert!(!is_xxx_format_with_case(
+			"camelCase",
+			None,
+			Form::StartWithUpper
+		));
+		assert!(!is_xxx_format_with_case(
+			"hello_world",
+			None,
+			Form::StartWithUpper
+		));
 	}
 
 	// Test PathBuf implementations
 	#[test]
 	fn test_pathbuf_case_detection() {
 		// Test with file extension - dots break case detection
-		let snake_path = <std::path::PathBuf as std::convert::From<&str,>>::from(
-			"/path/to/snake_case_file.txt",
-		);
+		let snake_path =
+			<std::path::PathBuf as std::convert::From<&str,>>::from(
+				"/path/to/snake_case_file.txt",
+			);
 		assert!(snake_path.is_snake());
 		assert!(!snake_path.is_camel()); // The filename doesn't start with uppercase
 
 		// Test without extension
 		let snake_no_ext =
-			<std::path::PathBuf as std::convert::From<&str,>>::from("/path/to/snake_case_file",);
+			<std::path::PathBuf as std::convert::From<&str,>>::from(
+				"/path/to/snake_case_file",
+			);
 		assert!(snake_no_ext.is_snake()); // snake_case_file is valid snake case
 
 		let camel_path =
-			<std::path::PathBuf as std::convert::From<&str,>>::from("/path/to/CamelCaseFile.txt",);
+			<std::path::PathBuf as std::convert::From<&str,>>::from(
+				"/path/to/CamelCaseFile.txt",
+			);
 		assert!(camel_path.is_camel()); // CamelCaseFile.txt starts with uppercase
-		// PathBuf's is_kebab incorrectly calls is_screaming_snake, so this will be false
+		// PathBuf's is_kebab incorrectly calls is_screaming_snake, so this will
+		// be false
 		assert!(!camel_path.is_kebab()); // Note: this is due to the bug in PathBuf::is_kebab
 	}
 
 	#[test]
 	fn test_pathbuf_dump_string() {
-		let path =
-			<std::path::PathBuf as std::convert::From<&str,>>::from("/path/to/test_file.txt",);
+		let path = <std::path::PathBuf as std::convert::From<&str,>>::from(
+			"/path/to/test_file.txt",
+		);
 		assert_eq!(path.dump_string(), "test_file");
 
-		let path = <std::path::PathBuf as std::convert::From<&str,>>::from("simple_file.txt",);
+		let path = <std::path::PathBuf as std::convert::From<&str,>>::from(
+			"simple_file.txt",
+		);
 		assert_eq!(path.dump_string(), "simple_file");
 	}
 
 	#[test]
 	fn test_pathbuf_find_spacer() {
-		let snake_path = <std::path::PathBuf as std::convert::From<&str,>>::from(
-			"/path/to/snake_case_file.txt",
-		);
+		let snake_path =
+			<std::path::PathBuf as std::convert::From<&str,>>::from(
+				"/path/to/snake_case_file.txt",
+			);
 		let spacer: Option<String,> = snake_path.find_spacer();
 		assert_eq!(spacer, Some("_".to_string()));
 
-		let kebab_path = <std::path::PathBuf as std::convert::From<&str,>>::from(
-			"/path/to/kebab-case-file.txt",
-		);
+		let kebab_path =
+			<std::path::PathBuf as std::convert::From<&str,>>::from(
+				"/path/to/kebab-case-file.txt",
+			);
 		let spacer: Option<String,> = kebab_path.find_spacer();
 		assert_eq!(spacer, Some("-".to_string()));
 	}
 
 	#[test]
 	fn test_pathbuf_words() {
-		let snake_path = <std::path::PathBuf as std::convert::From<&str,>>::from(
-			"/path/to/snake_case_file.txt",
-		);
+		let snake_path =
+			<std::path::PathBuf as std::convert::From<&str,>>::from(
+				"/path/to/snake_case_file.txt",
+			);
 		let words = snake_path.words();
 		assert_eq!(words, vec!["snake", "case", "file"]);
 	}
 
 	#[test]
 	fn test_pathbuf_as_string_kind() {
-		let path = <std::path::PathBuf as std::convert::From<&str,>>::from("/path/to/test.txt",);
+		let path = <std::path::PathBuf as std::convert::From<&str,>>::from(
+			"/path/to/test.txt",
+		);
 		assert!(path.as_string_kind().is_some());
 	}
 
 	#[test]
 	fn test_pathbuf_as_case_convert() {
-		let path = <std::path::PathBuf as std::convert::From<&str,>>::from("/path/to/test.txt",);
+		let path = <std::path::PathBuf as std::convert::From<&str,>>::from(
+			"/path/to/test.txt",
+		);
 		assert!(path.as_case_convert().is_some());
 	}
 
@@ -657,9 +732,10 @@ mod tests {
 
 	#[test]
 	fn test_pathbuf_enhanced_integration() {
-		let snake_path = <std::path::PathBuf as std::convert::From<&str,>>::from(
-			"/path/to/hello_world_test.txt",
-		);
+		let snake_path =
+			<std::path::PathBuf as std::convert::From<&str,>>::from(
+				"/path/to/hello_world_test.txt",
+			);
 
 		assert!(snake_path.is_snake());
 		assert_eq!(snake_path.dump_string(), "hello_world_test");
@@ -677,7 +753,8 @@ mod tests {
 	#[test]
 	#[should_panic(expected = "failed to get file/dir name")]
 	fn test_pathbuf_dump_string_no_filename() {
-		let path = <std::path::PathBuf as std::convert::From<&str,>>::from("/",);
+		let path =
+			<std::path::PathBuf as std::convert::From<&str,>>::from("/",);
 		let _ = path.dump_string();
 	}
 
@@ -880,11 +957,13 @@ mod tests {
 		// Test the case_transit method directly
 		let snake_case = "hello_world".to_string();
 		let upper_converter = |s: String| s.to_uppercase();
-		let result: String = snake_case.case_transit(upper_converter, Some('_',),);
+		let result: String =
+			snake_case.case_transit(upper_converter, Some('_',),);
 		assert_eq!(result, "HELLO_WORLD");
 
 		let lower_converter = |s: String| s.to_lowercase();
-		let result: String = snake_case.case_transit(lower_converter, Some('_',),);
+		let result: String =
+			snake_case.case_transit(lower_converter, Some('_',),);
 		assert_eq!(result, "hello_world");
 	}
 
@@ -905,13 +984,15 @@ mod tests {
 	#[test]
 	fn test_pathbuf_edge_cases() {
 		// Test PathBuf implementations with edge cases
-		let root_path = <std::path::PathBuf as std::convert::From<&str,>>::from("/",);
+		let root_path =
+			<std::path::PathBuf as std::convert::From<&str,>>::from("/",);
 		// This should panic when trying to get filename, but we'll catch it
 		let result = std::panic::catch_unwind(|| root_path.dump_string(),);
 		assert!(result.is_err());
 
 		// Test with current directory
-		let current_dir = <std::path::PathBuf as std::convert::From<&str,>>::from(".",);
+		let current_dir =
+			<std::path::PathBuf as std::convert::From<&str,>>::from(".",);
 		let result = std::panic::catch_unwind(|| current_dir.dump_string(),);
 		// This might succeed or fail depending on the system
 		let _ = result;
@@ -921,43 +1002,52 @@ mod tests {
 	fn test_pathbuf_case_detection_edge_cases() {
 		// Test PathBuf case detection with various filename patterns
 		let snake_file =
-			<std::path::PathBuf as std::convert::From<&str,>>::from("/path/to/snake_case_file",);
+			<std::path::PathBuf as std::convert::From<&str,>>::from(
+				"/path/to/snake_case_file",
+			);
 		assert!(snake_file.is_snake());
 
 		let camel_file =
-			<std::path::PathBuf as std::convert::From<&str,>>::from("/path/to/CamelCaseFile",);
+			<std::path::PathBuf as std::convert::From<&str,>>::from(
+				"/path/to/CamelCaseFile",
+			);
 		assert!(camel_file.is_camel());
 
 		let kebab_file =
-			<std::path::PathBuf as std::convert::From<&str,>>::from("/path/to/kebab-case-file",);
+			<std::path::PathBuf as std::convert::From<&str,>>::from(
+				"/path/to/kebab-case-file",
+			);
 		assert!(kebab_file.is_kebab());
 
-		let screaming_file = <std::path::PathBuf as std::convert::From<&str,>>::from(
-			"/path/to/SCREAMING_SNAKE_FILE",
-		);
+		let screaming_file =
+			<std::path::PathBuf as std::convert::From<&str,>>::from(
+				"/path/to/SCREAMING_SNAKE_FILE",
+			);
 		assert!(screaming_file.is_screaming_snake());
 	}
 
 	#[test]
 	fn test_pathbuf_with_extensions() {
 		// Test PathBuf behavior with various file extensions
-		let extensions =
-			vec![".txt", ".rs", ".toml", ".md", ".json", ".xml", ".html", ".css", ".js"];
+		let extensions = vec![
+			".txt", ".rs", ".toml", ".md", ".json", ".xml", ".html", ".css",
+			".js",
+		];
 
 		for ext in extensions {
 			let filename = format!("test_file{}", ext);
-			let path = <std::path::PathBuf as std::convert::From<String,>>::from(format!(
-				"/path/to/{}",
-				filename
-			),);
+			let path =
+				<std::path::PathBuf as std::convert::From<String,>>::from(
+					format!("/path/to/{}", filename),
+				);
 			assert_eq!(path.dump_string(), filename.split('.').next().unwrap());
 
 			// Test case detection with extensions
 			let snake_with_ext = format!("snake_case_file{}", ext);
-			let path = <std::path::PathBuf as std::convert::From<String,>>::from(format!(
-				"/path/to/{}",
-				snake_with_ext
-			),);
+			let path =
+				<std::path::PathBuf as std::convert::From<String,>>::from(
+					format!("/path/to/{}", snake_with_ext),
+				);
 			assert!(path.is_snake());
 		}
 	}
@@ -1041,7 +1131,9 @@ mod tests {
 	#[test]
 	fn test_pathbuf_string_kind_trait() {
 		// Test StringKind trait implementation for PathBuf
-		let path = <std::path::PathBuf as std::convert::From<&str,>>::from("/path/to/test.txt",);
+		let path = <std::path::PathBuf as std::convert::From<&str,>>::from(
+			"/path/to/test.txt",
+		);
 
 		let dumped = path.dump_string();
 		assert_eq!(dumped, "test");

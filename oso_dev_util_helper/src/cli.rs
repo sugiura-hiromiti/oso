@@ -1,11 +1,13 @@
-// NOTE:  this file must be copied to oso_proc_macro_logic_2/src/lib.rs on every build
+// NOTE:  this file must be copied to oso_proc_macro_logic_2/src/lib.rs on every
+// build
 use anyhow::Result as Rslt;
 use colored::Colorize;
 use std::ffi::OsStr;
 use std::process::Command;
 use std::process::Stdio;
 
-/// Trait for enhanced command execution with better error handling and output formatting
+/// Trait for enhanced command execution with better error handling and output
+/// formatting
 ///
 /// The `Run` trait extends the standard [`Command`] functionality with:
 /// - Colored command output display
@@ -13,8 +15,8 @@ use std::process::Stdio;
 /// - Enhanced error handling with context
 /// - Command argument formatting
 ///
-/// This trait is particularly useful for development tools and build scripts where
-/// clear command output and error reporting are essential.
+/// This trait is particularly useful for development tools and build scripts
+/// where clear command output and error reporting are essential.
 ///
 /// # Examples
 ///
@@ -42,7 +44,8 @@ pub trait Run {
 	/// # Returns
 	///
 	/// * `Ok(())` - If the command executed successfully (exit code 0)
-	/// * `Err(anyhow::Error)` - If the command failed or returned a non-zero exit code
+	/// * `Err(anyhow::Error)` - If the command failed or returned a non-zero
+	///   exit code
 	///
 	/// # Errors
 	///
@@ -81,15 +84,19 @@ pub trait Run {
 impl Run for Command {
 	/// Executes the command with enhanced formatting and error handling
 	///
-	/// This implementation provides a user-friendly command execution experience
-	/// with colored output, proper error handling, and stdio inheritance.
+	/// This implementation provides a user-friendly command execution
+	/// experience with colored output, proper error handling, and stdio
+	/// inheritance.
 	///
 	/// # Implementation Details
 	///
-	/// 1. **Command Display**: Formats and displays the command with arguments in bold blue
-	/// 2. **Stdio Configuration**: Inherits stdout, stderr, and stdin from the parent process
+	/// 1. **Command Display**: Formats and displays the command with arguments
+	///    in bold blue
+	/// 2. **Stdio Configuration**: Inherits stdout, stderr, and stdin from the
+	///    parent process
 	/// 3. **Execution**: Runs the command and waits for completion
-	/// 4. **Error Checking**: Validates the exit status and converts errors to `anyhow::Error`
+	/// 4. **Error Checking**: Validates the exit status and converts errors to
+	///    `anyhow::Error`
 	///
 	/// # Examples
 	///
@@ -109,7 +116,10 @@ impl Run for Command {
 		let cmd_dsply = format!(
 			"{} {}",
 			self.get_program().display(),
-			self.get_args().collect::<Vec<&OsStr,>>().join(OsStr::new(" ")).display()
+			self.get_args()
+				.collect::<Vec<&OsStr,>>()
+				.join(OsStr::new(" "))
+				.display()
 		);
 
 		// Display the command in bold blue for visibility
@@ -178,7 +188,8 @@ mod tests {
 
 	#[test]
 	fn test_run_trait_multiple_calls() {
-		// Test that we can call run multiple times on different command instances
+		// Test that we can call run multiple times on different command
+		// instances
 		let mut cmd1 = Command::new("echo",);
 		cmd1.arg("first",);
 		assert!(cmd1.run().is_ok());
@@ -194,8 +205,9 @@ mod tests {
 		cmd.current_dir("/tmp",);
 
 		let result = cmd.run();
-		// This might fail on some systems if /tmp doesn't exist or pwd isn't available
-		// but we're mainly testing that the trait works with current_dir
+		// This might fail on some systems if /tmp doesn't exist or pwd isn't
+		// available but we're mainly testing that the trait works with
+		// current_dir
 		let _ = result; // Don't assert success since it's system-dependent
 	}
 
@@ -214,8 +226,11 @@ mod tests {
 	#[test]
 	fn test_command_builder_pattern() {
 		// Test that we can use the builder pattern with our trait
-		let result =
-			Command::new("echo",).arg("builder",).arg("pattern",).env("TEST", "value",).run();
+		let result = Command::new("echo",)
+			.arg("builder",)
+			.arg("pattern",)
+			.env("TEST", "value",)
+			.run();
 
 		assert!(result.is_ok(), "Builder pattern should work");
 	}
@@ -256,7 +271,10 @@ mod tests {
 		cmd.args(&["-c", "echo 'error message' >&2",],);
 
 		let result = cmd.run();
-		assert!(result.is_ok(), "Command writing to stderr should still succeed if exit code is 0");
+		assert!(
+			result.is_ok(),
+			"Command writing to stderr should still succeed if exit code is 0"
+		);
 	}
 
 	#[test]
@@ -266,7 +284,10 @@ mod tests {
 		cmd.args(&["-c", "exit 1",],);
 
 		let result = cmd.run();
-		assert!(result.is_err(), "Non-zero exit code should be treated as error");
+		assert!(
+			result.is_err(),
+			"Non-zero exit code should be treated as error"
+		);
 	}
 
 	#[test]
@@ -292,7 +313,8 @@ mod tests {
 	#[test]
 	fn test_run_trait_command_not_found_vs_execution_failure() {
 		// Test the difference between command not found and execution failure
-		let mut nonexistent_cmd = Command::new("definitely_nonexistent_command_12345",);
+		let mut nonexistent_cmd =
+			Command::new("definitely_nonexistent_command_12345",);
 		let nonexistent_result = nonexistent_cmd.run();
 		assert!(nonexistent_result.is_err());
 
@@ -301,7 +323,8 @@ mod tests {
 		assert!(failing_result.is_err());
 
 		// Both should fail, but potentially with different error types
-		// We can't easily distinguish them in the test, but both should be errors
+		// We can't easily distinguish them in the test, but both should be
+		// errors
 	}
 
 	#[test]
@@ -500,7 +523,8 @@ mod tests {
 	#[test]
 	fn test_run_trait_with_path_commands() {
 		// Test commands with full paths
-		let common_paths = vec!["/bin/echo", "/usr/bin/echo", "/bin/true", "/usr/bin/true"];
+		let common_paths =
+			vec!["/bin/echo", "/usr/bin/echo", "/bin/true", "/usr/bin/true"];
 
 		for path in common_paths {
 			if std::path::Path::new(path,).exists() {
@@ -508,7 +532,11 @@ mod tests {
 				cmd.arg("path_test",);
 
 				let result = cmd.run();
-				assert!(result.is_ok(), "Command with full path should work: {}", path);
+				assert!(
+					result.is_ok(),
+					"Command with full path should work: {}",
+					path
+				);
 				break; // Only test the first available one
 			}
 		}
@@ -526,7 +554,11 @@ mod tests {
 	#[test]
 	fn test_run_trait_command_chaining_simulation() {
 		// Simulate command chaining by running multiple commands in sequence
-		let commands = vec![vec!["echo", "first"], vec!["echo", "second"], vec!["echo", "third"]];
+		let commands = vec![
+			vec!["echo", "first"],
+			vec!["echo", "second"],
+			vec!["echo", "third"],
+		];
 
 		for args in commands {
 			let mut cmd = Command::new(&args[0],);
