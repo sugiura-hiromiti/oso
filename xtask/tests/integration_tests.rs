@@ -41,7 +41,8 @@ fn test_xtask_help() {
 /// Test workspace detection functionality
 #[test]
 fn test_workspace_detection() {
-	// This test verifies that the workspace can be detected from the xtask directory
+	// This test verifies that the workspace can be detected from the xtask
+	// directory
 	let current_dir = env::current_dir().unwrap();
 
 	// The workspace detection should work from the xtask directory
@@ -49,7 +50,8 @@ fn test_workspace_detection() {
 
 	// Test that we can find the parent OSO directory
 	let mut oso_root = current_dir.clone();
-	while oso_root.file_name().unwrap() != "oso" && oso_root.parent().is_some() {
+	while oso_root.file_name().unwrap() != "oso" && oso_root.parent().is_some()
+	{
 		oso_root = oso_root.parent().unwrap().to_path_buf();
 	}
 
@@ -63,7 +65,8 @@ fn test_workspace_structure() {
 	let mut oso_root = current_dir.clone();
 
 	// Find OSO root
-	while oso_root.file_name().unwrap() != "oso" && oso_root.parent().is_some() {
+	while oso_root.file_name().unwrap() != "oso" && oso_root.parent().is_some()
+	{
 		oso_root = oso_root.parent().unwrap().to_path_buf();
 	}
 
@@ -71,8 +74,16 @@ fn test_workspace_structure() {
 	let loader_dir = oso_root.join("oso_loader",);
 	let kernel_dir = oso_root.join("oso_kernel",);
 
-	assert!(loader_dir.exists(), "oso_loader directory should exist at {:?}", loader_dir);
-	assert!(kernel_dir.exists(), "oso_kernel directory should exist at {:?}", kernel_dir);
+	assert!(
+		loader_dir.exists(),
+		"oso_loader directory should exist at {:?}",
+		loader_dir
+	);
+	assert!(
+		kernel_dir.exists(),
+		"oso_kernel directory should exist at {:?}",
+		kernel_dir
+	);
 }
 
 /// Test that Cargo.toml files exist for loader and kernel
@@ -82,13 +93,22 @@ fn test_cargo_manifests_exist() {
 	let mut oso_root = current_dir.clone();
 
 	// Find OSO root
-	while oso_root.file_name().unwrap() != "oso" && oso_root.parent().is_some() {
+	while oso_root.file_name().unwrap() != "oso" && oso_root.parent().is_some()
+	{
 		oso_root = oso_root.parent().unwrap().to_path_buf();
 	}
 
 	let loader_manifest = oso_root.join("oso_loader",).join("Cargo.toml",);
 	let kernel_manifest = oso_root.join("oso_kernel",).join("Cargo.toml",);
 
-	assert!(loader_manifest.exists(), "Loader Cargo.toml should exist at {:?}", loader_manifest);
-	assert!(kernel_manifest.exists(), "Kernel Cargo.toml should exist at {:?}", kernel_manifest);
+	assert!(
+		loader_manifest.exists(),
+		"Loader Cargo.toml should exist at {:?}",
+		loader_manifest
+	);
+	assert!(
+		kernel_manifest.exists(),
+		"Kernel Cargo.toml should exist at {:?}",
+		kernel_manifest
+	);
 }

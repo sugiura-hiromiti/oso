@@ -1,11 +1,12 @@
 //! # ELF Header Parsing Module
 //!
-//! This module provides functionality for parsing ELF (Executable and Linkable Format)
-//! headers from the OSO kernel binary. It uses the `readelf` command-line tool to extract
-//! header information and parses it into structured Rust types.
+//! This module provides functionality for parsing ELF (Executable and Linkable
+//! Format) headers from the OSO kernel binary. It uses the `readelf`
+//! command-line tool to extract header information and parses it into
+//! structured Rust types.
 //!
-//! The module is primarily used for build-time analysis and validation of the kernel
-//! binary to ensure it meets the expected format and requirements.
+//! The module is primarily used for build-time analysis and validation of the
+//! kernel binary to ensure it meets the expected format and requirements.
 
 use crate::RsltP;
 use crate::check_oso_kernel;
@@ -61,11 +62,13 @@ pub struct ReadElfH {
 }
 
 impl ReadElfH {
-	/// Cleans up the parsed header fields by removing extra whitespace and comments
+	/// Cleans up the parsed header fields by removing extra whitespace and
+	/// comments
 	///
-	/// The `readelf` command often includes additional information after the main
-	/// value (like comments or explanations). This method extracts just the first
-	/// word/value from each field, which is typically the actual data we need.
+	/// The `readelf` command often includes additional information after the
+	/// main value (like comments or explanations). This method extracts just
+	/// the first word/value from each field, which is typically the actual
+	/// data we need.
 	///
 	/// # Examples
 	///
@@ -74,11 +77,28 @@ impl ReadElfH {
 	/// - "little endian" becomes "little"
 	fn fix(&mut self,) {
 		// Extract first word from each field (split on whitespace)
-		self.file_class = self.file_class.split_whitespace().next().unwrap_or("",).to_string();
-		self.endianness = self.endianness.split_whitespace().next().unwrap_or("",).to_string();
-		self.elf_version = self.elf_version.split_whitespace().next().unwrap_or("",).to_string();
-		// Note: target_os_abi is intentionally not processed as it may contain spaces
-		self.abi_version = self.abi_version.split(" ",).nth(0,).unwrap().to_string();
+		self.file_class = self
+			.file_class
+			.split_whitespace()
+			.next()
+			.unwrap_or("",)
+			.to_string();
+		self.endianness = self
+			.endianness
+			.split_whitespace()
+			.next()
+			.unwrap_or("",)
+			.to_string();
+		self.elf_version = self
+			.elf_version
+			.split_whitespace()
+			.next()
+			.unwrap_or("",)
+			.to_string();
+		// Note: target_os_abi is intentionally not processed as it may contain
+		// spaces
+		self.abi_version =
+			self.abi_version.split(" ",).nth(0,).unwrap().to_string();
 		self.ty = self.ty.split(" ",).nth(0,).unwrap().to_string();
 		self.machine = self.machine.split(" ",).nth(0,).unwrap().to_string();
 		self.version = self.version.split(" ",).nth(0,).unwrap().to_string();
@@ -88,13 +108,22 @@ impl ReadElfH {
 		self.section_header_offset =
 			self.section_header_offset.split(" ",).nth(0,).unwrap().to_string();
 		self.flags = self.flags.split(" ",).nth(0,).unwrap().to_string();
-		self.elf_header_size = self.elf_header_size.split(" ",).nth(0,).unwrap().to_string();
-		self.program_header_entry_size =
-			self.program_header_entry_size.split(" ",).nth(0,).unwrap().to_string();
+		self.elf_header_size =
+			self.elf_header_size.split(" ",).nth(0,).unwrap().to_string();
+		self.program_header_entry_size = self
+			.program_header_entry_size
+			.split(" ",)
+			.nth(0,)
+			.unwrap()
+			.to_string();
 		self.program_header_count =
 			self.program_header_count.split(" ",).nth(0,).unwrap().to_string();
-		self.section_header_entry_size =
-			self.section_header_entry_size.split(" ",).nth(0,).unwrap().to_string();
+		self.section_header_entry_size = self
+			.section_header_entry_size
+			.split(" ",)
+			.nth(0,)
+			.unwrap()
+			.to_string();
 		self.section_header_count =
 			self.section_header_count.split(" ",).nth(0,).unwrap().to_string();
 		self.section_header_index_of_section_name_string_table = self
@@ -147,9 +176,10 @@ pub fn test_elf_header_parse(rslt: proc_macro2::TokenStream,) -> RsltP {
 
 /// Generates token stream for expected ELF header information.
 ///
-/// This function executes `readelf -h` on the target binary and parses the output
-/// to create a token stream representing the expected ELF header structure. This
-/// is used by the `test_elf_header_parse` macro to validate ELF header parsing.
+/// This function executes `readelf -h` on the target binary and parses the
+/// output to create a token stream representing the expected ELF header
+/// structure. This is used by the `test_elf_header_parse` macro to validate ELF
+/// header parsing.
 ///
 /// # Returns
 ///
@@ -172,7 +202,8 @@ pub fn test_elf_header_parse(rslt: proc_macro2::TokenStream,) -> RsltP {
 /// - `program_header_count`: Number of program header entries
 /// - `section_header_entry_size`: Size of section header entries
 /// - `section_header_count`: Number of section header entries
-/// - `section_header_index_of_section_name_string_table`: Index of section name string table
+/// - `section_header_index_of_section_name_string_table`: Index of section name
+///   string table
 ///
 /// # Panics
 ///
@@ -243,8 +274,8 @@ pub fn elf_header_info() -> RsltP {
 ///
 /// # Returns
 ///
-/// Returns a token stream representing an `ElfHeaderIdent` struct initialization
-/// with all identification fields populated.
+/// Returns a token stream representing an `ElfHeaderIdent` struct
+/// initialization with all identification fields populated.
 ///
 /// # ELF Identification Fields
 ///
@@ -257,7 +288,8 @@ fn elf_header_ident_build(header: &ReadElfH,) -> RsltP {
 	let (file_class, mut diag,) = parse_file_class(header,)?;
 	let (endianness, mut diag_endianness,) = parse_endianness(header,)?;
 	let (elf_version, mut diag_elf_version,) = parse_elf_version(header,)?;
-	let (target_os_abi, mut diag_target_os_abi,) = parse_target_os_abi(header,)?;
+	let (target_os_abi, mut diag_target_os_abi,) =
+		parse_target_os_abi(header,)?;
 	let (abi_version, mut diag_abi_version,) = parse_abi_version(header,)?;
 
 	diag.append(&mut diag_endianness,);
@@ -281,8 +313,8 @@ fn elf_header_ident_build(header: &ReadElfH,) -> RsltP {
 
 /// Parses the ELF file class from readelf output.
 ///
-/// Converts the file class string from readelf into the appropriate enum variant.
-/// The file class indicates whether the ELF file is 32-bit or 64-bit.
+/// Converts the file class string from readelf into the appropriate enum
+/// variant. The file class indicates whether the ELF file is 32-bit or 64-bit.
 ///
 /// # Parameters
 ///
@@ -388,12 +420,10 @@ fn parse_elf_version(header: &ReadElfH,) -> RsltP {
 		},
 	};
 
-	Ok(
-		(
-			elf_version.clone(),
-			vec![Diag::Warn(format!("unrecognized elf version: {elf_version}"),)],
-		),
-	)
+	Ok((
+		elf_version.clone(),
+		vec![Diag::Warn(format!("unrecognized elf version: {elf_version}"),)],
+	),)
 }
 
 /// Parses the target OS ABI from readelf output.
@@ -473,12 +503,10 @@ fn parse_abi_version(header: &ReadElfH,) -> RsltP {
 		},
 	};
 
-	Ok(
-		(
-			abi_version.clone(),
-			vec![Diag::Warn(format!("unrecognized abi version: {abi_version}"),)],
-		),
-	)
+	Ok((
+		abi_version.clone(),
+		vec![Diag::Warn(format!("unrecognized abi version: {abi_version}"),)],
+	),)
 }
 
 /// Parses the ELF file type from readelf output.
@@ -534,7 +562,8 @@ fn parse_ty(header: &ReadElfH,) -> RsltP {
 ///
 /// # Examples
 ///
-/// - "Advanced Micro Devices X86-64" -> `ElfHeader::EM_ADVANCED_MICRO_DEVICES_X86-64`
+/// - "Advanced Micro Devices X86-64" ->
+///   `ElfHeader::EM_ADVANCED_MICRO_DEVICES_X86-64`
 /// - "AArch64" -> `ElfHeader::EM_AARCH64`
 fn parse_machine(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	// Normalize machine name: uppercase and replace spaces with underscores
@@ -543,7 +572,9 @@ fn parse_machine(header: &ReadElfH,) -> proc_macro2::TokenStream {
 		.as_str()
 		.chars()
 		.map(|c| match c {
-			cap if cap.is_ascii_lowercase() => (cap as u8 + b'A' - b'a') as char,
+			cap if cap.is_ascii_lowercase() => {
+				(cap as u8 + b'A' - b'a') as char
+			},
 			' ' => '_',
 			_ => c,
 		},)
@@ -564,8 +595,9 @@ fn parse_machine(header: &ReadElfH,) -> proc_macro2::TokenStream {
 fn parse_version(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let version = header.version.as_str();
 	let version = &version[2..]; // Remove "0x" prefix
-	let version = u32::from_str_radix(version, 16,)
-		.unwrap_or_else(|_| panic!("version must be valid hex number: {version}"),);
+	let version = u32::from_str_radix(version, 16,).unwrap_or_else(|_| {
+		panic!("version must be valid hex number: {version}")
+	},);
 
 	quote::quote! {
 		#version
@@ -577,8 +609,9 @@ fn parse_version(header: &ReadElfH,) -> proc_macro2::TokenStream {
 fn parse_entry(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let entry = header.entry.as_str();
 	let entry = &entry[2..]; // Remove "0x" prefix
-	let entry = u64::from_str_radix(entry, 16,)
-		.unwrap_or_else(|_| panic!("entry point address must be valid hex number: {entry}"),);
+	let entry = u64::from_str_radix(entry, 16,).unwrap_or_else(|_| {
+		panic!("entry point address must be valid hex number: {entry}")
+	},);
 
 	quote::quote! {
 		#entry
@@ -589,9 +622,13 @@ fn parse_entry(header: &ReadElfH,) -> proc_macro2::TokenStream {
 /// Expects a decimal string.
 fn parse_program_header_offset(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let program_header_offset = header.program_header_offset.as_str();
-	let program_header_offset = program_header_offset.parse::<u64>().unwrap_or_else(|_| {
-		panic!("program_header_offset address must be valid hex number: {program_header_offset}")
-	},);
+	let program_header_offset =
+		program_header_offset.parse::<u64>().unwrap_or_else(|_| {
+			panic!(
+				"program_header_offset address must be valid hex number: \
+				 {program_header_offset}"
+			)
+		},);
 
 	quote::quote! {
 		#program_header_offset
@@ -602,9 +639,13 @@ fn parse_program_header_offset(header: &ReadElfH,) -> proc_macro2::TokenStream {
 /// Expects a decimal string.
 fn parse_section_header_offset(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let section_header_offset = header.section_header_offset.as_str();
-	let section_header_offset = section_header_offset.parse::<u64>().unwrap_or_else(|_| {
-		panic!("section_header_offset address must be valid hex number: {section_header_offset}")
-	},);
+	let section_header_offset =
+		section_header_offset.parse::<u64>().unwrap_or_else(|_| {
+			panic!(
+				"section_header_offset address must be valid hex number: \
+				 {section_header_offset}"
+			)
+		},);
 
 	quote::quote! {
 		#section_header_offset
@@ -628,9 +669,9 @@ fn parse_flags(header: &ReadElfH,) -> proc_macro2::TokenStream {
 /// Expects a decimal string.
 fn parse_elf_header_size(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let elf_header_size = header.elf_header_size.as_str();
-	let elf_header_size = elf_header_size
-		.parse::<u16>()
-		.unwrap_or_else(|_| panic!("elf_header_size must be valid hex number: {elf_header_size}"),);
+	let elf_header_size = elf_header_size.parse::<u16>().unwrap_or_else(|_| {
+		panic!("elf_header_size must be valid hex number: {elf_header_size}")
+	},);
 
 	quote::quote! {
 		#elf_header_size
@@ -639,11 +680,17 @@ fn parse_elf_header_size(header: &ReadElfH,) -> proc_macro2::TokenStream {
 
 /// Parses the program header entry size from readelf output.
 /// Expects a decimal string.
-fn parse_program_header_entry_size(header: &ReadElfH,) -> proc_macro2::TokenStream {
+fn parse_program_header_entry_size(
+	header: &ReadElfH,
+) -> proc_macro2::TokenStream {
 	let program_header_entry_size = header.program_header_entry_size.as_str();
-	let program_header_entry_size = program_header_entry_size.parse::<u16>().unwrap_or_else(|_| {
-		panic!("program_header_entry_size must be valid hex number: {program_header_entry_size}")
-	},);
+	let program_header_entry_size =
+		program_header_entry_size.parse::<u16>().unwrap_or_else(|_| {
+			panic!(
+				"program_header_entry_size must be valid hex number: \
+				 {program_header_entry_size}"
+			)
+		},);
 
 	quote::quote! {
 		#program_header_entry_size
@@ -654,9 +701,13 @@ fn parse_program_header_entry_size(header: &ReadElfH,) -> proc_macro2::TokenStre
 /// Expects a decimal string.
 fn parse_program_header_count(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let program_header_count = header.program_header_count.as_str();
-	let program_header_count = program_header_count.parse::<u16>().unwrap_or_else(|_| {
-		panic!("program_header_count must be valid hex number: {program_header_count}")
-	},);
+	let program_header_count =
+		program_header_count.parse::<u16>().unwrap_or_else(|_| {
+			panic!(
+				"program_header_count must be valid hex number: \
+				 {program_header_count}"
+			)
+		},);
 
 	quote::quote! {
 		#program_header_count
@@ -665,11 +716,17 @@ fn parse_program_header_count(header: &ReadElfH,) -> proc_macro2::TokenStream {
 
 /// Parses the section header entry size from readelf output.
 /// Expects a decimal string.
-fn parse_section_header_entry_size(header: &ReadElfH,) -> proc_macro2::TokenStream {
+fn parse_section_header_entry_size(
+	header: &ReadElfH,
+) -> proc_macro2::TokenStream {
 	let section_header_entry_size = header.section_header_entry_size.as_str();
-	let section_header_entry_size = section_header_entry_size.parse::<u16>().unwrap_or_else(|_| {
-		panic!("section_header_entry_size must be valid hex number: {section_header_entry_size}")
-	},);
+	let section_header_entry_size =
+		section_header_entry_size.parse::<u16>().unwrap_or_else(|_| {
+			panic!(
+				"section_header_entry_size must be valid hex number: \
+				 {section_header_entry_size}"
+			)
+		},);
 
 	quote::quote! {
 		#section_header_entry_size
@@ -680,9 +737,13 @@ fn parse_section_header_entry_size(header: &ReadElfH,) -> proc_macro2::TokenStre
 /// Expects a decimal string.
 fn parse_section_header_count(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let section_header_count = header.section_header_count.as_str();
-	let section_header_count = section_header_count.parse::<u16>().unwrap_or_else(|_| {
-		panic!("section_header_count must be valid hex number: {section_header_count}")
-	},);
+	let section_header_count =
+		section_header_count.parse::<u16>().unwrap_or_else(|_| {
+			panic!(
+				"section_header_count must be valid hex number: \
+				 {section_header_count}"
+			)
+		},);
 
 	quote::quote! {
 		#section_header_count
@@ -698,12 +759,15 @@ fn parse_section_header_index_of_section_name_string_table(
 	let section_header_index_of_section_name_string_table =
 		header.section_header_index_of_section_name_string_table.as_str();
 	let section_header_index_of_section_name_string_table =
-		section_header_index_of_section_name_string_table.parse::<u16>().unwrap_or_else(|_| {
-			panic!(
-				"section_header_index_of_section_name_string_table must be valid hex number: \
-				 {section_header_index_of_section_name_string_table}"
-			)
-		},);
+		section_header_index_of_section_name_string_table
+			.parse::<u16>()
+			.unwrap_or_else(|_| {
+				panic!(
+					"section_header_index_of_section_name_string_table must \
+					 be valid hex number: \
+					 {section_header_index_of_section_name_string_table}"
+				)
+			},);
 
 	quote::quote! {
 		#section_header_index_of_section_name_string_table
@@ -740,8 +804,10 @@ pub fn readelf_h() -> Rslt<ReadElfH,> {
 	check_oso_kernel()?;
 
 	// Execute readelf command to get header information
-	let header_info =
-		Command::new("readelf",).args(["-h", "target/oso_kernel.elf",],).output()?.stdout;
+	let header_info = Command::new("readelf",)
+		.args(["-h", "target/oso_kernel.elf",],)
+		.output()?
+		.stdout;
 
 	// Convert command output to string
 	let header_info = String::from_utf8(header_info,)?;
@@ -760,14 +826,16 @@ pub fn readelf_h() -> Rslt<ReadElfH,> {
 		}
 		if key_value.is_peoperty_of("Data",) {
 			// Extract endianness from "2's complement, little endian" format
-			header.endianness = key_value[1].split(" ",).nth(2,).unwrap().to_string();
+			header.endianness =
+				key_value[1].split(" ",).nth(2,).unwrap().to_string();
 		}
 		if key_value.is_peoperty_of("Version",) {
 			// Handle both ELF version and object version fields
 			if key_value[1].contains("0x",) {
 				header.version = key_value[1].to_string();
 			} else {
-				header.elf_version = key_value[1].split(" ",).next().unwrap().to_string();
+				header.elf_version =
+					key_value[1].split(" ",).next().unwrap().to_string();
 			}
 		}
 		if key_value.is_peoperty_of("OS/ABI",) {
@@ -786,7 +854,8 @@ pub fn readelf_h() -> Rslt<ReadElfH,> {
 			header.entry = key_value[1].to_string();
 		}
 		if key_value.is_peoperty_of("Start of program headers",) {
-			header.program_header_offset = key_value[1].split(" ",).next().unwrap().to_string();
+			header.program_header_offset =
+				key_value[1].split(" ",).next().unwrap().to_string();
 		}
 		if key_value.is_peoperty_of("Start of section headers",) {
 			header.section_header_offset = key_value[1].to_string();
@@ -795,10 +864,12 @@ pub fn readelf_h() -> Rslt<ReadElfH,> {
 			header.flags = key_value[1].to_string();
 		}
 		if key_value.is_peoperty_of("Size of this header",) {
-			header.elf_header_size = key_value[1].split(" ",).next().unwrap().to_string();
+			header.elf_header_size =
+				key_value[1].split(" ",).next().unwrap().to_string();
 		}
 		if key_value.is_peoperty_of("Size of program headers",) {
-			header.program_header_entry_size = key_value[1].split(" ",).next().unwrap().to_string();
+			header.program_header_entry_size =
+				key_value[1].split(" ",).next().unwrap().to_string();
 		}
 		if key_value.is_peoperty_of("Number of program headers",) {
 			header.program_header_count = key_value[1].to_string();
@@ -810,7 +881,8 @@ pub fn readelf_h() -> Rslt<ReadElfH,> {
 			header.section_header_count = key_value[1].to_string();
 		}
 		if key_value.is_peoperty_of("Section header string table index",) {
-			header.section_header_index_of_section_name_string_table = key_value[1].to_string();
+			header.section_header_index_of_section_name_string_table =
+				key_value[1].to_string();
 		}
 	},);
 
@@ -861,7 +933,10 @@ mod tests {
 		assert_eq!(header.program_header_count, "");
 		assert_eq!(header.section_header_entry_size, "");
 		assert_eq!(header.section_header_count, "");
-		assert_eq!(header.section_header_index_of_section_name_string_table, "");
+		assert_eq!(
+			header.section_header_index_of_section_name_string_table,
+			""
+		);
 	}
 
 	#[test]
@@ -870,7 +945,8 @@ mod tests {
 			file_class: "ELF64 (64-bit)".to_string(),
 			endianness: "little endian".to_string(),
 			elf_version: "1 (current)".to_string(),
-			target_os_abi: "UNIX - System V".to_string(), // This one should not be split
+			target_os_abi: "UNIX - System V".to_string(), /* This one should
+			                                               * not be split */
 			abi_version: "0 (default)".to_string(),
 			ty: "EXEC (Executable file)".to_string(),
 			machine: "Advanced Micro Devices X86-64".to_string(),
@@ -884,7 +960,8 @@ mod tests {
 			program_header_count: "2 (program headers)".to_string(),
 			section_header_entry_size: "64 (bytes)".to_string(),
 			section_header_count: "10 (section headers)".to_string(),
-			section_header_index_of_section_name_string_table: "9 (string table index)".to_string(),
+			section_header_index_of_section_name_string_table:
+				"9 (string table index)".to_string(),
 		};
 
 		header.fix();
@@ -907,7 +984,10 @@ mod tests {
 		assert_eq!(header.program_header_count, "2");
 		assert_eq!(header.section_header_entry_size, "64");
 		assert_eq!(header.section_header_count, "10");
-		assert_eq!(header.section_header_index_of_section_name_string_table, "9");
+		assert_eq!(
+			header.section_header_index_of_section_name_string_table,
+			"9"
+		);
 	}
 
 	#[test]
@@ -930,7 +1010,8 @@ mod tests {
 
 	#[test]
 	fn test_property_trait_multiple_elements() {
-		let key_value = vec!["Entry point address", "0x401000", "additional", "info"];
+		let key_value =
+			vec!["Entry point address", "0x401000", "additional", "info"];
 		assert!(key_value.is_peoperty_of("Entry point address"));
 		assert!(!key_value.is_peoperty_of("0x401000"));
 	}
@@ -949,20 +1030,39 @@ mod tests {
 		// Simulate parsing different types of readelf output lines
 		let test_cases = vec![
 			("Class:                             ELF64", "Class", "ELF64",),
-			("Data:                              2's complement, little endian", "Data", "2's",),
-			("Version:                           1 (current)", "Version", "1",),
-			("OS/ABI:                            UNIX - System V", "OS/ABI", "UNIX - System V",),
-			("Type:                              EXEC (Executable file)", "Type", "EXEC",),
 			(
-				"Machine:                           Advanced Micro Devices X86-64",
+				"Data:                              2's complement, little \
+				 endian",
+				"Data",
+				"2's",
+			),
+			("Version:                           1 (current)", "Version", "1",),
+			(
+				"OS/ABI:                            UNIX - System V",
+				"OS/ABI",
+				"UNIX - System V",
+			),
+			(
+				"Type:                              EXEC (Executable file)",
+				"Type",
+				"EXEC",
+			),
+			(
+				"Machine:                           Advanced Micro Devices \
+				 X86-64",
 				"Machine",
 				"Advanced",
 			),
-			("Entry point address:               0x401000", "Entry point address", "0x401000",),
+			(
+				"Entry point address:               0x401000",
+				"Entry point address",
+				"0x401000",
+			),
 		];
 
 		for (line, expected_key, expected_first_word,) in test_cases {
-			let key_value: Vec<_,> = line.split(':',).map(|s| s.trim(),).collect();
+			let key_value: Vec<_,> =
+				line.split(':',).map(|s| s.trim(),).collect();
 
 			if key_value.len() >= 2 {
 				assert_eq!(key_value[0], expected_key);
@@ -978,12 +1078,15 @@ mod tests {
 
 	#[test]
 	fn test_readelf_h_version_field_handling() {
-		// Test the special case where Version field can be either ELF version or object version
+		// Test the special case where Version field can be either ELF version
+		// or object version
 		let elf_version_line = "Version:                           1 (current)";
 		let object_version_line = "Version:                           0x1";
 
-		let elf_key_value: Vec<_,> = elf_version_line.split(':',).map(|s| s.trim(),).collect();
-		let obj_key_value: Vec<_,> = object_version_line.split(':',).map(|s| s.trim(),).collect();
+		let elf_key_value: Vec<_,> =
+			elf_version_line.split(':',).map(|s| s.trim(),).collect();
+		let obj_key_value: Vec<_,> =
+			object_version_line.split(':',).map(|s| s.trim(),).collect();
 
 		// ELF version doesn't contain 0x
 		assert!(!elf_key_value[1].contains("0x"));
@@ -1034,7 +1137,10 @@ mod tests {
 		assert_eq!(header.program_header_count, "2");
 		assert_eq!(header.section_header_entry_size, "40");
 		assert_eq!(header.section_header_count, "0");
-		assert_eq!(header.section_header_index_of_section_name_string_table, "0");
+		assert_eq!(
+			header.section_header_index_of_section_name_string_table,
+			"0"
+		);
 	}
 
 	#[test]
@@ -1107,7 +1213,8 @@ mod tests {
 
 		header.fix();
 
-		// The fix method should handle leading/trailing whitespace by taking first word
+		// The fix method should handle leading/trailing whitespace by taking
+		// first word
 		assert_eq!(header.file_class, "ELF64");
 		assert_eq!(header.endianness, "little");
 		assert_eq!(header.elf_version, "1");
@@ -1121,7 +1228,11 @@ mod tests {
 		for i in 0..1000 {
 			let header = ReadElfH {
 				file_class: format!("ELF{}", i % 2 + 32),
-				endianness: if i % 2 == 0 { "little".to_string() } else { "big".to_string() },
+				endianness: if i % 2 == 0 {
+					"little".to_string()
+				} else {
+					"big".to_string()
+				},
 				entry: format!("0x{:x}", i * 0x1000),
 				..Default::default()
 			};
@@ -1231,20 +1342,21 @@ mod tests {
 
 	#[test]
 	fn test_readelf_h_numeric_field_formats() {
-		let mut header = ReadElfH {
-			entry: "0x401000 (entry point)".to_string(),
-			program_header_offset: "64 (bytes into file)".to_string(),
-			section_header_offset: "4096 (bytes into file)".to_string(),
-			flags: "0x0 (no flags)".to_string(),
-			elf_header_size: "64 (bytes)".to_string(),
-			program_header_entry_size: "56 (bytes)".to_string(),
-			program_header_count: "4 (entries)".to_string(),
-			section_header_entry_size: "64 (bytes)".to_string(),
-			section_header_count: "10 (entries)".to_string(),
-			section_header_index_of_section_name_string_table: "9 (section name string table)"
-				.to_string(),
-			..Default::default()
-		};
+		let mut header =
+			ReadElfH {
+				entry: "0x401000 (entry point)".to_string(),
+				program_header_offset: "64 (bytes into file)".to_string(),
+				section_header_offset: "4096 (bytes into file)".to_string(),
+				flags: "0x0 (no flags)".to_string(),
+				elf_header_size: "64 (bytes)".to_string(),
+				program_header_entry_size: "56 (bytes)".to_string(),
+				program_header_count: "4 (entries)".to_string(),
+				section_header_entry_size: "64 (bytes)".to_string(),
+				section_header_count: "10 (entries)".to_string(),
+				section_header_index_of_section_name_string_table:
+					"9 (section name string table)".to_string(),
+				..Default::default()
+			};
 
 		header.fix();
 
@@ -1258,7 +1370,10 @@ mod tests {
 		assert_eq!(header.program_header_count, "4");
 		assert_eq!(header.section_header_entry_size, "64");
 		assert_eq!(header.section_header_count, "10");
-		assert_eq!(header.section_header_index_of_section_name_string_table, "9");
+		assert_eq!(
+			header.section_header_index_of_section_name_string_table,
+			"9"
+		);
 	}
 
 	#[test]
@@ -1273,7 +1388,10 @@ mod tests {
 		];
 
 		for (full_arch, expected_first,) in architectures {
-			let mut header = ReadElfH { machine: full_arch.to_string(), ..Default::default() };
+			let mut header = ReadElfH {
+				machine: full_arch.to_string(),
+				..Default::default()
+			};
 
 			header.fix();
 			assert_eq!(header.machine, expected_first);
@@ -1290,7 +1408,8 @@ mod tests {
 		];
 
 		for (full_type, expected_first,) in types {
-			let mut header = ReadElfH { ty: full_type.to_string(), ..Default::default() };
+			let mut header =
+				ReadElfH { ty: full_type.to_string(), ..Default::default() };
 
 			header.fix();
 			assert_eq!(header.ty, expected_first);
@@ -1312,27 +1431,28 @@ mod tests {
 
 	#[test]
 	fn test_readelf_h_all_fields_populated() {
-		let mut header = ReadElfH {
-			file_class: "ELF64 (64-bit)".to_string(),
-			endianness: "little endian".to_string(),
-			elf_version: "1 (current)".to_string(),
-			target_os_abi: "UNIX - System V".to_string(),
-			abi_version: "0 (current)".to_string(),
-			ty: "EXEC (Executable file)".to_string(),
-			machine: "Advanced Micro Devices X86-64".to_string(),
-			version: "0x1 (current)".to_string(),
-			entry: "0x401000 (entry point)".to_string(),
-			program_header_offset: "64 (bytes into file)".to_string(),
-			section_header_offset: "4096 (bytes into file)".to_string(),
-			flags: "0x0 (no flags)".to_string(),
-			elf_header_size: "64 (bytes)".to_string(),
-			program_header_entry_size: "56 (bytes)".to_string(),
-			program_header_count: "4 (entries)".to_string(),
-			section_header_entry_size: "64 (bytes)".to_string(),
-			section_header_count: "10 (entries)".to_string(),
-			section_header_index_of_section_name_string_table: "9 (section name string table)"
-				.to_string(),
-		};
+		let mut header =
+			ReadElfH {
+				file_class: "ELF64 (64-bit)".to_string(),
+				endianness: "little endian".to_string(),
+				elf_version: "1 (current)".to_string(),
+				target_os_abi: "UNIX - System V".to_string(),
+				abi_version: "0 (current)".to_string(),
+				ty: "EXEC (Executable file)".to_string(),
+				machine: "Advanced Micro Devices X86-64".to_string(),
+				version: "0x1 (current)".to_string(),
+				entry: "0x401000 (entry point)".to_string(),
+				program_header_offset: "64 (bytes into file)".to_string(),
+				section_header_offset: "4096 (bytes into file)".to_string(),
+				flags: "0x0 (no flags)".to_string(),
+				elf_header_size: "64 (bytes)".to_string(),
+				program_header_entry_size: "56 (bytes)".to_string(),
+				program_header_count: "4 (entries)".to_string(),
+				section_header_entry_size: "64 (bytes)".to_string(),
+				section_header_count: "10 (entries)".to_string(),
+				section_header_index_of_section_name_string_table:
+					"9 (section name string table)".to_string(),
+			};
 
 		header.fix();
 
@@ -1354,6 +1474,10 @@ mod tests {
 		assert!(!header.program_header_count.is_empty());
 		assert!(!header.section_header_entry_size.is_empty());
 		assert!(!header.section_header_count.is_empty());
-		assert!(!header.section_header_index_of_section_name_string_table.is_empty());
+		assert!(
+			!header
+				.section_header_index_of_section_name_string_table
+				.is_empty()
+		);
 	}
 }

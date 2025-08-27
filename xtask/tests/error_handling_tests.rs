@@ -174,7 +174,10 @@ fn test_disk_space_simulation() {
 	let data = vec![0u8; reasonable_size];
 
 	let write_result = fs::write(&large_file, data,);
-	assert!(write_result.is_ok(), "Should be able to write reasonable size file");
+	assert!(
+		write_result.is_ok(),
+		"Should be able to write reasonable size file"
+	);
 }
 
 /// Test error handling for invalid file permissions
@@ -268,10 +271,15 @@ fn test_network_error_simulation() {
 	// Since we can't easily simulate network failures in unit tests,
 	// we test the error handling patterns
 
-	let mock_network_error =
-		std::io::Error::new(std::io::ErrorKind::ConnectionRefused, "Connection refused",);
+	let mock_network_error = std::io::Error::new(
+		std::io::ErrorKind::ConnectionRefused,
+		"Connection refused",
+	);
 
-	assert_eq!(mock_network_error.kind(), std::io::ErrorKind::ConnectionRefused);
+	assert_eq!(
+		mock_network_error.kind(),
+		std::io::ErrorKind::ConnectionRefused
+	);
 	assert!(mock_network_error.to_string().contains("Connection refused"));
 }
 
@@ -281,11 +289,12 @@ fn test_qemu_execution_errors() {
 	use std::process::Command;
 
 	// Test QEMU with invalid arguments
-	let result =
-		Command::new("qemu-system-aarch64",).arg("--definitely-invalid-argument",).output();
+	let result = Command::new("qemu-system-aarch64",)
+		.arg("--definitely-invalid-argument",)
+		.output();
 
-	// This might succeed (if QEMU is not installed) or fail (if QEMU rejects the argument)
-	// Either way, we should handle it gracefully
+	// This might succeed (if QEMU is not installed) or fail (if QEMU rejects
+	// the argument) Either way, we should handle it gracefully
 	match result {
 		Ok(output,) => {
 			// If QEMU is installed, it should reject the invalid argument

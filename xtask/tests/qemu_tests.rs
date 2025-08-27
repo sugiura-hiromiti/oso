@@ -7,7 +7,8 @@ use std::path::PathBuf;
 use tempfile::TempDir;
 
 // Import the types we need to test
-// Note: We'll test the public interface and logic without requiring full Builder instantiation
+// Note: We'll test the public interface and logic without requiring full
+// Builder instantiation
 
 /// Test QEMU executable name generation for different architectures
 #[test]
@@ -25,7 +26,14 @@ fn test_qemu_executable_names() {
 /// Test basic QEMU arguments for aarch64
 #[test]
 fn test_aarch64_basic_args() {
-	let expected_args = vec!["-machine", "virt", "-cpu", "cortex-a72", "-device", "virtio-gpu-pci"];
+	let expected_args = vec![
+		"-machine",
+		"virt",
+		"-cpu",
+		"cortex-a72",
+		"-device",
+		"virtio-gpu-pci",
+	];
 
 	// Verify that the expected arguments are reasonable
 	assert!(expected_args.contains(&"-machine"));
@@ -56,8 +64,10 @@ fn test_pflash_args_readonly() {
 	let test_file = PathBuf::from("/tmp/test_code.fd",);
 
 	// Test read-only pflash arguments
-	let expected_readonly =
-		format!("-drive if=pflash,format=raw,readonly=on,file={}", test_file.display());
+	let expected_readonly = format!(
+		"-drive if=pflash,format=raw,readonly=on,file={}",
+		test_file.display()
+	);
 
 	assert!(expected_readonly.contains("if=pflash"));
 	assert!(expected_readonly.contains("format=raw"));
@@ -71,8 +81,10 @@ fn test_pflash_args_readwrite() {
 	let test_file = PathBuf::from("/tmp/test_vars.fd",);
 
 	// Test read-write pflash arguments
-	let expected_readwrite =
-		format!("-drive if=pflash,format=raw,readonly=off,file={}", test_file.display());
+	let expected_readwrite = format!(
+		"-drive if=pflash,format=raw,readonly=off,file={}",
+		test_file.display()
+	);
 
 	assert!(expected_readwrite.contains("if=pflash"));
 	assert!(expected_readwrite.contains("format=raw"));
@@ -87,13 +99,21 @@ fn test_block_device_args() {
 	let arg = &format!("file={},format=raw,if=none,id=hd0", disk_img.display());
 
 	// Test block device arguments for x86_64
-	let x86_64_args =
-		vec!["-monitor", "stdio", "-drive", arg, "-device", "virtio-blk-pci,drive=hd0"];
+	let x86_64_args = vec![
+		"-monitor",
+		"stdio",
+		"-drive",
+		arg,
+		"-device",
+		"virtio-blk-pci,drive=hd0",
+	];
 
 	assert!(x86_64_args.contains(&"-monitor"));
 	assert!(x86_64_args.contains(&"stdio"));
 	assert!(x86_64_args.contains(&"-drive"));
-	assert!(x86_64_args.iter().any(|arg| arg.contains("file=/tmp/test_disk.img")));
+	assert!(
+		x86_64_args.iter().any(|arg| arg.contains("file=/tmp/test_disk.img"))
+	);
 	assert!(x86_64_args.iter().any(|arg| arg.contains("format=raw")));
 	assert!(x86_64_args.iter().any(|arg| arg.contains("if=none")));
 	assert!(x86_64_args.iter().any(|arg| arg.contains("id=hd0")));
@@ -169,7 +189,11 @@ fn test_debug_mode_args() {
 	let debug_enabled = true;
 
 	if debug_enabled {
-		args.extend(vec!["-gdb".to_string(), "tcp::12345".to_string(), "-S".to_string()],);
+		args.extend(vec![
+			"-gdb".to_string(),
+			"tcp::12345".to_string(),
+			"-S".to_string(),
+		],);
 	}
 
 	assert_eq!(args.len(), 3);

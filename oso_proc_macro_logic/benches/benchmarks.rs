@@ -21,7 +21,12 @@ where F: FnMut() -> R {
 	}
 	let duration = start.elapsed();
 
-	println!("{}: {:?} total, {:?} per iteration", name, duration, duration / iterations as u32);
+	println!(
+		"{}: {:?} total, {:?} per iteration",
+		name,
+		duration,
+		duration / iterations as u32
+	);
 
 	duration
 }
@@ -34,11 +39,12 @@ fn benchmark_fonts_data_processing() {
 
 	// Create test font data
 	let temp_file = NamedTempFile::new().expect("Failed to create temp file",);
-	let font_pattern = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@..\n..@.\
-	                    .@..\n..@..@..\n..@..@..\n........\n........\n........\n........\n........\
-	                    \n........\n";
+	let font_pattern = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@\
+	                    @@..\n..@..@..\n..@..@..\n..@..@..\n..@..@..\n........\
+	                    \n........\n........\n........\n........\n........\n";
 	let font_data = font_pattern.repeat(256,);
-	fs::write(temp_file.path(), font_data,).expect("Failed to write font data",);
+	fs::write(temp_file.path(), font_data,)
+		.expect("Failed to write font data",);
 
 	let path_str = temp_file.path().to_str().unwrap();
 	let lit_str = syn::LitStr::new(path_str, proc_macro2::Span::call_site(),);
@@ -48,7 +54,9 @@ fn benchmark_fonts_data_processing() {
 
 	// Benchmark bitfield conversion
 	let fonts = font::fonts(&lit_str,);
-	let _duration = benchmark("Bitfield conversion", 1000, || font::convert_bitfield(&fonts,),);
+	let _duration = benchmark("Bitfield conversion", 1000, || {
+		font::convert_bitfield(&fonts,)
+	},);
 }
 
 #[test]
@@ -114,16 +122,22 @@ fn benchmark_status_from_spec_html_parsing() {
 
 	// Benchmark HTML parsing
 	let _duration = benchmark("HTML parsing", 100, || {
-		let dom =
-			html5ever::parse_document(markup5ever_rcdom::RcDom::default(), Default::default(),)
-				.one(&test_html,);
+		let dom = html5ever::parse_document(
+			markup5ever_rcdom::RcDom::default(),
+			Default::default(),
+		)
+		.one(&test_html,);
 
-		let _main_section = get_element_by_id(dom.document.clone(), "status-codes",);
+		let _main_section =
+			get_element_by_id(dom.document.clone(), "status-codes",);
 	},);
 
 	// Benchmark element searching
-	let dom = html5ever::parse_document(markup5ever_rcdom::RcDom::default(), Default::default(),)
-		.one(&test_html,);
+	let dom = html5ever::parse_document(
+		markup5ever_rcdom::RcDom::default(),
+		Default::default(),
+	)
+	.one(&test_html,);
 
 	let _duration = benchmark("Element by ID search", 1000, || {
 		let _element = get_element_by_id(dom.document.clone(), "status-codes",);
@@ -138,13 +152,23 @@ fn benchmark_status_from_spec_html_parsing() {
 fn benchmark_hex_parsing() {
 	use oso_proc_macro_logic::test_program_headers_parse::*;
 
-	let hex_strings =
-		vec!["0x0", "0x1", "0xff", "0x1000", "0x12345678", "0xabcdef", "0x1a2b3c4d", "0xffffffff"];
+	let hex_strings = vec![
+		"0x0",
+		"0x1",
+		"0xff",
+		"0x1000",
+		"0x12345678",
+		"0xabcdef",
+		"0x1a2b3c4d",
+		"0xffffffff",
+	];
 
 	// Benchmark u32 hex parsing
 	let _duration = benchmark("u32 hex parsing", 10000, || {
 		for hex_str in &hex_strings {
-			if let Ok(hex_without_prefix,) = hex_str.strip_prefix("0x",).ok_or("no prefix",) {
+			if let Ok(hex_without_prefix,) =
+				hex_str.strip_prefix("0x",).ok_or("no prefix",)
+			{
 				let _result = u32::parse(hex_without_prefix,);
 			}
 		}
@@ -153,7 +177,9 @@ fn benchmark_hex_parsing() {
 	// Benchmark u64 hex parsing
 	let _duration = benchmark("u64 hex parsing", 10000, || {
 		for hex_str in &hex_strings {
-			if let Ok(hex_without_prefix,) = hex_str.strip_prefix("0x",).ok_or("no prefix",) {
+			if let Ok(hex_without_prefix,) =
+				hex_str.strip_prefix("0x",).ok_or("no prefix",)
+			{
 				let _result = u64::parse(hex_without_prefix,);
 			}
 		}
@@ -196,7 +222,8 @@ fn benchmark_string_operations() {
 #[test]
 fn benchmark_vector_operations() {
 	// Test vector operations used in various modules
-	let data: Vec<String,> = (0..1000).map(|i| format!("item_{}", i),).collect();
+	let data: Vec<String,> =
+		(0..1000).map(|i| format!("item_{}", i),).collect();
 
 	// Benchmark vector iteration
 	let _duration = benchmark("Vector iteration", 1000, || {
@@ -207,7 +234,8 @@ fn benchmark_vector_operations() {
 
 	// Benchmark vector filtering
 	let _duration = benchmark("Vector filtering", 1000, || {
-		let _filtered: Vec<_,> = data.iter().filter(|s| s.contains("5",),).collect();
+		let _filtered: Vec<_,> =
+			data.iter().filter(|s| s.contains("5",),).collect();
 	},);
 
 	// Benchmark vector mapping

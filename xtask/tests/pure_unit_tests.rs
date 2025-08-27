@@ -1,7 +1,7 @@
 //! Pure unit tests for xtask logic
 //!
-//! These tests verify the core logic without any dependencies on the xtask crate itself.
-//! They test the algorithms and logic patterns used in xtask.
+//! These tests verify the core logic without any dependencies on the xtask
+//! crate itself. They test the algorithms and logic patterns used in xtask.
 
 use std::path::PathBuf;
 use tempfile::TempDir;
@@ -10,7 +10,9 @@ use tempfile::TempDir;
 #[test]
 fn test_architecture_validation() {
 	fn is_supported_arch(target: &str,) -> bool {
-		target.contains("aarch64",) || target.contains("x86_64",) || target.contains("riscv64",)
+		target.contains("aarch64",)
+			|| target.contains("x86_64",)
+			|| target.contains("riscv64",)
 	}
 
 	let valid_targets = [
@@ -21,15 +23,26 @@ fn test_architecture_validation() {
 		"riscv64gc-unknown-linux-gnu",
 	];
 
-	let invalid_targets =
-		["arm-unknown-linux-gnueabihf", "i686-pc-windows-gnu", "powerpc64-unknown-linux-gnu",];
+	let invalid_targets = [
+		"arm-unknown-linux-gnueabihf",
+		"i686-pc-windows-gnu",
+		"powerpc64-unknown-linux-gnu",
+	];
 
 	for target in &valid_targets {
-		assert!(is_supported_arch(target), "Target {} should be supported", target);
+		assert!(
+			is_supported_arch(target),
+			"Target {} should be supported",
+			target
+		);
 	}
 
 	for target in &invalid_targets {
-		assert!(!is_supported_arch(target), "Target {} should not be supported", target);
+		assert!(
+			!is_supported_arch(target),
+			"Target {} should not be supported",
+			target
+		);
 	}
 }
 
@@ -151,7 +164,14 @@ fn test_qemu_args_generation() {
 	fn basic_qemu_args(arch: &str,) -> Vec<&'static str,> {
 		match arch {
 			"aarch64" => {
-				vec!["-machine", "virt", "-cpu", "cortex-a72", "-device", "virtio-gpu-pci"]
+				vec![
+					"-machine",
+					"virt",
+					"-cpu",
+					"cortex-a72",
+					"-device",
+					"virtio-gpu-pci",
+				]
 			},
 			"x86_64" => vec!["-machine", "q35", "-smp", "4", "-vga", "std"],
 			"riscv64" => vec![], // Not implemented yet
@@ -220,8 +240,13 @@ fn test_workspace_path_logic() {
 #[test]
 fn test_json_artifact_detection() {
 	fn extract_output_path(args: &[&str],) -> Option<String,> {
-		args.iter()
-			.find_map(|arg| if arg.starts_with("-o",) { Some(arg[2..].to_string(),) } else { None },)
+		args.iter().find_map(|arg| {
+			if arg.starts_with("-o",) {
+				Some(arg[2..].to_string(),)
+			} else {
+				None
+			}
+		},)
 	}
 
 	let test_args = ["-Ttext=0x80000", "-o/tmp/kernel.elf", "--gc-sections",];
@@ -350,7 +375,8 @@ fn test_error_detection() {
 	assert!(!detect_json_structure_error(valid_json));
 	assert!(detect_json_structure_error(invalid_json));
 
-	let json_value: serde_json::Value = serde_json::from_str(valid_json,).unwrap();
+	let json_value: serde_json::Value =
+		serde_json::from_str(valid_json,).unwrap();
 	assert!(!detect_missing_field(&json_value, "field"));
 	assert!(detect_missing_field(&json_value, "missing_field"));
 }

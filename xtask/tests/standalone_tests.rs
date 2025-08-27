@@ -19,8 +19,11 @@ fn test_architecture_validation_logic() {
 		"riscv64gc-unknown-linux-gnu",
 	];
 
-	let invalid_arch_strings =
-		["arm-unknown-linux-gnueabihf", "i686-pc-windows-gnu", "powerpc64-unknown-linux-gnu",];
+	let invalid_arch_strings = [
+		"arm-unknown-linux-gnueabihf",
+		"i686-pc-windows-gnu",
+		"powerpc64-unknown-linux-gnu",
+	];
 
 	// Test valid architectures
 	for arch_str in &valid_arch_strings {
@@ -129,7 +132,14 @@ fn test_feature_parsing_logic() {
 #[test]
 fn test_qemu_args_logic() {
 	// Test aarch64 QEMU args
-	let aarch64_args = vec!["-machine", "virt", "-cpu", "cortex-a72", "-device", "virtio-gpu-pci"];
+	let aarch64_args = vec![
+		"-machine",
+		"virt",
+		"-cpu",
+		"cortex-a72",
+		"-device",
+		"virtio-gpu-pci",
+	];
 
 	assert!(aarch64_args.contains(&"-machine"));
 	assert!(aarch64_args.contains(&"virt"));
@@ -151,13 +161,15 @@ fn test_pflash_args_logic() {
 	let test_file = "/tmp/test.fd";
 
 	// Test read-only pflash args
-	let readonly_arg = format!("if=pflash,format=raw,readonly=on,file={}", test_file);
+	let readonly_arg =
+		format!("if=pflash,format=raw,readonly=on,file={}", test_file);
 	assert!(readonly_arg.contains("if=pflash"));
 	assert!(readonly_arg.contains("readonly=on"));
 	assert!(readonly_arg.contains(test_file));
 
 	// Test read-write pflash args
-	let readwrite_arg = format!("if=pflash,format=raw,readonly=off,file={}", test_file);
+	let readwrite_arg =
+		format!("if=pflash,format=raw,readonly=off,file={}", test_file);
 	assert!(readwrite_arg.contains("if=pflash"));
 	assert!(readwrite_arg.contains("readonly=off"));
 	assert!(readwrite_arg.contains(test_file));
@@ -261,7 +273,8 @@ fn test_path_construction_logic() {
 /// Test command-line argument parsing logic
 #[test]
 fn test_argument_parsing_logic() {
-	let test_args = vec!["xtask", "-r", "--release", "-86", "--debug", "--features", "rgb"];
+	let test_args =
+		vec!["xtask", "-r", "--release", "-86", "--debug", "--features", "rgb"];
 
 	// Test argument recognition logic
 	let mut release_found = false;
@@ -300,7 +313,8 @@ fn test_error_handling_logic() {
 
 	// Test malformed JSON handling
 	let invalid_json = r#"{"invalid": json"#;
-	let parse_result = serde_json::from_str::<serde_json::Value,>(invalid_json,);
+	let parse_result =
+		serde_json::from_str::<serde_json::Value,>(invalid_json,);
 	assert!(parse_result.is_err());
 }
 

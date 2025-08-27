@@ -1,11 +1,12 @@
 //! # ELF Program Headers Parsing Module
 //!
-//! This module provides functionality for parsing ELF program headers from the OSO kernel
-//! binary. Program headers describe segments in an executable file and contain information
-//! about how the program should be loaded into memory.
+//! This module provides functionality for parsing ELF program headers from the
+//! OSO kernel binary. Program headers describe segments in an executable file
+//! and contain information about how the program should be loaded into memory.
 //!
-//! The module uses the `readelf -l` command to extract program header information and
-//! parses it into structured Rust types for build-time analysis and validation.
+//! The module uses the `readelf -l` command to extract program header
+//! information and parses it into structured Rust types for build-time analysis
+//! and validation.
 
 use crate::RsltP;
 use crate::check_oso_kernel;
@@ -16,9 +17,9 @@ use std::process::Command;
 
 /// Trait for parsing hexadecimal string representations into integer types
 ///
-/// This trait provides a common interface for parsing hex strings (like "0x1000")
-/// into various integer types. It's used to convert the hex values from readelf
-/// output into proper numeric types.
+/// This trait provides a common interface for parsing hex strings (like
+/// "0x1000") into various integer types. It's used to convert the hex values
+/// from readelf output into proper numeric types.
 pub trait IntField: Sized {
 	/// Parses a hexadecimal string into the implementing type
 	///
@@ -32,7 +33,8 @@ pub trait IntField: Sized {
 	///
 	/// # Errors
 	///
-	/// Returns an error if the string cannot be parsed as a valid hexadecimal number
+	/// Returns an error if the string cannot be parsed as a valid hexadecimal
+	/// number
 	fn parse(hex: &str,) -> Rslt<Self,>;
 }
 
@@ -63,7 +65,8 @@ pub struct ReadElfL {
 	pub offset:           u64,
 	/// Virtual address where the segment should be loaded
 	pub virtual_address:  u64,
-	/// Physical address where the segment should be loaded (usually same as virtual)
+	/// Physical address where the segment should be loaded (usually same as
+	/// virtual)
 	pub physical_address: u64,
 	/// Size of the segment in the file
 	pub file_size:        u64,
@@ -92,15 +95,15 @@ pub fn test_program_headers_parse(rslt: proc_macro2::TokenStream,) -> RsltP {
 
 /// Generates token stream for expected program headers information.
 ///
-/// This function executes `readelf -l` on the target binary and parses the output
-/// to create a token stream representing the expected program headers structure.
-/// This is used by the `test_program_headers_parse` macro to validate program
-/// header parsing.
+/// This function executes `readelf -l` on the target binary and parses the
+/// output to create a token stream representing the expected program headers
+/// structure. This is used by the `test_program_headers_parse` macro to
+/// validate program header parsing.
 ///
 /// # Returns
 ///
-/// Returns a `proc_macro2::TokenStream` representing a vector of `ProgramHeader`
-/// structs, each initialized with data from the actual binary.
+/// Returns a `proc_macro2::TokenStream` representing a vector of
+/// `ProgramHeader` structs, each initialized with data from the actual binary.
 ///
 /// # Generated Structure
 ///
@@ -190,14 +193,17 @@ pub fn program_headers_info() -> RsltP {
 /// - "PT_LOAD" -> `ProgramHeaderType::PtLoad`
 /// - "PT_DYNAMIC" -> `ProgramHeaderType::PtDynamic`
 /// - "PT_INTERP" -> `ProgramHeaderType::PtInterp`
-fn parse_program_header_type(program_header: &ReadElfL,) -> proc_macro2::TokenStream {
+fn parse_program_header_type(
+	program_header: &ReadElfL,
+) -> proc_macro2::TokenStream {
 	// Convert underscore_separated to CamelCase
 	let camel_cased: String = program_header
 		.ty
 		.split("_",)
 		.flat_map(|word| {
-			word.char_indices()
-				.map(|(i, c,)| if i == 0 { c } else { (c as u8 - b'A' + b'a') as char },)
+			word.char_indices().map(|(i, c,)| {
+				if i == 0 { c } else { (c as u8 - b'A' + b'a') as char }
+			},)
 		},)
 		.collect();
 
@@ -213,11 +219,13 @@ pub fn readelf_l() -> Rslt<Vec<ReadElfL,>,> {
 
 	let program_headers_info = readelf_l_out()?;
 
-	let program_header_count = program_headers_count(&program_headers_info[0],)?;
+	let program_header_count =
+		program_headers_count(&program_headers_info[0],)?;
 
 	program_headers_fields(&program_headers_info, program_header_count,)
 		.map(|s| {
-			let fields_info: Vec<_,> = s.split(" ",).filter(|s| !s.is_empty(),).collect();
+			let fields_info: Vec<_,> =
+				s.split(" ",).filter(|s| !s.is_empty(),).collect();
 
 			let ty = fields_info[0].to_string();
 			let offset = parse_str_hex_repr(fields_info[1],)?;
@@ -242,11 +250,15 @@ pub fn readelf_l() -> Rslt<Vec<ReadElfL,>,> {
 }
 
 fn readelf_l_out() -> Rslt<Vec<String,>,> {
-	let program_headers_info =
-		Command::new("readelf",).args(["-l", "target/oso_kernel.elf",],).output()?.stdout;
+	let program_headers_info = Command::new("readelf",)
+		.args(["-l", "target/oso_kernel.elf",],)
+		.output()?
+		.stdout;
 	let program_headers_info = String::from_utf8(program_headers_info,)?;
-	let program_headers_info: Vec<_,> =
-		program_headers_info.split("Program Headers:",).map(|s| s.to_string(),).collect();
+	let program_headers_info: Vec<_,> = program_headers_info
+		.split("Program Headers:",)
+		.map(|s| s.to_string(),)
+		.collect();
 
 	Ok(program_headers_info,)
 }
@@ -254,10 +266,18 @@ fn readelf_l_out() -> Rslt<Vec<String,>,> {
 fn program_headers_count(info: &str,) -> Rslt<usize,> {
 	let desc_lines_count = info.lines().count();
 	if desc_lines_count < 2 {
-		return Err(anyhow::anyhow!("Insufficient lines to parse program header count"),);
+		return Err(anyhow::anyhow!(
+			"Insufficient lines to parse program header count"
+		),);
 	}
-	let program_header_count: usize =
-		info.lines().nth(desc_lines_count - 2,).unwrap().split(" ",).nth(2,).unwrap().parse()?;
+	let program_header_count: usize = info
+		.lines()
+		.nth(desc_lines_count - 2,)
+		.unwrap()
+		.split(" ",)
+		.nth(2,)
+		.unwrap()
+		.parse()?;
 	Ok(program_header_count,)
 }
 
@@ -274,7 +294,12 @@ fn program_headers_fields(
 	infos: &[String],
 	count: usize,
 ) -> impl Iterator<Item = std::string::String,> {
-	infos[1].lines().skip(3,).array_chunks::<2>().map(|s| s.concat(),).take(count,)
+	infos[1]
+		.lines()
+		.skip(3,)
+		.array_chunks::<2>()
+		.map(|s| s.concat(),)
+		.take(count,)
 }
 
 /// ```compile_fail
@@ -323,7 +348,10 @@ fn parse_flags_and_align(fields_info: &[&str],) -> Rslt<(u32, u64,),> {
 		let align = parse_str_hex_repr(fields_info[8],)?;
 		(0b101, align,)
 	} else {
-		return Err(anyhow!("fields_info length should be 8 or 9, get {}", fields_info.len()),);
+		return Err(anyhow!(
+			"fields_info length should be 8 or 9, get {}",
+			fields_info.len()
+		),);
 	};
 
 	Ok(rslt,)
@@ -341,7 +369,12 @@ mod tests {
 		let mut cwd = current_dir()?;
 		while let Some(parent_path,) = cwd.parent()
 			&& parent_path.file_name().unwrap() != "oso"
-			&& parent_path.file_name().unwrap().to_str().unwrap().contains("oso",)
+			&& parent_path
+				.file_name()
+				.unwrap()
+				.to_str()
+				.unwrap()
+				.contains("oso",)
 		{
 			cwd = parent_path.to_owned();
 		}
@@ -417,7 +450,8 @@ mod tests {
 		}
 
 		let program_headers_info = readelf_l_out()?;
-		let program_header_count = program_headers_count(&program_headers_info[0],)?;
+		let program_header_count =
+			program_headers_count(&program_headers_info[0],)?;
 
 		assert_eq!(program_header_count, 4);
 		set_current_dir(cwd,)?;
@@ -437,9 +471,12 @@ mod tests {
 		}
 
 		let program_headers_info = readelf_l_out()?;
-		let program_header_count = program_headers_count(&program_headers_info[0],)?;
-		let program_headers_info =
-			program_headers_fields(&program_headers_info, program_header_count,);
+		let program_header_count =
+			program_headers_count(&program_headers_info[0],)?;
+		let program_headers_info = program_headers_fields(
+			&program_headers_info,
+			program_header_count,
+		);
 
 		assert_eq!(program_header_count, program_headers_info.count());
 		set_current_dir(cwd,)?;
@@ -582,7 +619,9 @@ mod tests {
 
 	#[test]
 	fn test_program_headers_count_parsing() -> Rslt<(),> {
-		let test_line = "There are 4 program headers, starting at offset 64\n\n".to_string();
+		let test_line = "There are 4 program headers, starting at offset \
+		                 64\n\n"
+			.to_string();
 		let count = program_headers_count(&test_line,)?;
 		assert_eq!(count, 4);
 		Ok((),)
@@ -590,7 +629,9 @@ mod tests {
 
 	#[test]
 	fn test_program_headers_count_different_format() -> Rslt<(),> {
-		let test_line = "There are 2 program headers, starting at offset 128\n\n".to_string();
+		let test_line = "There are 2 program headers, starting at offset \
+		                 128\n\n"
+			.to_string();
 		let count = program_headers_count(&test_line,)?;
 		assert_eq!(count, 2);
 		Ok((),)
@@ -614,12 +655,23 @@ mod tests {
 	fn test_program_headers_fields_iterator() {
 		let test_lines = vec![
 			"Program Headers:".to_string(),
-			"  Type           Offset             VirtAddr           PhysAddr".to_string(),
-			"                 FileSiz            MemSiz              Flags  Align".to_string(),
-			"  LOAD           0x0000000000001000 0x0000000000401000 0x0000000000401000".to_string(),
-			"                 0x0000000000002000 0x0000000000002000  R E    0x1000".to_string(),
-			"  LOAD           0x0000000000003000 0x0000000000403000 0x0000000000403000".to_string(),
-			"                 0x0000000000001000 0x0000000000001000  RW     0x1000".to_string(),
+			"  Type           Offset             VirtAddr           PhysAddr"
+				.to_string(),
+			"                 FileSiz            MemSiz              Flags  \
+			 Align"
+				.to_string(),
+			"  LOAD           0x0000000000001000 0x0000000000401000 \
+			 0x0000000000401000"
+				.to_string(),
+			"                 0x0000000000002000 0x0000000000002000  R E    \
+			 0x1000"
+				.to_string(),
+			"  LOAD           0x0000000000003000 0x0000000000403000 \
+			 0x0000000000403000"
+				.to_string(),
+			"                 0x0000000000001000 0x0000000000001000  RW     \
+			 0x1000"
+				.to_string(),
 		];
 
 		let mock_output = vec!["".to_string(), test_lines.join("\n",)];
@@ -636,7 +688,8 @@ mod tests {
 	fn test_program_headers_fields_insufficient_lines() {
 		let test_lines = vec![
 			"Program Headers:".to_string(),
-			"  Type           Offset             VirtAddr           PhysAddr".to_string(),
+			"  Type           Offset             VirtAddr           PhysAddr"
+				.to_string(),
 		];
 
 		let fields = program_headers_fields(&test_lines, 2,);
@@ -649,8 +702,9 @@ mod tests {
 	#[test]
 	fn test_readelf_l_out_simulation() {
 		// We can't easily test the actual readelf command without the binary,
-		// but we can test that the function signature is correct and it returns a Result
-		// This test would need to be ignored in CI/CD environments without the binary
+		// but we can test that the function signature is correct and it returns
+		// a Result This test would need to be ignored in CI/CD environments
+		// without the binary
 	}
 
 	#[test]
@@ -681,15 +735,27 @@ mod tests {
 			"".to_string(),
 			"Elf file type is EXEC (Executable file)".to_string(),
 			"Entry point 0x401000".to_string(),
-			"There are 2 program headers, starting at offset 64\n\n".to_string(),
+			"There are 2 program headers, starting at offset 64\n\n"
+				.to_string(),
 			"".to_string(),
 			"Program Headers:".to_string(),
-			"  Type           Offset             VirtAddr           PhysAddr".to_string(),
-			"                 FileSiz            MemSiz              Flags  Align".to_string(),
-			"  LOAD           0x0000000000001000 0x0000000000401000 0x0000000000401000".to_string(),
-			"                 0x0000000000002000 0x0000000000002000  R E    0x1000".to_string(),
-			"  LOAD           0x0000000000003000 0x0000000000403000 0x0000000000403000".to_string(),
-			"                 0x0000000000001000 0x0000000000001000  RW     0x1000".to_string(),
+			"  Type           Offset             VirtAddr           PhysAddr"
+				.to_string(),
+			"                 FileSiz            MemSiz              Flags  \
+			 Align"
+				.to_string(),
+			"  LOAD           0x0000000000001000 0x0000000000401000 \
+			 0x0000000000401000"
+				.to_string(),
+			"                 0x0000000000002000 0x0000000000002000  R E    \
+			 0x1000"
+				.to_string(),
+			"  LOAD           0x0000000000003000 0x0000000000403000 \
+			 0x0000000000403000"
+				.to_string(),
+			"                 0x0000000000001000 0x0000000000001000  RW     \
+			 0x1000"
+				.to_string(),
 		];
 
 		// Test program header count extraction
@@ -698,8 +764,10 @@ mod tests {
 
 		let replaced = mock_readelf_output[3].replace('\n', "",);
 		mock_readelf_output[3] = replaced;
-		let new_mock =
-			vec![mock_readelf_output[..3].join("\n",), mock_readelf_output[5..].join("\n",)];
+		let new_mock = vec![
+			mock_readelf_output[..3].join("\n",),
+			mock_readelf_output[5..].join("\n",),
+		];
 
 		// Test program header fields extraction
 		let fields = program_headers_fields(&new_mock, count,);
