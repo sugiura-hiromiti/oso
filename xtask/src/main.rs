@@ -3,8 +3,8 @@
 
 //! # OSO xtask
 //!
-//! A build and run utility for the OSO project that automates the process of building,
-//! packaging, and running the OSO kernel and loader in QEMU.
+//! A build and run utility for the OSO project that automates the process of
+//! building, packaging, and running the OSO kernel and loader in QEMU.
 //!
 //! This crate provides a convenient way to:
 //! - Build the OSO loader (UEFI application) and kernel
@@ -47,7 +47,10 @@ fn main() -> Rslt<(),> {
 	match app() {
 		Ok(_,) => println!("\n\nprogram run successfully\nexit"),
 		Err(e,) => {
-			eprintln!("{} error msg:\n```rust\n{e:#?}\n```", "program panicked".red().bold())
+			eprintln!(
+				"{} error msg:\n```rust\n{e:#?}\n```",
+				"program panicked".red().bold()
+			)
 		},
 	}
 
@@ -58,8 +61,8 @@ fn main() -> Rslt<(),> {
 fn print_workspace() -> Rslt<(),> {
 	Command::new("eza",)
 		.args(
-			"-ahlF --icons --group-directories-first --sort=extension --time-style=iso --git \
-			 --no-user --no-time -T target/xtask"
+			"-ahlF --icons --group-directories-first --sort=extension \
+			 --time-style=iso --git --no-user --no-time -T target/xtask"
 				.split_whitespace(),
 		)
 		.run()
