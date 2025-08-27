@@ -1,14 +1,14 @@
 //! # OSO Development Utilities
 //!
-//! A collection of development utilities and helper functions for the OSO operating system project.
-//! This crate provides tools for workspace management, command execution, and development workflow
-//! automation.
+//! A collection of development utilities and helper functions for the OSO
+//! operating system project. This crate provides tools for workspace
+//! management, command execution, and development workflow automation.
 //!
 //! ## Features
 //!
 //! - **Workspace Management**: Tools for managing multi-crate workspaces
-//! - **Command Execution**: Enhanced command execution with better error handling and output
-//!   formatting
+//! - **Command Execution**: Enhanced command execution with better error
+//!   handling and output formatting
 //! - **Development Workflow**: Utilities to streamline the development process
 //! - **Cross-platform Support**: Works across different operating systems
 //!
@@ -98,21 +98,26 @@ mod tests {
 
 		// Verify the path exists
 		let path = std::path::Path::new(OSO_DEV_UTIL_PATH,);
-		assert!(path.exists(), "OSO_DEV_UTIL_PATH should point to an existing file");
+		assert!(
+			path.exists(),
+			"OSO_DEV_UTIL_PATH should point to an existing file"
+		);
 		assert!(path.is_file(), "OSO_DEV_UTIL_PATH should point to a file");
 	}
 
 	#[test]
 	fn test_module_accessibility() {
 		// Test that all public modules are accessible
-		// This is a compile-time test - if it compiles, the modules are accessible
+		// This is a compile-time test - if it compiles, the modules are
+		// accessible
 
 		// Test cargo module
 		let _build_mode = cargo::BuildMode::Debug;
 		let _arch = cargo::Arch::Aarch64;
 
 		// Test that we can access the fs module functions
-		// Note: These might fail in test environment, but we test they're callable
+		// Note: These might fail in test environment, but we test they're
+		// callable
 		let _project_root_result = fs::project_root();
 		let _current_crate_result = fs::current_crate();
 	}
@@ -128,7 +133,8 @@ mod tests {
 		assert!(result.is_err());
 		let error_string = result.unwrap_err().to_string();
 		assert!(error_string.contains("additional context"));
-		// Note: The exact error message format may vary, so we just check for context
+		// Note: The exact error message format may vary, so we just check for
+		// context
 	}
 
 	#[test]
@@ -235,7 +241,11 @@ mod tests {
 		// Test CLI with default values
 		use cargo::Cli;
 
-		let cli = Cli { build_mode: None, feature_flags: None, arch: None, };
+		let cli = Cli {
+			build_mode:    None,
+			feature_flags: None,
+			arch:          None,
+		};
 
 		let opts = cli.to_opts();
 		assert!(opts.build_mode.is_debug()); // Default should be Debug
@@ -371,7 +381,8 @@ mod tests {
 		assert_eq!(path.file_name().unwrap(), "Cargo.toml");
 
 		// Should be readable
-		let content = std::fs::read_to_string(path,).expect("Should be able to read Cargo.toml",);
+		let content = std::fs::read_to_string(path,)
+			.expect("Should be able to read Cargo.toml",);
 		assert!(content.contains("[package]"));
 		assert!(content.contains("oso_dev_util"));
 	}
@@ -482,7 +493,11 @@ mod tests {
 
 		for &build_mode in &all_build_modes {
 			for &arch in &all_archs {
-				let opts = Opts { build_mode, feature_flags: Vec::<Feature,>::new(), arch, };
+				let opts = Opts {
+					build_mode,
+					feature_flags: Vec::<Feature,>::new(),
+					arch,
+				};
 
 				// Test CompileOpt trait methods
 				let _build_mode_str: String = opts.build_mode().into();
@@ -504,7 +519,8 @@ mod tests {
 		assert!(manifest_path.is_file());
 
 		// Test path operations
-		let parent = manifest_path.parent().expect("Should have parent directory",);
+		let parent =
+			manifest_path.parent().expect("Should have parent directory",);
 		assert!(parent.exists());
 		assert!(parent.is_dir());
 
@@ -556,9 +572,17 @@ mod tests {
 		let mut opts_vec = Vec::new();
 		for i in 0..1000 {
 			let opts = Opts {
-				build_mode:    if i % 2 == 0 { BuildMode::Debug } else { BuildMode::Release },
+				build_mode:    if i % 2 == 0 {
+					BuildMode::Debug
+				} else {
+					BuildMode::Release
+				},
 				feature_flags: Vec::<Feature,>::new(),
-				arch:          if i % 2 == 0 { Arch::Aarch64 } else { Arch::Riscv64 },
+				arch:          if i % 2 == 0 {
+					Arch::Aarch64
+				} else {
+					Arch::Riscv64
+				},
 			};
 			opts_vec.push(opts,);
 		}

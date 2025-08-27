@@ -45,7 +45,10 @@ pub trait CrateSurvey: CrateInfo {
 			&& *name != true_name
 		{
 			*name = true_name;
-			std::fs::write(self.path().join(CARGO_MANIFEST,), toml::to_string(&manifest,)?,)?;
+			std::fs::write(
+				self.path().join(CARGO_MANIFEST,),
+				toml::to_string(&manifest,)?,
+			)?;
 		};
 		Ok((),)
 	}
@@ -92,11 +95,16 @@ pub trait CrateAction: CrateInfo {
 	fn fmt_with(&self, opt: &[impl AsRef<OsStr,>],) -> Rslt<(),> {
 		self.cargo_xxx_with("fmt", opt,)
 	}
-	fn cargo_xxx_with(&self, cmd: impl AsRef<OsStr,>, opt: &[impl AsRef<OsStr,>],) -> Rslt<(),> {
+	fn cargo_xxx_with(
+		&self,
+		cmd: impl AsRef<OsStr,>,
+		opt: &[impl AsRef<OsStr,>],
+	) -> Rslt<(),> {
 		let mut cargo = Command::new("cargo",);
 		let cargo = cargo.arg(cmd,);
 
-		let opt: Vec<_,> = opt.iter().filter(|s| !s.as_ref().is_empty(),).collect();
+		let opt: Vec<_,> =
+			opt.iter().filter(|s| !s.as_ref().is_empty(),).collect();
 		if !opt.is_empty() {
 			cargo.args(opt,);
 		}
@@ -127,13 +135,14 @@ pub trait CrateInfo: CrateCalled {
 	}
 
 	/// return path to the crate
-	/// return type is not Result because macro ensures that path exists and self has path in
-	/// compile time
+	/// return type is not Result because macro ensures that path exists and
+	/// self has path in compile time
 	fn path(&self,) -> PathBuf;
 
 	fn toml(&self,) -> Rslt<toml::Table,> {
 		let cargo_toml = self.path().join(CARGO_MANIFEST,);
-		read_toml(cargo_toml,).unwrap_or_else(|| panic!("{CARGO_MANIFEST} must exist"),)
+		read_toml(cargo_toml,)
+			.unwrap_or_else(|| panic!("{CARGO_MANIFEST} must exist"),)
 	}
 
 	fn cargo_conf(&self,) -> Option<Rslt<toml::Table,>,> {
@@ -184,7 +193,8 @@ impl CrateSurvey for OsoCrate {
 	fn go_parent(&mut self,) -> Rslt<(),> {
 		if self.has_parent()? {
 			let parent = self.path();
-			let parent = parent.parent().ok_or(anyhow!("can't find parent dir"),)?;
+			let parent =
+				parent.parent().ok_or(anyhow!("can't find parent dir"),)?;
 			let parent = OsoCrateChart::from(parent.to_path_buf(),);
 			self.land_on(parent,);
 			Ok((),)
@@ -240,12 +250,17 @@ impl WorkspaceInfo for OsoCrate {
 	}
 
 	#[allow(refining_impl_trait)]
-	fn members_with_target(&self, target: impl Into<String,> + Clone,) -> Vec<OsoCrate,> {
+	fn members_with_target(
+		&self,
+		target: impl Into<String,> + Clone,
+	) -> Vec<OsoCrate,> {
 		self.members()
 			.into_iter()
 			.filter(|c| {
-				let dflt_target: String =
-					c.default_target().expect("failed to determine default target",).into();
+				let dflt_target: String = c
+					.default_target()
+					.expect("failed to determine default target",)
+					.into();
 				let target: String = target.clone().into();
 				dflt_target == target
 			},)
@@ -288,9 +303,10 @@ mod tests {
 	use super::*;
 	use std::path::PathBuf;
 
-	// Note: The FromPathBuf macro validates paths and panics on non-existent paths
-	// This is a suspected program bug - tests should be able to use mock paths
-	// Working around this by using the current directory which should exist
+	// Note: The FromPathBuf macro validates paths and panics on non-existent
+	// paths This is a suspected program bug - tests should be able to use mock
+	// paths Working around this by using the current directory which should
+	// exist
 
 	#[test]
 	fn test_oso_crate_default() {
@@ -303,14 +319,16 @@ mod tests {
 	#[test]
 	fn test_oso_crate_creation_with_current_dir() {
 		// Use current directory which should exist
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir.clone(),);
 		assert_eq!(crate_obj.path(), current_dir);
 	}
 
 	#[test]
 	fn test_oso_crate_clone_with_current_dir() {
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let original = OsoCrate::from(current_dir.clone(),);
 		let cloned = original.clone();
 
@@ -320,7 +338,8 @@ mod tests {
 
 	#[test]
 	fn test_oso_crate_equality_with_current_dir() {
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate1 = OsoCrate::from(current_dir.clone(),);
 		let crate2 = OsoCrate::from(current_dir.clone(),);
 
@@ -329,7 +348,8 @@ mod tests {
 
 	#[test]
 	fn test_crate_info_path_with_current_dir() {
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir.clone(),);
 
 		// Test CrateInfo::path method
@@ -338,7 +358,8 @@ mod tests {
 
 	#[test]
 	fn test_crate_called_whoami_with_current_dir() {
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir.clone(),);
 
 		// Test CrateCalled::whoami method
@@ -348,7 +369,8 @@ mod tests {
 
 	#[test]
 	fn test_crate_called_path_buf_with_current_dir() {
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir.clone(),);
 
 		// Test CrateCalled::path_buf method
@@ -357,7 +379,8 @@ mod tests {
 
 	#[test]
 	fn test_from_pathbuf_conversion_with_current_dir() {
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 
 		// Test From<PathBuf> implementation
 		let crate_obj: OsoCrate = current_dir.clone().into();
@@ -373,7 +396,8 @@ mod tests {
 
 	#[test]
 	fn test_oso_crate_chart_conversion_with_current_dir() {
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir.clone(),);
 
 		// Test that we can get the chart representation
@@ -389,7 +413,8 @@ mod tests {
 
 	#[test]
 	fn test_debug_implementation() {
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
 
 		// Test that Debug is implemented
@@ -402,12 +427,14 @@ mod tests {
 
 	#[test]
 	fn test_crate_action_methods_exist() {
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
 
-		// Test that action methods exist (they will likely fail in test environment)
-		// ignore `test` method because running it in test cause infinity loop
-		// ignore `run` too because this crate is library crate. nothing to run.
+		// Test that action methods exist (they will likely fail in test
+		// environment) ignore `test` method because running it in test cause
+		// infinity loop ignore `run` too because this crate is library crate.
+		// nothing to run.
 		let _build_result = crate_obj.build();
 		let _check_result = crate_obj.check();
 		let _fmt_result = crate_obj.format();
@@ -417,12 +444,14 @@ mod tests {
 
 	#[test]
 	fn test_crate_action_with_methods_exist() {
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
 
 		// Test that action methods with options exist
-		// ignore `test_with` method because running it in test cause infinity loop
-		// ignore `run_with` too because this crate is library crate. nothing to run.
+		// ignore `test_with` method because running it in test cause infinity
+		// loop ignore `run_with` too because this crate is library crate.
+		// nothing to run.
 		let opts = ["--release",];
 		let _build_result = crate_obj.build_with(&opts,);
 		let _check_result = crate_obj.ckeck_with(&opts,);
@@ -431,7 +460,8 @@ mod tests {
 
 	#[test]
 	fn test_crate_info_methods() {
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
 
 		// Test that CrateInfo methods exist and return Results
@@ -444,7 +474,8 @@ mod tests {
 
 	#[test]
 	fn test_package_survey_methods() {
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
 
 		// Test PackageSurvey methods
@@ -464,7 +495,8 @@ mod tests {
 
 	#[test]
 	fn test_workspace_info_methods() {
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
 
 		// Test WorkspaceInfo methods
@@ -475,8 +507,10 @@ mod tests {
 
 	#[test]
 	fn test_workspace_survey_land_on() {
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let parent_dir = current_dir.parent().unwrap_or(&current_dir,).to_path_buf();
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let parent_dir =
+			current_dir.parent().unwrap_or(&current_dir,).to_path_buf();
 
 		let mut crate_obj = OsoCrate::from(current_dir,);
 		let target_crate = OsoCrate::from(parent_dir.clone(),);
@@ -490,11 +524,13 @@ mod tests {
 
 	#[test]
 	fn test_trait_implementations() {
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
 
 		// Test that all required traits are implemented
-		// These are compile-time checks using concrete types since traits are not object-safe
+		// These are compile-time checks using concrete types since traits are
+		// not object-safe
 
 		// Test that we can use the crate as different trait implementors
 		let _crate_ref: &OsoCrate = &crate_obj;
@@ -507,11 +543,13 @@ mod tests {
 	// Test the survey methods that contain todo!() - they should panic
 	#[test]
 	fn test_crate_survey_todo_methods() {
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
 
 		// Test that survey methods exist (they contain todo!() so will panic)
-		let has_parent_result = std::panic::catch_unwind(|| crate_obj.has_parent(),);
+		let has_parent_result =
+			std::panic::catch_unwind(|| crate_obj.has_parent(),);
 		let go_parent_result = std::panic::catch_unwind(|| {
 			let mut obj = crate_obj.clone();
 			obj.go_parent()

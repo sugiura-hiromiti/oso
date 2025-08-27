@@ -121,8 +121,8 @@ mod tests {
 	#[test]
 	fn test_function_error_propagation() {
 		// Test that errors from helper functions are properly propagated
-		// This is a behavioral test - we can't easily mock the helper functions,
-		// but we can verify the error handling structure
+		// This is a behavioral test - we can't easily mock the helper
+		// functions, but we can verify the error handling structure
 
 		// Test project_root error handling
 		let project_result = project_root();
@@ -257,7 +257,8 @@ mod tests {
 				assert!(true);
 			},
 			_ => {
-				// Mixed success/failure might be valid depending on implementation
+				// Mixed success/failure might be valid depending on
+				// implementation
 				assert!(true);
 			},
 		}
@@ -273,7 +274,8 @@ mod tests {
 				assert!(true);
 			},
 			_ => {
-				// Mixed success/failure might be valid depending on implementation
+				// Mixed success/failure might be valid depending on
+				// implementation
 				assert!(true);
 			},
 		}
@@ -319,8 +321,8 @@ mod tests {
 			let path = project_crate.path();
 
 			// Path should be valid for filesystem operations
-			// Note: We can't guarantee the path exists in all test environments,
-			// but we can test that it's a valid path structure
+			// Note: We can't guarantee the path exists in all test
+			// environments, but we can test that it's a valid path structure
 			assert!(!path.as_os_str().is_empty());
 
 			// Test that path can be converted to string
@@ -387,7 +389,8 @@ mod tests {
 				thread::spawn(|| {
 					let _project_result = project_root();
 					let _current_result = current_crate();
-					// If we get here without panicking, the functions are thread-safe
+					// If we get here without panicking, the functions are
+					// thread-safe
 					true
 				},)
 			},)
