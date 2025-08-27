@@ -1,8 +1,8 @@
 //! # Parser Generation Framework
 //!
-//! This module provides the core traits and types for building composable parsers
-//! in the OSO operating system. The framework is designed around traits that allow
-//! for flexible parser construction and zero-cost abstractions.
+//! This module provides the core traits and types for building composable
+//! parsers in the OSO operating system. The framework is designed around traits
+//! that allow for flexible parser construction and zero-cost abstractions.
 //!
 //! ## Core Concepts
 //!
@@ -81,7 +81,8 @@ pub trait ParserGenerator<C: Context,> {
 ///
 /// # Associated Constants
 ///
-/// - `SIZE`: The size in bytes of the output type (defaults to `size_of::<Self::Output>()`)
+/// - `SIZE`: The size in bytes of the output type (defaults to
+///   `size_of::<Self::Output>()`)
 pub trait Context {
 	/// The type that will be produced by successful parsing
 	type Output;
@@ -128,8 +129,9 @@ pub trait Context {
 pub trait ParserComponents<C: Context,> {
 	/// Apply this parser component to the given context.
 	///
-	/// This method performs the parsing operation represented by this component,
-	/// potentially modifying the context and producing a result of type `R`.
+	/// This method performs the parsing operation represented by this
+	/// component, potentially modifying the context and producing a result of
+	/// type `R`.
 	///
 	/// # Type Parameters
 	///
@@ -141,7 +143,8 @@ pub trait ParserComponents<C: Context,> {
 	///
 	/// # Returns
 	///
-	/// A result containing either the parsed value of type `R` or a `ParserError`
+	/// A result containing either the parsed value of type `R` or a
+	/// `ParserError`
 	///
 	/// # Examples
 	///

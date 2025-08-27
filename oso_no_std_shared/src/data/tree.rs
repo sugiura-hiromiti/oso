@@ -16,9 +16,9 @@
 //! ## Design Principles
 //!
 //! The tree implementation uses lifetime parameters to ensure memory safety
-//! without requiring heap allocation, making it suitable for `no_std` environments.
-//! The trait-based design allows for flexible tree operations while maintaining
-//! type safety.
+//! without requiring heap allocation, making it suitable for `no_std`
+//! environments. The trait-based design allows for flexible tree operations
+//! while maintaining type safety.
 
 use crate::data::node::NodeValue;
 
@@ -27,7 +27,8 @@ pub mod walk_rslt;
 pub mod walker;
 
 //  TODO: -implement TreePart for Tree
-// - refactor codebase to use `TreePart` object as an atomic unit in `TreeWalk` and `TreeWindow`
+// - refactor codebase to use `TreePart` object as an atomic unit in `TreeWalk`
+//   and `TreeWindow`
 pub trait TreePart {
 	type N: NodeValue;
 
