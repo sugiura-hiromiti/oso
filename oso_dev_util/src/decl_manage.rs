@@ -28,8 +28,12 @@ pub struct OsoCargoInterface {
 impl CargoCrate for OsoCargoInterface {
 	fn specified_target(&self,) -> Rslt<impl Into<String,>,> {
 		let search_rslt = search_in_with(&self.ws.path(), |entry| {
-			let file_name =
-				entry.as_ref().expect("file io error",).file_name().to_string_lossy().to_string();
+			let file_name = entry
+				.as_ref()
+				.expect("file io error",)
+				.file_name()
+				.to_string_lossy()
+				.to_string();
 			let arch = self.opt.arch().into();
 
 			file_name.contains(&arch,) && file_name.ends_with(".json",)

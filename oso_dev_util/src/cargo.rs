@@ -17,7 +17,12 @@ pub trait CompileOpt {
 }
 
 #[features]
-#[derive(strum_macros::AsRefStr, strum_macros::EnumIs, strum_macros::EnumString, Clone,)]
+#[derive(
+	strum_macros::AsRefStr,
+	strum_macros::EnumIs,
+	strum_macros::EnumString,
+	Clone,
+)]
 pub enum Feature {}
 
 pub struct Opts {
@@ -103,7 +108,10 @@ impl Runtime {
 		host_tuple()?
 			.split('-',)
 			.next()
-			.context("target tuple for host does not include `-`. that is not usual.",)
+			.context(
+				"target tuple for host does not include `-`. that is not \
+				 usual.",
+			)
 			.map(Runtime::from_str,)
 	}
 }
@@ -228,7 +236,11 @@ pub fn host_tuple() -> Rslt<String,> {
 	target
 		.lines()
 		.find_map(|l| {
-			if l.contains("host: ",) { Some(l.replace("host: ", "",).to_string(),) } else { None }
+			if l.contains("host: ",) {
+				Some(l.replace("host: ", "",).to_string(),)
+			} else {
+				None
+			}
 		},)
 		.context("can't get host target tuple",)
 }
@@ -311,7 +323,11 @@ mod tests {
 
 	#[test]
 	fn test_cli_to_opts_with_defaults() {
-		let cli = Cli { build_mode: None, feature_flags: None, arch: None, };
+		let cli = Cli {
+			build_mode:    None,
+			feature_flags: None,
+			arch:          None,
+		};
 
 		let opts = cli.to_opts();
 		assert!(opts.build_mode.is_debug());
@@ -349,7 +365,10 @@ mod tests {
 
 	#[test]
 	fn test_firmware_debug() {
-		let firmware = Firmware { code: PathBuf::from("/code",), vars: PathBuf::from("/vars",), };
+		let firmware = Firmware {
+			code: PathBuf::from("/code",),
+			vars: PathBuf::from("/vars",),
+		};
 
 		let debug_str = format!("{:?}", firmware);
 		assert!(debug_str.contains("Firmware"));
@@ -378,7 +397,8 @@ mod tests {
 		assert!(features.is_empty());
 
 		// Test that Feature implements required traits
-		let _phantom: std::marker::PhantomData<Feature,> = std::marker::PhantomData;
+		let _phantom: std::marker::PhantomData<Feature,> =
+			std::marker::PhantomData;
 	}
 
 	// Property-based tests
@@ -523,8 +543,10 @@ mod tests {
 
 		assert!(!debug_str.is_empty());
 
-		let firmware =
-			Firmware { code: PathBuf::from("/test/code",), vars: PathBuf::from("/test/vars",), };
+		let firmware = Firmware {
+			code: PathBuf::from("/test/code",),
+			vars: PathBuf::from("/test/vars",),
+		};
 		let debug_str = format!("{:?}", firmware);
 		assert!(debug_str.contains("Firmware"));
 		assert!(debug_str.contains("/test/code"));
@@ -576,8 +598,11 @@ mod tests {
 					assert!(bm.is_debug());
 					assert!(a.is_aarch_64());
 
-					let _opts =
-						Opts { build_mode: *bm, feature_flags: vec![], arch: *a, };
+					let _opts = Opts {
+						build_mode:    *bm,
+						feature_flags: vec![],
+						arch:          *a,
+					};
 				},)
 			},)
 			.collect();
@@ -596,7 +621,11 @@ mod tests {
 		let _parser = Cli::command();
 
 		// Test default CLI
-		let cli = Cli { build_mode: None, feature_flags: None, arch: None, };
+		let cli = Cli {
+			build_mode:    None,
+			feature_flags: None,
+			arch:          None,
+		};
 
 		let opts = cli.to_opts();
 		assert!(opts.build_mode.is_debug());

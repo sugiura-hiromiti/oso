@@ -28,15 +28,18 @@ mod tests {
 	use crate::decl_manage::crate_::OsoCrate;
 	use std::path::PathBuf;
 
-	// Note: Working around FromPathBuf macro validation by using current directory
+	// Note: Working around FromPathBuf macro validation by using current
+	// directory
 
 	#[test]
 	fn test_package_trait_hierarchy() {
 		// Test that Package trait requires both PackageAction and PackageSurvey
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
 
-		// Test that OsoCrate implements Package (using concrete type since not object-safe)
+		// Test that OsoCrate implements Package (using concrete type since not
+		// object-safe)
 		let _package_ref: &OsoCrate = &crate_obj;
 
 		// Test as_action method
@@ -49,7 +52,8 @@ mod tests {
 	#[test]
 	fn test_package_action_trait() {
 		// Test that PackageAction combines PackageInfo and CrateAction
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
 
 		// Test that OsoCrate implements PackageAction (concrete type only)
@@ -61,7 +65,11 @@ mod tests {
 		let check_result = crate_obj.check();
 
 		// If we get here without compilation errors, PackageAction is working
-		assert!(build_result.is_ok() || format_result.is_ok() || check_result.is_ok());
+		assert!(
+			build_result.is_ok()
+				|| format_result.is_ok()
+				|| check_result.is_ok()
+		);
 	}
 
 	#[test]
@@ -71,7 +79,8 @@ mod tests {
 		use crate::cargo::Feature;
 		use crate::cargo::Opts;
 
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
 
 		// Test that OsoCrate implements PackageSurvey
@@ -85,7 +94,8 @@ mod tests {
 	#[test]
 	fn test_package_info_trait() {
 		// Test that PackageInfo extends CrateInfo
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir.clone(),);
 
 		// Test that OsoCrate implements PackageInfo (concrete type only)
@@ -120,7 +130,8 @@ mod tests {
 			let _path = info.path();
 		}
 
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
 
 		test_package(&crate_obj,);
@@ -139,7 +150,8 @@ mod tests {
 			let _survey = package.as_survey();
 		}
 
-		let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
+		let current_dir =
+			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
 
 		work_with_package(crate_obj,);
