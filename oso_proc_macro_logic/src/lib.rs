@@ -1,7 +1,7 @@
 //! # OSO Procedural Macro Logic
 //!
-//! This crate provides procedural macro logic and utilities for the OSO operating system project.
-//! It includes functionality for:
+//! This crate provides procedural macro logic and utilities for the OSO
+//! operating system project. It includes functionality for:
 //!
 //! - Font data processing and bitmap conversion
 //! - ELF file parsing and analysis
@@ -12,7 +12,8 @@
 //! ## Features
 //!
 //! The crate uses several unstable Rust features:
-//! - `proc_macro_diagnostic`: For emitting diagnostic messages during macro expansion
+//! - `proc_macro_diagnostic`: For emitting diagnostic messages during macro
+//!   expansion
 //! - `str_as_str`: String manipulation utilities
 //! - `iter_array_chunks`: Iterator chunking operations
 //! - `associated_type_defaults`: Default associated types in traits
@@ -69,9 +70,11 @@ mod tests {
 
 	/// Helper function to create a temporary directory structure for testing
 	fn create_test_environment() -> (TempDir, PathBuf,) {
-		let temp_dir = TempDir::new().expect("Failed to create temp directory",);
+		let temp_dir =
+			TempDir::new().expect("Failed to create temp directory",);
 		let target_dir = temp_dir.path().join("target",);
-		create_dir_all(&target_dir,).expect("Failed to create target directory",);
+		create_dir_all(&target_dir,)
+			.expect("Failed to create target directory",);
 
 		let kernel_path = target_dir.join("oso_kernel.elf",);
 		(temp_dir, kernel_path,)
@@ -85,18 +88,23 @@ mod tests {
 		File::create(&kernel_path,).expect("Failed to create kernel file",);
 
 		// Change to the temp directory
-		let original_dir = current_dir().expect("Failed to get current directory",);
+		let original_dir =
+			current_dir().expect("Failed to get current directory",);
 		set_current_dir(temp_dir.path(),).expect("Failed to change directory",);
 
 		// Test that check_oso_kernel succeeds when file exists
 		let result = check_oso_kernel();
 
-		// Restore original directory - handle case where original directory might not exist
+		// Restore original directory - handle case where original directory
+		// might not exist
 		if original_dir.exists() {
-			set_current_dir(original_dir,).expect("Failed to restore directory",);
+			set_current_dir(original_dir,)
+				.expect("Failed to restore directory",);
 		} else {
-			// If original directory doesn't exist, just change to a safe directory
-			set_current_dir("/tmp",).expect("Failed to change to safe directory",);
+			// If original directory doesn't exist, just change to a safe
+			// directory
+			set_current_dir("/tmp",)
+				.expect("Failed to change to safe directory",);
 		}
 
 		assert!(result.is_ok());
@@ -109,18 +117,23 @@ mod tests {
 		// Don't create the kernel file
 
 		// Change to the temp directory
-		let original_dir = current_dir().expect("Failed to get current directory",);
+		let original_dir =
+			current_dir().expect("Failed to get current directory",);
 		set_current_dir(temp_dir.path(),).expect("Failed to change directory",);
 
 		// Test that check_oso_kernel fails when file doesn't exist
 		let result = check_oso_kernel();
 
-		// Restore original directory - handle case where original directory might not exist
+		// Restore original directory - handle case where original directory
+		// might not exist
 		if original_dir.exists() {
-			set_current_dir(original_dir,).expect("Failed to restore directory",);
+			set_current_dir(original_dir,)
+				.expect("Failed to restore directory",);
 		} else {
-			// If original directory doesn't exist, just change to a safe directory
-			set_current_dir("/tmp",).expect("Failed to change to safe directory",);
+			// If original directory doesn't exist, just change to a safe
+			// directory
+			set_current_dir("/tmp",)
+				.expect("Failed to change to safe directory",);
 		}
 
 		assert!(result.is_err());
@@ -132,23 +145,29 @@ mod tests {
 
 	#[test]
 	fn test_check_oso_kernel_target_directory_not_exists() {
-		let temp_dir = TempDir::new().expect("Failed to create temp directory",);
+		let temp_dir =
+			TempDir::new().expect("Failed to create temp directory",);
 
 		// Don't create target directory
 
 		// Change to the temp directory
-		let original_dir = current_dir().expect("Failed to get current directory",);
+		let original_dir =
+			current_dir().expect("Failed to get current directory",);
 		set_current_dir(temp_dir.path(),).expect("Failed to change directory",);
 
 		// Test that check_oso_kernel fails when target directory doesn't exist
 		let result = check_oso_kernel();
 
-		// Restore original directory - handle case where original directory might not exist
+		// Restore original directory - handle case where original directory
+		// might not exist
 		if original_dir.exists() {
-			set_current_dir(original_dir,).expect("Failed to restore directory",);
+			set_current_dir(original_dir,)
+				.expect("Failed to restore directory",);
 		} else {
-			// If original directory doesn't exist, just change to a safe directory
-			set_current_dir("/tmp",).expect("Failed to change to safe directory",);
+			// If original directory doesn't exist, just change to a safe
+			// directory
+			set_current_dir("/tmp",)
+				.expect("Failed to change to safe directory",);
 		}
 
 		assert!(result.is_err());
@@ -156,22 +175,23 @@ mod tests {
 
 	#[test]
 	fn test_check_oso_kernel_path_construction() {
-		// We can't easily test the internal path construction without modifying the function,
-		// but we can test that it behaves consistently
+		// We can't easily test the internal path construction without modifying
+		// the function, but we can test that it behaves consistently
 		let result1 = check_oso_kernel();
 		let result2 = check_oso_kernel();
 
 		// Both calls should have the same result (both succeed or both fail)
-		// However, if one succeeds and one fails, it might be due to environmental changes
-		// In that case, we just verify that the function doesn't panic
+		// However, if one succeeds and one fails, it might be due to
+		// environmental changes In that case, we just verify that the
+		// function doesn't panic
 		match (result1.is_ok(), result2.is_ok(),) {
 			(true, true,) | (false, false,) => {
 				// Consistent results - this is expected
 				assert!(true);
 			},
 			(true, false,) | (false, true,) => {
-				// Inconsistent results - this can happen due to environmental changes
-				// but the function should still work correctly
+				// Inconsistent results - this can happen due to environmental
+				// changes but the function should still work correctly
 				// Let's just verify that both results are valid Result types
 				assert!(result1.is_ok() || result1.is_err());
 				assert!(result2.is_ok() || result2.is_err());
@@ -182,7 +202,8 @@ mod tests {
 	#[test]
 	fn test_module_visibility() {
 		// Test that all modules are properly exposed
-		// This is more of a compilation test - if it compiles, the modules are accessible
+		// This is more of a compilation test - if it compiles, the modules are
+		// accessible
 
 		// We can't directly test the module contents without using them,
 		// but we can verify they exist by checking they compile
@@ -212,14 +233,15 @@ mod tests {
 
 	#[test]
 	fn test_crate_features() {
-		// This test verifies that the crate compiles with all the required features
-		// If any feature is missing, compilation would fail
+		// This test verifies that the crate compiles with all the required
+		// features If any feature is missing, compilation would fail
 
 		// Test proc_macro_diagnostic feature (implicitly tested by compilation)
 		// Test str_as_str feature (implicitly tested by compilation)
 		// Test iter_array_chunks feature (implicitly tested by compilation)
-		// Test associated_type_defaults feature (implicitly tested by compilation)
-		// Test iterator_try_collect feature (implicitly tested by compilation)
+		// Test associated_type_defaults feature (implicitly tested by
+		// compilation) Test iterator_try_collect feature (implicitly tested
+		// by compilation)
 
 		assert!(true);
 	}
@@ -233,8 +255,9 @@ mod tests {
 		}
 
 		let result = failing_function();
-		// In most test environments, this should fail because oso_kernel.elf doesn't exist
-		// But we don't assert the specific result since it depends on the test environment
+		// In most test environments, this should fail because oso_kernel.elf
+		// doesn't exist But we don't assert the specific result since it
+		// depends on the test environment
 
 		// Just verify that the Result type works correctly
 		match result {
@@ -256,7 +279,8 @@ mod tests {
 	#[test]
 	fn test_file_exists_check() {
 		// Test the file existence checking logic
-		let temp_dir = TempDir::new().expect("Failed to create temp directory",);
+		let temp_dir =
+			TempDir::new().expect("Failed to create temp directory",);
 		let test_file = temp_dir.path().join("test_file.txt",);
 
 		// File doesn't exist initially
@@ -369,8 +393,10 @@ mod tests {
 
 		fn test_function_with_diags() -> RsltP {
 			let tokens = quote::quote! { fn test() {} };
-			let diags =
-				vec![Diag::Warn("Test warning".to_string(),), Diag::Note("Test note".to_string(),)];
+			let diags = vec![
+				Diag::Warn("Test warning".to_string(),),
+				Diag::Note("Test note".to_string(),),
+			];
 			Ok((tokens, diags,),)
 		}
 
@@ -416,7 +442,8 @@ mod tests {
 	#[test]
 	fn test_quote_macro_functionality() {
 		// Test various quote! macro patterns
-		let ident = syn::Ident::new("TestStruct", proc_macro2::Span::call_site(),);
+		let ident =
+			syn::Ident::new("TestStruct", proc_macro2::Span::call_site(),);
 		let ty: syn::Type = syn::parse_quote! { i32 };
 
 		let tokens = quote::quote! {
@@ -434,7 +461,8 @@ mod tests {
 	fn test_syn_parsing_functionality() {
 		// Test syn parsing capabilities
 		let input = "fn test(arg: i32) -> bool { true }";
-		let parsed: syn::ItemFn = syn::parse_str(input,).expect("Failed to parse function",);
+		let parsed: syn::ItemFn =
+			syn::parse_str(input,).expect("Failed to parse function",);
 
 		assert_eq!(parsed.sig.ident.to_string(), "test");
 		assert_eq!(parsed.sig.inputs.len(), 1);
@@ -449,8 +477,12 @@ mod tests {
 		let joined = items.iter().join(", ",);
 		assert_eq!(joined, "a, b, c");
 
-		let chunks: Vec<Vec<&str,>,> =
-			items.iter().chunks(2,).into_iter().map(|chunk| chunk.cloned().collect(),).collect();
+		let chunks: Vec<Vec<&str,>,> = items
+			.iter()
+			.chunks(2,)
+			.into_iter()
+			.map(|chunk| chunk.cloned().collect(),)
+			.collect();
 		assert_eq!(chunks.len(), 2);
 		assert_eq!(chunks[0], vec!["a", "b"]);
 		assert_eq!(chunks[1], vec!["c"]);
@@ -458,7 +490,8 @@ mod tests {
 
 	#[test]
 	fn test_colored_output_functionality() {
-		// Test that colored output doesn't panic (even if colors aren't visible in tests)
+		// Test that colored output doesn't panic (even if colors aren't visible
+		// in tests)
 		use colored::Colorize;
 
 		let colored_text = "Test message".red().bold();
@@ -507,7 +540,8 @@ mod tests {
 
 		let error_msg = result.unwrap_err().to_string();
 		assert!(error_msg.contains("Outer context"));
-		// The error chain format may vary, so just check that we have some error content
+		// The error chain format may vary, so just check that we have some
+		// error content
 		assert!(!error_msg.is_empty());
 	}
 
@@ -526,7 +560,8 @@ mod tests {
 
 		// Test iterator_try_collect feature (if used)
 		let results: Vec<Result<i32, &str,>,> = vec![Ok(1,), Ok(2,), Ok(3,)];
-		let _collected: Result<Vec<i32,>, &str,> = results.into_iter().try_collect();
+		let _collected: Result<Vec<i32,>, &str,> =
+			results.into_iter().try_collect();
 
 		// If this compiles, the features are working
 		assert!(true);
@@ -538,10 +573,12 @@ mod tests {
 		use crate::oso_proc_macro_helper;
 
 		// Test that we can create types from each module
-		let _diag = oso_proc_macro_helper::Diag::Note("Integration test".to_string(),);
+		let _diag =
+			oso_proc_macro_helper::Diag::Note("Integration test".to_string(),);
 
 		// Test that module functions exist (compilation test)
-		// We can't easily call them without proper inputs, but we can verify they exist
+		// We can't easily call them without proper inputs, but we can verify
+		// they exist
 		assert!(true);
 	}
 
@@ -661,19 +698,21 @@ mod tests {
 		// Test advanced syn parsing capabilities
 
 		// Test parsing complex function signatures
-		let complex_fn = "pub async unsafe fn complex_function<T: Clone + Send>(
+		let complex_fn = "pub async unsafe fn complex_function<T: Clone + \
+		                  Send>(
 			arg1: &mut T,
 			arg2: Option<Vec<T>>,
 			arg3: impl Iterator<Item = T>
-		) -> Result<Box<dyn Iterator<Item = T>>, Box<dyn std::error::Error + Send + Sync>>
+		) -> Result<Box<dyn Iterator<Item = T>>, Box<dyn std::error::Error + Send + \
+		                  Sync>>
 		where
 			T: 'static + Clone + Send + Sync
 		{
 			todo!()
 		}";
 
-		let parsed: syn::ItemFn =
-			syn::parse_str(complex_fn,).expect("Failed to parse complex function",);
+		let parsed: syn::ItemFn = syn::parse_str(complex_fn,)
+			.expect("Failed to parse complex function",);
 
 		assert_eq!(parsed.sig.ident.to_string(), "complex_function");
 		assert!(parsed.sig.asyncness.is_some());
@@ -682,10 +721,10 @@ mod tests {
 		assert!(parsed.sig.generics.params.len() > 0);
 
 		// Test parsing complex types
-		let complex_type =
-			"Result<Box<dyn Iterator<Item = T>>, Box<dyn std::error::Error + Send + Sync>>";
-		let parsed_type: syn::Type =
-			syn::parse_str(complex_type,).expect("Failed to parse complex type",);
+		let complex_type = "Result<Box<dyn Iterator<Item = T>>, Box<dyn \
+		                    std::error::Error + Send + Sync>>";
+		let parsed_type: syn::Type = syn::parse_str(complex_type,)
+			.expect("Failed to parse complex type",);
 
 		match parsed_type {
 			syn::Type::Path(_,) => assert!(true),
@@ -749,7 +788,10 @@ mod tests {
 		}
 
 		impl std::fmt::Display for CustomError {
-			fn fmt(&self, f: &mut std::fmt::Formatter<'_,>,) -> std::fmt::Result {
+			fn fmt(
+				&self,
+				f: &mut std::fmt::Formatter<'_,>,
+			) -> std::fmt::Result {
 				write!(f, "Custom error: {}", self.message)
 			}
 		}
@@ -757,7 +799,8 @@ mod tests {
 		impl std::error::Error for CustomError {}
 
 		fn function_with_custom_error() -> Rslt<(),> {
-			let custom_err = CustomError { message: "Something went wrong".to_string(), };
+			let custom_err =
+				CustomError { message: "Something went wrong".to_string(), };
 			Err(anyhow::Error::from(custom_err,),)
 		}
 
@@ -769,8 +812,12 @@ mod tests {
 		use itertools::Itertools;
 
 		let numbers = vec![1, 2, 3, 4, 5, 6];
-		let grouped: Vec<Vec<i32,>,> =
-			numbers.into_iter().chunks(2,).into_iter().map(|chunk| chunk.collect(),).collect();
+		let grouped: Vec<Vec<i32,>,> = numbers
+			.into_iter()
+			.chunks(2,)
+			.into_iter()
+			.map(|chunk| chunk.collect(),)
+			.collect();
 		assert_eq!(grouped.len(), 3);
 		assert_eq!(grouped[0], vec![1, 2]);
 		assert_eq!(grouped[1], vec![3, 4]);

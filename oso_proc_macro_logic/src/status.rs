@@ -1,16 +1,16 @@
 //! # UEFI Status Code Specification Parser
 //!
-//! This module provides functionality for parsing UEFI status codes from the official
-//! UEFI specification HTML documents. It can extract success, error, and warning codes
-//! along with their mnemonics, values, and descriptions.
+//! This module provides functionality for parsing UEFI status codes from the
+//! official UEFI specification HTML documents. It can extract success, error,
+//! and warning codes along with their mnemonics, values, and descriptions.
 //!
 //! The parser works by:
 //! 1. Fetching the UEFI specification page via HTTP
 //! 2. Parsing the HTML content to extract status code tables
 //! 3. Converting the table data into structured Rust types
 //!
-//! This is particularly useful for generating constants and enums for UEFI status
-//! codes in operating system development.
+//! This is particularly useful for generating constants and enums for UEFI
+//! status codes in operating system development.
 
 use crate::RsltP;
 use crate::oso_proc_macro_helper::Diag;
@@ -30,13 +30,16 @@ use std::rc::Rc;
 const MAIN_SECTION_ID: &str = "status-codes";
 
 /// HTML element ID of the success codes table in the UEFI specification
-const SUCCESS_CODE_TABLE_ID: &str = "efi-status-success-codes-high-bit-clear-apx-d-status-codes";
+const SUCCESS_CODE_TABLE_ID: &str =
+	"efi-status-success-codes-high-bit-clear-apx-d-status-codes";
 
 /// HTML element ID of the error codes table in the UEFI specification
-const ERROR_CODE_TABLE_ID: &str = "efi-status-error-codes-high-bit-set-apx-d-status-codes";
+const ERROR_CODE_TABLE_ID: &str =
+	"efi-status-error-codes-high-bit-set-apx-d-status-codes";
 
 /// HTML element ID of the warning codes table in the UEFI specification
-const WARN_CODE_TABLE_ID: &str = "efi-status-warning-codes-high-bit-clear-apx-d-status-codes";
+const WARN_CODE_TABLE_ID: &str =
+	"efi-status-warning-codes-high-bit-clear-apx-d-status-codes";
 
 /// Trait for converting status code information into token stream parts.
 ///
@@ -73,15 +76,21 @@ impl TokenParts for Vec<StatusCodeInfo,> {
 		self.iter()
 			.map(|sci| {
 				// Create identifier from the status code mnemonic
-				let mnemonic = syn::Ident::new(&sci.mnemonic, Span::call_site(),);
+				let mnemonic =
+					syn::Ident::new(&sci.mnemonic, Span::call_site(),);
 
 				// Create literal from the status code value
-				let value =
-					syn::Lit::Int(syn::LitInt::new(&format!("{}", sci.value), Span::call_site(),),);
+				let value = syn::Lit::Int(syn::LitInt::new(
+					&format!("{}", sci.value),
+					Span::call_site(),
+				),);
 
 				// Generate appropriate match arm based on error status
-				let match_arms =
-					if is_err { err_match(&mnemonic, &sci.desc,) } else { ok_match(&mnemonic,) };
+				let match_arms = if is_err {
+					err_match(&mnemonic, &sci.desc,)
+				} else {
+					ok_match(&mnemonic,)
+				};
 
 				// Generate associated constant with documentation
 				let assoc = assoc_const(&mnemonic, &value, &sci.desc,);
@@ -134,7 +143,9 @@ pub fn status(version: syn::Lit,) -> RsltP {
 	};
 
 	// Construct the URL for the UEFI specification page
-	let status_spec_url = format!("https://uefi.org/specs/UEFI/{version}/Apx_D_Status_Codes.html");
+	let status_spec_url = format!(
+		"https://uefi.org/specs/UEFI/{version}/Apx_D_Status_Codes.html"
+	);
 
 	// Fetch and parse the specification page
 	let spec_page = status_spec_page(&status_spec_url,)?;
@@ -155,9 +166,10 @@ pub fn status(version: syn::Lit,) -> RsltP {
 
 /// Fetches and parses UEFI status codes from the official specification
 ///
-/// This function downloads the UEFI specification page, parses the HTML content,
-/// and extracts all status codes (success, error, and warning) into a structured format.
-/// Error codes are automatically marked with the high bit set as per UEFI specification.
+/// This function downloads the UEFI specification page, parses the HTML
+/// content, and extracts all status codes (success, error, and warning) into a
+/// structured format. Error codes are automatically marked with the high bit
+/// set as per UEFI specification.
 ///
 /// # Arguments
 ///
@@ -165,8 +177,8 @@ pub fn status(version: syn::Lit,) -> RsltP {
 ///
 /// # Returns
 ///
-/// A `Result<StatusCode>` containing all parsed status codes organized by category,
-/// or an error if the page cannot be fetched or parsed.
+/// A `Result<StatusCode>` containing all parsed status codes organized by
+/// category, or an error if the page cannot be fetched or parsed.
 ///
 /// # Errors
 ///
@@ -183,14 +195,16 @@ pub fn status(version: syn::Lit,) -> RsltP {
 /// let status_codes = status_spec_page(url)?;
 /// println!("Found {} success codes", status_codes.success.len());
 /// ```
-pub fn status_spec_page(status_spec_url: impl Into<String,>,) -> Rslt<StatusCode,> {
+pub fn status_spec_page(
+	status_spec_url: impl Into<String,>,
+) -> Rslt<StatusCode,> {
 	// Fetch the specification page
 	let mut rsp = ureq::get(status_spec_url.into(),).call()?;
 	let rsp_body = rsp.body_mut().read_to_string()?;
 
 	// Parse the HTML document
-	let dom =
-		html5ever::parse_document(RcDom::default(), Default::default(),).one(rsp_body.as_str(),);
+	let dom = html5ever::parse_document(RcDom::default(), Default::default(),)
+		.one(rsp_body.as_str(),);
 
 	let node = dom.document;
 
@@ -199,12 +213,18 @@ pub fn status_spec_page(status_spec_url: impl Into<String,>,) -> Rslt<StatusCode
 		.expect("failed to get main section node",);
 
 	// Extract the three status code tables
-	let success_code_table = get_element_by_id(main_section.clone(), SUCCESS_CODE_TABLE_ID,)
-		.ok_or(anyhow!("ELEMENT WITH ID NOT FOUND: {SUCCESS_CODE_TABLE_ID}"),)?;
-	let error_code_table = get_element_by_id(main_section.clone(), ERROR_CODE_TABLE_ID,)
-		.ok_or(anyhow!("ELEMENT WITH ID NOT FOUND: {ERROR_CODE_TABLE_ID}"),)?;
-	let warn_code_table = get_element_by_id(main_section.clone(), WARN_CODE_TABLE_ID,)
-		.ok_or(anyhow!("ELEMENT WITH ID NOT FOUND: {WARN_CODE_TABLE_ID}"),)?;
+	let success_code_table =
+		get_element_by_id(main_section.clone(), SUCCESS_CODE_TABLE_ID,).ok_or(
+			anyhow!("ELEMENT WITH ID NOT FOUND: {SUCCESS_CODE_TABLE_ID}"),
+		)?;
+	let error_code_table =
+		get_element_by_id(main_section.clone(), ERROR_CODE_TABLE_ID,).ok_or(
+			anyhow!("ELEMENT WITH ID NOT FOUND: {ERROR_CODE_TABLE_ID}"),
+		)?;
+	let warn_code_table =
+		get_element_by_id(main_section.clone(), WARN_CODE_TABLE_ID,).ok_or(
+			anyhow!("ELEMENT WITH ID NOT FOUND: {WARN_CODE_TABLE_ID}"),
+		)?;
 
 	// Extract table rows from each table (skip header row)
 	let success_code_table_rows = table_rows(success_code_table.clone(),);
@@ -212,8 +232,10 @@ pub fn status_spec_page(status_spec_url: impl Into<String,>,) -> Rslt<StatusCode
 	let warn_code_table_rows = table_rows(warn_code_table.clone(),);
 
 	// Parse table data from each row
-	let success_codes_info: Vec<Vec<String,>,> =
-		success_code_table_rows.iter().map(|n| table_data(n.clone(),),).collect();
+	let success_codes_info: Vec<Vec<String,>,> = success_code_table_rows
+		.iter()
+		.map(|n| table_data(n.clone(),),)
+		.collect();
 	let error_codes_info: Vec<Vec<String,>,> =
 		error_code_table_rows.iter().map(|n| table_data(n.clone(),),).collect();
 	let warn_codes_info: Vec<Vec<String,>,> =
@@ -229,14 +251,18 @@ pub fn status_spec_page(status_spec_url: impl Into<String,>,) -> Rslt<StatusCode
 		sci.value |= StatusCodeInfo::ERROR_BIT;
 	},);
 
-	Ok(StatusCode { success: success_codes, error: error_codes, warn: warn_codes, },)
+	Ok(StatusCode {
+		success: success_codes,
+		error:   error_codes,
+		warn:    warn_codes,
+	},)
 }
 
 /// Generates the implementation block for the UEFI Status struct.
 ///
-/// This function takes parsed status code information from the UEFI specification
-/// and generates a complete implementation block including associated constants
-/// for all status codes and error handling methods.
+/// This function takes parsed status code information from the UEFI
+/// specification and generates a complete implementation block including
+/// associated constants for all status codes and error handling methods.
 ///
 /// # Parameters
 ///
@@ -252,9 +278,10 @@ pub fn status_spec_page(status_spec_url: impl Into<String,>,) -> Rslt<StatusCode
 ///
 /// # Generated Methods
 ///
-/// - `ok_or()`: Converts the status to a Result, returning Ok for success/warning status codes and
-///   Err for error status codes
-/// - `ok_or_with()`: Similar to ok_or but allows custom transformation of success values
+/// - `ok_or()`: Converts the status to a Result, returning Ok for
+///   success/warning status codes and Err for error status codes
+/// - `ok_or_with()`: Similar to ok_or but allows custom transformation of
+///   success values
 pub fn impl_status(spec_page: &StatusCode,) -> proc_macro2::TokenStream {
 	// Generate token parts for success status codes (non-error)
 	let (success_match, success_assoc,): (Vec<_,>, Vec<_,>,) =
@@ -307,8 +334,9 @@ pub fn impl_status(spec_page: &StatusCode,) -> proc_macro2::TokenStream {
 
 /// Generates a match arm for successful (non-error) status codes.
 ///
-/// Creates a match arm that returns `Ok(Self::MNEMONIC)` for the given status code.
-/// This is used for success and warning status codes in the `ok_or()` method.
+/// Creates a match arm that returns `Ok(Self::MNEMONIC)` for the given status
+/// code. This is used for success and warning status codes in the `ok_or()`
+/// method.
 ///
 /// # Parameters
 ///
@@ -360,8 +388,13 @@ fn err_match(mnemonic: &syn::Ident, msg: &String,) -> proc_macro2::TokenStream {
 ///
 /// # Returns
 ///
-/// Returns a token stream representing an associated constant with documentation
-fn assoc_const(mnemonic: &syn::Ident, value: &syn::Lit, msg: &String,) -> proc_macro2::TokenStream {
+/// Returns a token stream representing an associated constant with
+/// documentation
+fn assoc_const(
+	mnemonic: &syn::Ident,
+	value: &syn::Lit,
+	msg: &String,
+) -> proc_macro2::TokenStream {
 	quote::quote! {
 		#[doc = #msg]
 		pub const #mnemonic: Self = Self(#value);
@@ -388,8 +421,11 @@ pub fn get_element_by_id(node: Rc<Node,>, id: &str,) -> Option<Rc<Node,>,> {
 		let attrs_borrow = attrs.borrow();
 		attrs_borrow.iter().any(|a| {
 			// Create a tendril for the target ID
-			let value =
-				unsafe { tendril::StrTendril::from_byte_slice_without_validating(id.as_bytes(),) };
+			let value = unsafe {
+				tendril::StrTendril::from_byte_slice_without_validating(
+					id.as_bytes(),
+				)
+			};
 			let local_name = local_name!("id");
 
 			// Check if this attribute is an ID with the target value
@@ -403,7 +439,10 @@ pub fn get_element_by_id(node: Rc<Node,>, id: &str,) -> Option<Rc<Node,>,> {
 		Some(node,)
 	} else {
 		// Recursively search child nodes
-		node.children.borrow().iter().find_map(|n| get_element_by_id(n.clone(), id,),)
+		node.children
+			.borrow()
+			.iter()
+			.find_map(|n| get_element_by_id(n.clone(), id,),)
 	}
 }
 
@@ -420,19 +459,25 @@ pub fn get_element_by_id(node: Rc<Node,>, id: &str,) -> Option<Rc<Node,>,> {
 ///
 /// # Returns
 ///
-/// A vector of all matching nodes. Returns an empty vector if no matches are found.
+/// A vector of all matching nodes. Returns an empty vector if no matches are
+/// found.
 ///
 /// # Note
 ///
 /// This function is currently unused but kept for potential future use.
 #[allow(dead_code)]
-fn get_elements_by_attribute(node: Rc<Node,>, attr: &str, value: &str,) -> Vec<Rc<Node,>,> {
+fn get_elements_by_attribute(
+	node: Rc<Node,>,
+	attr: &str,
+	value: &str,
+) -> Vec<Rc<Node,>,> {
 	let mut rslt = vec![];
 
 	// Check if current node matches the attribute criteria
 	let matches = match &node.data {
 		NodeData::Element { attrs, .. } => attrs.borrow().iter().any(|a| {
-			let local_name = string_cache::Atom::<LocalNameStaticSet,>::from(attr,);
+			let local_name =
+				string_cache::Atom::<LocalNameStaticSet,>::from(attr,);
 			*a.name.local == *local_name && a.value.contains(value,)
 		},),
 		_ => false,
@@ -444,7 +489,8 @@ fn get_elements_by_attribute(node: Rc<Node,>, attr: &str, value: &str,) -> Vec<R
 
 	// Recursively search child nodes
 	node.children.borrow().iter().for_each(|n| {
-		let mut child_matches = get_elements_by_attribute(n.clone(), attr, value,);
+		let mut child_matches =
+			get_elements_by_attribute(n.clone(), attr, value,);
 		rslt.append(&mut child_matches,);
 	},);
 
@@ -474,7 +520,8 @@ fn get_elements_by_name(node: Rc<Node,>, tag_name: &str,) -> Vec<Rc<Node,>,> {
 	// Check if current node matches the tag name
 	let matches = match &node.data {
 		NodeData::Element { name, .. } => {
-			let element_name = string_cache::Atom::<LocalNameStaticSet,>::from(tag_name,);
+			let element_name =
+				string_cache::Atom::<LocalNameStaticSet,>::from(tag_name,);
 			*name.local == *element_name
 		},
 		_ => false,
@@ -537,19 +584,25 @@ fn table_data(node: Rc<Node,>,) -> Vec<String,> {
 	let row = get_elements_by_name(node.clone(), "p",);
 
 	// Extract text from the first cell (mnemonic)
-	let NodeData::Text { ref contents, } = row[0].clone().children.borrow()[0].clone().data else {
+	let NodeData::Text { ref contents, } =
+		row[0].clone().children.borrow()[0].clone().data
+	else {
 		panic!("text node expected: {:#?}", row[0].clone())
 	};
 	rslt.push(contents.borrow().as_str().to_string(),);
 
 	// Extract text from the second cell (value)
-	let NodeData::Text { ref contents, } = row[1].clone().children.borrow()[0].clone().data else {
+	let NodeData::Text { ref contents, } =
+		row[1].clone().children.borrow()[0].clone().data
+	else {
 		panic!("text node expected: {:#?}", row[1].clone())
 	};
 	rslt.push(contents.borrow().as_str().to_string(),);
 
 	// Extract text from the third cell (description)
-	let NodeData::Text { ref contents, } = row[2].clone().children.borrow()[0].clone().data else {
+	let NodeData::Text { ref contents, } =
+		row[2].clone().children.borrow()[0].clone().data
+	else {
 		panic!("text node expected: {:#?}", row[2].clone())
 	};
 	rslt.push(contents.borrow().as_str().to_string(),);
@@ -564,8 +617,8 @@ fn table_data(node: Rc<Node,>,) -> Vec<String,> {
 ///
 /// # Arguments
 ///
-/// * `rows` - A vector of string vectors, where each inner vector contains [mnemonic, value,
-///   description] for one status code
+/// * `rows` - A vector of string vectors, where each inner vector contains
+///   [mnemonic, value, description] for one status code
 ///
 /// # Returns
 ///
@@ -579,7 +632,9 @@ fn status_codes_info(rows: Vec<Vec<String,>,>,) -> Vec<StatusCodeInfo,> {
 		.map(|row| StatusCodeInfo {
 			mnemonic: row[0].clone(),
 			// Parse the hex value string to integer
-			value:    row[1].parse().expect("value expected being parsable to integer",),
+			value:    row[1]
+				.parse()
+				.expect("value expected being parsable to integer",),
 			desc:     row[2].clone(),
 		},)
 		.collect()
@@ -588,7 +643,8 @@ fn status_codes_info(rows: Vec<Vec<String,>,>,) -> Vec<StatusCodeInfo,> {
 /// Debug utility function to inspect the children of an HTML node
 ///
 /// This function emits diagnostic messages showing information about all
-/// child nodes of a given HTML element. Useful for debugging HTML parsing issues.
+/// child nodes of a given HTML element. Useful for debugging HTML parsing
+/// issues.
 ///
 /// # Arguments
 ///
@@ -596,7 +652,8 @@ fn status_codes_info(rows: Vec<Vec<String,>,>,) -> Vec<StatusCodeInfo,> {
 ///
 /// # Note
 ///
-/// This function is only used for debugging and emits procedural macro diagnostics.
+/// This function is only used for debugging and emits procedural macro
+/// diagnostics.
 #[allow(dead_code)]
 fn inspect_children(node: Rc<Node,>,) -> Vec<Diag,> {
 	// Iterate through all child nodes and emit diagnostic info
@@ -606,12 +663,24 @@ fn inspect_children(node: Rc<Node,>,) -> Vec<Diag,> {
 		.enumerate()
 		.map(|(i, n,)| {
 			let name = match &n.data {
-				markup5ever_rcdom::NodeData::Document => todo!("inspect_children/Document"),
-				markup5ever_rcdom::NodeData::Doctype { .. } => todo!("inspect_children/Doctype"),
-				markup5ever_rcdom::NodeData::Text { contents, } => format!("text: {contents:?}"),
-				markup5ever_rcdom::NodeData::Comment { .. } => todo!("inspect_children/Comment"),
-				markup5ever_rcdom::NodeData::Element { name, .. } => format!("element: {name:?}"),
-				markup5ever_rcdom::NodeData::ProcessingInstruction { .. } => {
+				markup5ever_rcdom::NodeData::Document => {
+					todo!("inspect_children/Document")
+				},
+				markup5ever_rcdom::NodeData::Doctype { .. } => {
+					todo!("inspect_children/Doctype")
+				},
+				markup5ever_rcdom::NodeData::Text { contents, } => {
+					format!("text: {contents:?}")
+				},
+				markup5ever_rcdom::NodeData::Comment { .. } => {
+					todo!("inspect_children/Comment")
+				},
+				markup5ever_rcdom::NodeData::Element { name, .. } => {
+					format!("element: {name:?}")
+				},
+				markup5ever_rcdom::NodeData::ProcessingInstruction {
+					..
+				} => {
 					todo!("inspect_children/ProcessingInstruction")
 				},
 			};
@@ -631,7 +700,8 @@ fn inspect_children(node: Rc<Node,>,) -> Vec<Diag,> {
 ///
 /// # Note
 ///
-/// This function is only used for debugging and emits procedural macro diagnostics.
+/// This function is only used for debugging and emits procedural macro
+/// diagnostics.
 #[allow(dead_code)]
 fn inspect_node(node: Rc<Node,>,) -> Diag {
 	Diag::Note(format!("{node:#?}"),)
@@ -679,20 +749,25 @@ mod tests {
 			.ok_or(anyhow!("failed to get element with id identical"),)?;
 		get_element_by_id(node.clone(), "first_header",)
 			.ok_or(anyhow!("failed to get element with id first_header"),)?;
-		get_element_by_id(node.clone(), "non_exist_id",).ok_or(anyhow!("success"),).unwrap_err();
+		get_element_by_id(node.clone(), "non_exist_id",)
+			.ok_or(anyhow!("success"),)
+			.unwrap_err();
 		Ok((),)
 	}
 
 	#[test]
 	fn test_get_elements_by_attribute() {
 		let node = parse_text(BASIC_HTML,);
-		let class_wow = get_elements_by_attribute(node.clone(), "class", "wow",);
+		let class_wow =
+			get_elements_by_attribute(node.clone(), "class", "wow",);
 		assert_eq!(class_wow.len(), 3);
 
-		let class_main_sec = get_elements_by_attribute(node.clone(), "class", "main_sec",);
+		let class_main_sec =
+			get_elements_by_attribute(node.clone(), "class", "main_sec",);
 		assert_eq!(class_main_sec.len(), 1);
 
-		let style_color_bule = get_elements_by_attribute(node.clone(), "style", "color: blue",);
+		let style_color_bule =
+			get_elements_by_attribute(node.clone(), "style", "color: blue",);
 		assert_eq!(style_color_bule.len(), 1);
 	}
 
@@ -773,7 +848,8 @@ mod tests {
 </table>"#;
 
 		let node = parse_text(table_html,);
-		let table_node = get_elements_by_name(node.clone(), "table",)[0].clone();
+		let table_node =
+			get_elements_by_name(node.clone(), "table",)[0].clone();
 		let rows = table_rows(table_node,);
 
 		// Should return 2 rows (excluding header)
@@ -806,8 +882,16 @@ mod tests {
 	#[test]
 	fn test_status_codes_info_conversion() {
 		let raw_data = vec![
-			vec!["EFI_SUCCESS".to_string(), "0".to_string(), "Success".to_string()],
-			vec!["EFI_LOAD_ERROR".to_string(), "1".to_string(), "Load error".to_string()],
+			vec![
+				"EFI_SUCCESS".to_string(),
+				"0".to_string(),
+				"Success".to_string(),
+			],
+			vec![
+				"EFI_LOAD_ERROR".to_string(),
+				"1".to_string(),
+				"Load error".to_string(),
+			],
 		];
 
 		let status_codes = status_codes_info(raw_data,);
@@ -861,7 +945,8 @@ mod tests {
 <div class="status-warning-table">Warning Table</div>"#;
 
 		let node = parse_text(html_with_classes,);
-		let status_elements = get_elements_by_attribute(node, "class", "status",);
+		let status_elements =
+			get_elements_by_attribute(node, "class", "status",);
 
 		// Should find elements where class contains "status"
 		assert_eq!(status_elements.len(), 3);
@@ -902,7 +987,10 @@ mod tests {
 			SUCCESS_CODE_TABLE_ID,
 			"efi-status-success-codes-high-bit-clear-apx-d-status-codes"
 		);
-		assert_eq!(ERROR_CODE_TABLE_ID, "efi-status-error-codes-high-bit-set-apx-d-status-codes");
+		assert_eq!(
+			ERROR_CODE_TABLE_ID,
+			"efi-status-error-codes-high-bit-set-apx-d-status-codes"
+		);
 		assert_eq!(
 			WARN_CODE_TABLE_ID,
 			"efi-status-warning-codes-high-bit-clear-apx-d-status-codes"
@@ -917,8 +1005,11 @@ mod tests {
 			desc:     "Test description".to_string(),
 		};
 
-		let status_code =
-			StatusCode { success: vec![status_info], error: vec![], warn: vec![], };
+		let status_code = StatusCode {
+			success: vec![status_info],
+			error:   vec![],
+			warn:    vec![],
+		};
 
 		// Should be able to debug print both structs
 		let info_debug = format!("{:?}", status_code.success[0]);
@@ -940,7 +1031,8 @@ mod tests {
 
 	#[test]
 	fn test_malformed_html_parsing() {
-		let malformed_html = r#"<div><p>Unclosed paragraph<div>Nested without closing</div>"#;
+		let malformed_html =
+			r#"<div><p>Unclosed paragraph<div>Nested without closing</div>"#;
 		let node = parse_text(malformed_html,);
 
 		// HTML5 parser should handle malformed HTML gracefully
@@ -962,11 +1054,13 @@ mod tests {
 		assert!(by_id.is_some());
 
 		// Test class search
-		let by_class = get_elements_by_attribute(node.clone(), "class", "test-class",);
+		let by_class =
+			get_elements_by_attribute(node.clone(), "class", "test-class",);
 		assert_eq!(by_class.len(), 1);
 
 		// Test data attribute search
-		let by_data = get_elements_by_attribute(node.clone(), "data-value", "123",);
+		let by_data =
+			get_elements_by_attribute(node.clone(), "data-value", "123",);
 		assert_eq!(by_data.len(), 1);
 
 		// Test style attribute search

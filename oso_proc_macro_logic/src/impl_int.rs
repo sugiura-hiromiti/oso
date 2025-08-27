@@ -1,8 +1,9 @@
 //! # Trait Implementation Generation Module
 //!
-//! This module provides functionality for automatically generating trait implementations
-//! for integer types. It includes parsing utilities for type lists and code generation
-//! for common integer operations like digit counting and manipulation.
+//! This module provides functionality for automatically generating trait
+//! implementations for integer types. It includes parsing utilities for type
+//! lists and code generation for common integer operations like digit counting
+//! and manipulation.
 
 use proc_macro2::TokenTree;
 use syn::TypePath;
@@ -58,7 +59,8 @@ impl Parse for Types {
 	/// # Errors
 	///
 	/// Returns an error if:
-	/// - Unexpected token types are encountered (not identifiers or punctuation)
+	/// - Unexpected token types are encountered (not identifiers or
+	///   punctuation)
 	/// - The token stream is malformed
 	fn parse(input: syn::parse::ParseStream,) -> syn::Result<Self,> {
 		let parsed = input.step(|c| {
@@ -172,13 +174,18 @@ fn unwrap_primitive(ty: &syn::Type,) -> syn::Result<syn::Ident,> {
 		path: syn::Path { leading_colon: None, segments: seg, },
 	},) = ty
 	else {
-		return Err(syn::Error::new(ty.span(), format!("unable to unwrap type: {ty:#?}"),),);
+		return Err(syn::Error::new(
+			ty.span(),
+			format!("unable to unwrap type: {ty:#?}"),
+		),);
 	};
 
 	if seg.len() != 1 {
 		return Err(syn::Error::new(
 			ty.span(),
-			format!("type may not primitive: {ty:#?}. if not, remove leading path"),
+			format!(
+				"type may not primitive: {ty:#?}. if not, remove leading path"
+			),
 		),);
 	}
 
@@ -365,7 +372,8 @@ mod tests {
 	#[test]
 	fn test_types_parse_empty_input() {
 		let input = quote! {};
-		let types: Types = syn::parse2(input,).expect("Failed to parse empty types",);
+		let types: Types =
+			syn::parse2(input,).expect("Failed to parse empty types",);
 
 		let type_list: Vec<_,> = types.iter().collect();
 		assert_eq!(type_list.len(), 0);
@@ -534,7 +542,8 @@ mod tests {
 		let input = quote! { u8, i16, u32 };
 		let types: Types = syn::parse2(input,).expect("Failed to parse types",);
 
-		let implementations: Vec<_,> = types.iter().map(|ty| implement(ty,),).collect();
+		let implementations: Vec<_,> =
+			types.iter().map(|ty| implement(ty,),).collect();
 
 		assert_eq!(implementations.len(), 3);
 
