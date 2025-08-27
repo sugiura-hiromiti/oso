@@ -1,8 +1,9 @@
 //! # Chibi UEFI - Lightweight UEFI Interface Wrapper
 //!
-//! This module provides a simplified, lightweight wrapper around UEFI (Unified Extensible
-//! Firmware Interface) services and protocols. It abstracts the complexity of raw UEFI
-//! operations while maintaining safety and efficiency for bootloader operations.
+//! This module provides a simplified, lightweight wrapper around UEFI (Unified
+//! Extensible Firmware Interface) services and protocols. It abstracts the
+//! complexity of raw UEFI operations while maintaining safety and efficiency
+//! for bootloader operations.
 //!
 //! ## Features
 //!
@@ -62,10 +63,11 @@ pub mod table;
 
 /// Global storage for the UEFI image handle
 ///
-/// This atomic pointer stores the image handle for the current UEFI application,
-/// allowing access to it from anywhere in the codebase. It's set during
-/// initialization and used throughout the bootloader's lifetime.
-static IMAGE_HANDLE: AtomicPtr<c_void,> = AtomicPtr::new(core::ptr::null_mut(),);
+/// This atomic pointer stores the image handle for the current UEFI
+/// application, allowing access to it from anywhere in the codebase. It's set
+/// during initialization and used throughout the bootloader's lifetime.
+static IMAGE_HANDLE: AtomicPtr<c_void,> =
+	AtomicPtr::new(core::ptr::null_mut(),);
 
 /// Type-safe wrapper around UEFI handles
 ///
@@ -169,8 +171,10 @@ impl BootServices {
 	pub fn exit_boot_services(&self,) {
 		let mem_ty = MemoryType::BOOT_SERVICES_DATA;
 
-		let mut buf = MemoryMapBackingMemory::new(mem_ty,).expect("failed to allocate memory",);
-		let status = unsafe { self.try_exit_boot_services(buf.as_mut_slice(),) };
+		let mut buf = MemoryMapBackingMemory::new(mem_ty,)
+			.expect("failed to allocate memory",);
+		let status =
+			unsafe { self.try_exit_boot_services(buf.as_mut_slice(),) };
 
 		if !status.is_success() {
 			todo!("failed to exit boot service. reset the machine");
@@ -180,7 +184,9 @@ impl BootServices {
 	unsafe fn try_exit_boot_services(&self, buf: &mut [u8],) -> Status {
 		let mem_map = self.get_memory_map(buf,).expect("failed to get memmap",);
 		// core::mem::forget(mem_map,);
-		unsafe { (self.exit_boot_services)(image_handle().as_ptr(), mem_map.map_key,) }
+		unsafe {
+			(self.exit_boot_services)(image_handle().as_ptr(), mem_map.map_key,)
+		}
 	}
 }
 
@@ -199,7 +205,12 @@ impl RuntimeServices {
 	/// # Note
 	///
 	/// This function never returns as it resets the system.
-	pub fn reset(&self, _reset_type: ResetType, _status: Status, _data: Option<&[u8],>,) -> ! {
+	pub fn reset(
+		&self,
+		_reset_type: ResetType,
+		_status: Status,
+		_data: Option<&[u8],>,
+	) -> ! {
 		todo!()
 	}
 }
@@ -216,10 +227,13 @@ impl RuntimeServices {
 ///
 /// # Panics
 ///
-/// Panics if `set_image_handle_panicking` has not been called to initialize the handle.
+/// Panics if `set_image_handle_panicking` has not been called to initialize the
+/// handle.
 pub fn image_handle() -> Handle {
 	let p = IMAGE_HANDLE.load(Ordering::Acquire,);
-	unsafe { Handle::from_ptr(p,).expect("set_image_handle has not been called",) }
+	unsafe {
+		Handle::from_ptr(p,).expect("set_image_handle has not been called",)
+	}
 }
 /// Sets the global image handle (unsafe version)
 ///
@@ -237,8 +251,9 @@ unsafe fn set_image_handle(image_handle: Handle,) {
 
 /// Sets the global image handle (panicking version)
 ///
-/// This function sets the global image handle for use throughout the application.
-/// It's typically called during initialization with the handle provided by UEFI.
+/// This function sets the global image handle for use throughout the
+/// application. It's typically called during initialization with the handle
+/// provided by UEFI.
 ///
 /// # Arguments
 ///

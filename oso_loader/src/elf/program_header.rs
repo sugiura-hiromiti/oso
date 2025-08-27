@@ -149,7 +149,9 @@ impl TryFrom<u32,> for ProgramHeaderType {
 			0x6fff_fffb => Self::Sunwstack,
 			7 => Self::Tls,
 			_ => {
-				return Err(oso_err!(EfiParseError::InvalidProgramHeaderType(value)),);
+				return Err(oso_err!(EfiParseError::InvalidProgramHeaderType(
+					value
+				)),);
 			},
 		};
 		Ok(ty,)

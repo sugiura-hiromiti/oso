@@ -27,11 +27,18 @@ pub struct RuntimeServices {
 	header: Header,
 
 	// time services
-	pub get_time: unsafe extern "efiapi" fn(time: *mut Time, *mut TimeCapabilities,) -> Status,
-	pub set_time:        unsafe extern "efiapi" fn(time: *const Time,) -> Status,
-	pub get_wakeup_time:
-		unsafe extern "efiapi" fn(enabled: *mut u8, pending: *mut u8, time: *mut Time,) -> Status,
-	pub set_wakeup_time: unsafe extern "efiapi" fn(enable: u8, time: *const Time,) -> Status,
+	pub get_time: unsafe extern "efiapi" fn(
+		time: *mut Time,
+		*mut TimeCapabilities,
+	) -> Status,
+	pub set_time: unsafe extern "efiapi" fn(time: *const Time,) -> Status,
+	pub get_wakeup_time: unsafe extern "efiapi" fn(
+		enabled: *mut u8,
+		pending: *mut u8,
+		time: *mut Time,
+	) -> Status,
+	pub set_wakeup_time:
+		unsafe extern "efiapi" fn(enable: u8, time: *const Time,) -> Status,
 
 	// virtual memory services
 	pub set_virtual_address_map: unsafe extern "efiapi" fn(
@@ -40,9 +47,10 @@ pub struct RuntimeServices {
 		descriptor_version: u32,
 		virtual_map: *mut MemoryDescriptor,
 	) -> Status,
-	pub convert_pointer:
-		unsafe extern "efiapi" fn(debug_dispositioon: usize, address: *mut *const c_void,)
-			-> Status,
+	pub convert_pointer: unsafe extern "efiapi" fn(
+		debug_dispositioon: usize,
+		address: *mut *const c_void,
+	) -> Status,
 
 	// variable services
 	pub get_variable: unsafe extern "efiapi" fn(
@@ -66,7 +74,8 @@ pub struct RuntimeServices {
 	) -> Status,
 
 	// miscellaneous
-	pub get_next_high_monotonic_count: unsafe extern "efiapi" fn(count: *mut u32,) -> Status,
+	pub get_next_high_monotonic_count:
+		unsafe extern "efiapi" fn(count: *mut u32,) -> Status,
 	pub reset_system: unsafe extern "efiapi" fn(
 		reset_type: ResetType,
 		reset_status: Status,
@@ -111,7 +120,10 @@ pub struct BootServices {
 		pages: usize,
 		memory: *mut PhysicalAddress,
 	) -> Status,
-	pub free_pages:     unsafe extern "efiapi" fn(memory: PhysicalAddress, pages: usize,) -> Status,
+	pub free_pages: unsafe extern "efiapi" fn(
+		memory: PhysicalAddress,
+		pages: usize,
+	) -> Status,
 	pub get_memory_map: unsafe extern "efiapi" fn(
 		memory_map_size: *mut usize,
 		memory_map: *mut MemoryDescriptor,
@@ -130,13 +142,17 @@ pub struct BootServices {
 	pub create_event: unsafe extern "efiapi" fn(
 		event_type: EventType,
 		notify_tpl: Tpl,
-		notify_function: Option<unsafe extern "efiapi" fn(event: Event, context: *mut c_void,),>,
+		notify_function: Option<
+			unsafe extern "efiapi" fn(event: Event, context: *mut c_void,),
+		>,
 		notify_context: *mut c_void,
 		event: *mut Event,
 	) -> Status,
-	pub set_timer:
-		unsafe extern "efiapi" fn(event: Event, time_type: TimerDelay, trigger_time: u64,)
-			-> Status,
+	pub set_timer: unsafe extern "efiapi" fn(
+		event: Event,
+		time_type: TimerDelay,
+		trigger_time: u64,
+	) -> Status,
 	pub wait_for_event: unsafe extern "efiapi" fn(
 		number_of_events: usize,
 		event: *mut Event,
@@ -187,8 +203,10 @@ pub struct BootServices {
 		device_path: *mut *const DevicePathProtocol,
 		device: *mut *mut c_void,
 	) -> Status,
-	pub install_configuration_table:
-		unsafe extern "efiapi" fn(guid: *const Guid, table: *const c_void,) -> Status,
+	pub install_configuration_table: unsafe extern "efiapi" fn(
+		guid: *const Guid,
+		table: *const c_void,
+	) -> Status,
 
 	// image services
 	pub load_image: unsafe extern "efiapi" fn(
@@ -210,13 +228,17 @@ pub struct BootServices {
 		exit_data_size: usize,
 		exit_data: *mut Char16,
 	) -> Status,
-	pub unload_image:       unsafe extern "efiapi" fn(image_handle: UnsafeHandle,) -> Status,
-	pub exit_boot_services:
-		unsafe extern "efiapi" fn(image_handle: UnsafeHandle, map_key: usize,) -> Status,
+	pub unload_image:
+		unsafe extern "efiapi" fn(image_handle: UnsafeHandle,) -> Status,
+	pub exit_boot_services: unsafe extern "efiapi" fn(
+		image_handle: UnsafeHandle,
+		map_key: usize,
+	) -> Status,
 
 	// miscellaneous services
-	pub get_next_monotonic_count: unsafe extern "efiapi" fn(count: *mut u64,) -> Status,
-	pub stall:                    unsafe extern "efiapi" fn(micro_second: usize,) -> Status,
+	pub get_next_monotonic_count:
+		unsafe extern "efiapi" fn(count: *mut u64,) -> Status,
+	pub stall: unsafe extern "efiapi" fn(micro_second: usize,) -> Status,
 	pub set_watchdog_timer: unsafe extern "efiapi" fn(
 		timeout: usize,
 		watchdog_code: u64,
@@ -281,17 +303,26 @@ pub struct BootServices {
 		unsafe extern "C" fn(handle: UnsafeHandle, ...) -> Status,
 
 	// crc services
-	pub calculate_crc32:
-		unsafe extern "efiapi" fn(data: *const c_void, data_size: usize, crc32: *mut u32,)
-			-> Status,
+	pub calculate_crc32: unsafe extern "efiapi" fn(
+		data: *const c_void,
+		data_size: usize,
+		crc32: *mut u32,
+	) -> Status,
 
 	// misc services
-	pub copy_mem:        unsafe extern "efiapi" fn(dest: *mut u8, source: *const u8, len: usize,),
-	pub set_mem:         unsafe extern "efiapi" fn(buf: *mut u8, size: usize, value: u8,),
+	pub copy_mem: unsafe extern "efiapi" fn(
+		dest: *mut u8,
+		source: *const u8,
+		len: usize,
+	),
+	pub set_mem:
+		unsafe extern "efiapi" fn(buf: *mut u8, size: usize, value: u8,),
 	pub create_event_ex: unsafe extern "efiapi" fn(
 		event_type: EventType,
 		notify_tpl: Tpl,
-		notify_function: Option<unsafe extern "efiapi" fn(event: Event, context: *mut c_void,),>,
+		notify_function: Option<
+			unsafe extern "efiapi" fn(event: Event, context: *mut c_void,),
+		>,
 		notify_context: *mut c_void,
 		event_group: *mut Guid,
 		event: *mut Event,

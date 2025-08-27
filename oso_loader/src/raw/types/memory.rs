@@ -49,8 +49,10 @@ c_style_enum! {
 }
 
 impl MemoryType {
-	pub const RESERVED_FOR_OEM: RangeInclusive<u32,> = 0x7000_0000..=0x7fff_ffff;
-	pub const RESERVED_FOR_OS_LOADER: RangeInclusive<u32,> = 0x8000_0000..=0xffff_ffff;
+	pub const RESERVED_FOR_OEM: RangeInclusive<u32,> =
+		0x7000_0000..=0x7fff_ffff;
+	pub const RESERVED_FOR_OS_LOADER: RangeInclusive<u32,> =
+		0x8000_0000..=0xffff_ffff;
 
 	pub const fn custom(value: u32,) -> Self {
 		assert!(value >= 0x8000_0000);
@@ -136,7 +138,8 @@ impl MemoryMapBackingMemory {
 	unsafe fn from_raw(alloc_pos: *mut u8, len: usize,) -> Self {
 		assert_eq!(alloc_pos.align_offset(align_of::<MemoryDescriptor,>()), 0);
 
-		let ptr = NonNull::new(alloc_pos,).expect("uefi should never return null ptr",);
+		let ptr = NonNull::new(alloc_pos,)
+			.expect("uefi should never return null ptr",);
 		let slice = NonNull::slice_from_raw_parts(ptr, len,);
 
 		Self(slice,)
@@ -161,7 +164,10 @@ pub struct MemoryMapOwned {
 }
 
 impl MemoryMapOwned {
-	pub fn from_initialized_memory(buf: MemoryMapBackingMemory, info: MemoryMapInfo,) -> Self {
+	pub fn from_initialized_memory(
+		buf: MemoryMapBackingMemory,
+		info: MemoryMapInfo,
+	) -> Self {
 		assert!(info.desc_size >= size_of::<MemoryDescriptor,>());
 
 		let len = info.entry_count();

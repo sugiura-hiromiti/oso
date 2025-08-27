@@ -1,17 +1,22 @@
 //! # ELF File Parsing and Loading Module
 //!
-//! This module provides comprehensive ELF (Executable and Linkable Format) file parsing
-//! capabilities for the OSO bootloader. It supports parsing ELF headers, program headers,
-//! section headers, and various ELF structures needed for kernel loading.
+//! This module provides comprehensive ELF (Executable and Linkable Format) file
+//! parsing capabilities for the OSO bootloader. It supports parsing ELF
+//! headers, program headers, section headers, and various ELF structures needed
+//! for kernel loading.
 //!
 //! ## Features
 //!
 //! - **ELF Header Parsing**: Validates and parses ELF file headers
-//! - **Program Header Processing**: Handles loadable segments and program information
-//! - **Section Header Analysis**: Processes section headers for symbol tables and relocations
-//! - **Dynamic Linking Support**: Handles dynamic symbols, relocations, and version information
+//! - **Program Header Processing**: Handles loadable segments and program
+//!   information
+//! - **Section Header Analysis**: Processes section headers for symbol tables
+//!   and relocations
+//! - **Dynamic Linking Support**: Handles dynamic symbols, relocations, and
+//!   version information
 //! - **Multi-architecture Support**: Works with 32-bit and 64-bit ELF files
-//! - **Endianness Handling**: Supports both little-endian and big-endian formats
+//! - **Endianness Handling**: Supports both little-endian and big-endian
+//!   formats
 //!
 //! ## ELF Structure Support
 //!
@@ -170,7 +175,8 @@ impl Elf {
 	/// # Returns
 	///
 	/// * `Ok(Elf)` - Successfully parsed ELF structure
-	/// * `Err(EfiParseError)` - If parsing fails due to invalid format or unsupported features
+	/// * `Err(EfiParseError)` - If parsing fails due to invalid format or
+	///   unsupported features
 	///
 	/// # Errors
 	///
@@ -195,39 +201,59 @@ impl Elf {
 		oso_proc_macro::test_elf_header_parse!(header);
 
 		let mut offset = header.program_header_offset as usize;
-		let program_headers =
-			ProgramHeader::parse(binary, &mut offset, header.program_header_count as usize,)?;
+		let program_headers = ProgramHeader::parse(
+			binary,
+			&mut offset,
+			header.program_header_count as usize,
+		)?;
 
 		let mut interpreter = None;
 		for program_header in &program_headers {
-			if program_header.ty == ProgramHeaderType::Interp && program_header.file_size != 0 {
+			if program_header.ty == ProgramHeaderType::Interp
+				&& program_header.file_size != 0
+			{
 				let count = program_header.file_size as usize - 1;
 				let offset = program_header.offset as usize;
 
-				interpreter = Some(StringContext::Length(count,).read_bytes(&binary[offset..],)?,);
+				interpreter = Some(
+					StringContext::Length(count,)
+						.read_bytes(&binary[offset..],)?,
+				);
 			}
 		}
 
 		offset = header.section_header_offset as usize;
-		let section_headers =
-			SectionHeader::parse(binary, &mut offset, header.section_header_count as usize,)?;
+		let section_headers = SectionHeader::parse(
+			binary,
+			&mut offset,
+			header.section_header_count as usize,
+		)?;
 
-		let string_table_index = header.section_header_index_of_section_name_string_table as usize;
+		let string_table_index =
+			header.section_header_index_of_section_name_string_table as usize;
 		let section_header_string_table =
 			get_string_table(&section_headers, string_table_index, binary,)?;
 
 		let ctx = &Context::default();
 		let mut symbol_table = SymbolTable::default();
 		let mut string_table_for_symbol_table = StringTable::default();
-		if let Some(section_header,) =
-			section_headers.iter().rfind(|section_header| section_header.ty == SHT_SYMTAB,)
+		if let Some(section_header,) = section_headers
+			.iter()
+			.rfind(|section_header| section_header.ty == SHT_SYMTAB,)
 		{
 			let size = section_header.entry_size;
 			let count = if size == 0 { 0 } else { section_header.size / size };
-			symbol_table =
-				SymbolTable::parse(binary, section_header.offset as usize, count as usize, ctx,)?;
-			string_table_for_symbol_table =
-				get_string_table(&section_headers, section_header.link as usize, binary,)?;
+			symbol_table = SymbolTable::parse(
+				binary,
+				section_header.offset as usize,
+				count as usize,
+				ctx,
+			)?;
+			string_table_for_symbol_table = get_string_table(
+				&section_headers,
+				section_header.link as usize,
+				binary,
+			)?;
 		}
 
 		let mut is_position_independent_executable = false;
@@ -238,7 +264,8 @@ impl Elf {
 		let mut dynamic_symbol_table = SymbolTable::default();
 		let mut dynamic_relocation_with_addend = RelocationSection::default();
 		let mut dynamic_relocation = RelocationSection::default();
-		let mut procedure_linkage_table_relocation = RelocationSection::default();
+		let mut procedure_linkage_table_relocation =
+			RelocationSection::default();
 		let mut dynamic_string_table = StringTable::default();
 
 		let dynamic_info = Dynamic::parse(binary, &program_headers,)?;
@@ -254,8 +281,8 @@ impl Elf {
 			)?;
 
 			if dyn_info.shared_object_name_offset != 0 {
-				shared_object_name =
-					dynamic_string_table.get_at(dyn_info.shared_object_name_offset,);
+				shared_object_name = dynamic_string_table
+					.get_at(dyn_info.shared_object_name_offset,);
 			}
 			if dyn_info.version_need_count > 0 {
 				libraries = dynamic.get_libraries(&dynamic_string_table,);
@@ -263,11 +290,14 @@ impl Elf {
 
 			for dynamic in &dynamic.dyns {
 				if dynamic.tag == Dynamic::DT_RPATH {
-					if let Some(path,) = dynamic_string_table.get_at(dynamic.val as usize,) {
+					if let Some(path,) =
+						dynamic_string_table.get_at(dynamic.val as usize,)
+					{
 						runtime_search_path_deprecated.push(path,);
 					}
 				} else if dynamic.tag == Dynamic::DT_RUNPATH
-					&& let Some(path,) = dynamic_string_table.get_at(dynamic.val as usize,)
+					&& let Some(path,) =
+						dynamic_string_table.get_at(dynamic.val as usize,)
 				{
 					runtime_search_path.push(path,);
 				}
@@ -287,7 +317,8 @@ impl Elf {
 				false,
 				ctx,
 			)?;
-			let is_relocation_addrend = dyn_info.plt_relocation_type == Dynamic::DT_RELA;
+			let is_relocation_addrend =
+				dyn_info.plt_relocation_type == Dynamic::DT_RELA;
 			procedure_linkage_table_relocation = RelocationSection::parse(
 				binary,
 				dyn_info.jmp_relocation_address,
@@ -308,12 +339,19 @@ impl Elf {
 				.iter()
 				.chain(dynamic_relocation.iter(),)
 				.chain(procedure_linkage_table_relocation.iter(),)
-				.fold(0, |count, relocation| cmp::max(count, relocation.symbol_index,),);
+				.fold(0, |count, relocation| {
+					cmp::max(count, relocation.symbol_index,)
+				},);
 			if max_relocation_symbol != 0 {
-				symbols_count = cmp::max(symbols_count, max_relocation_symbol + 1,);
+				symbols_count =
+					cmp::max(symbols_count, max_relocation_symbol + 1,);
 			}
-			dynamic_symbol_table =
-				SymbolTable::parse(binary, dyn_info.symbol_table, symbols_count, ctx,)?;
+			dynamic_symbol_table = SymbolTable::parse(
+				binary,
+				dyn_info.symbol_table,
+				symbols_count,
+				ctx,
+			)?;
 		}
 
 		let mut section_relocations = vec![];
@@ -321,21 +359,25 @@ impl Elf {
 			let is_relocation_addrend = section.ty == SHT_RELA;
 			if is_relocation_addrend || section.ty == SHT_REL {
 				section.check_size(binary.len(),)?;
-				let section_header_relocation_section = RelocationSection::parse(
-					binary,
-					section.offset as usize,
-					section.size as usize,
-					is_relocation_addrend,
-					ctx,
-				)?;
-				section_relocations.push((index, section_header_relocation_section,),);
+				let section_header_relocation_section =
+					RelocationSection::parse(
+						binary,
+						section.offset as usize,
+						section.size as usize,
+						is_relocation_addrend,
+						ctx,
+					)?;
+				section_relocations
+					.push((index, section_header_relocation_section,),);
 			}
 		}
 
-		let symbol_version_section = SymbolVersionSection::parse(binary, &section_headers, ctx,)?;
+		let symbol_version_section =
+			SymbolVersionSection::parse(binary, &section_headers, ctx,)?;
 		let version_definition_section =
 			VersionDefinitionSection::parse(binary, &section_headers, ctx,)?;
-		let version_needed_section = VersionNeededSection::parse(binary, &section_headers, ctx,)?;
+		let version_needed_section =
+			VersionNeededSection::parse(binary, &section_headers, ctx,)?;
 
 		Ok(Self {
 			header,
@@ -641,8 +683,8 @@ impl ElfHeader {
 	pub const EM_NDR1: u16 = 57;
 	/// Andes Tech. compact code emb. RISC
 	pub const EM_NDS32: u16 = 167;
-	/// TODO: use Enum with explicit discriminant and get debug printer for free?
-	/// No machine
+	/// TODO: use Enum with explicit discriminant and get debug printer for
+	/// free? No machine
 	pub const EM_NONE: u16 = 0;
 	/// Nanoradio Optimized RISC
 	pub const EM_NORC: u16 = 218;
@@ -843,11 +885,12 @@ fn header_flag_fields(
 		};
 	}
 
-	let ty: u16 =
-		read_le_bytes(offset, ident_remain,).ok_or(oso_err!(EfiParseError::EndOfBinary {
+	let ty: u16 = read_le_bytes(offset, ident_remain,).ok_or(oso_err!(
+		EfiParseError::EndOfBinary {
 			parser_pos: "ty",
 			stage:      oso_error::loader::EfiParseStage::Header,
-		}),)?;
+		}
+	),)?;
 	let ty = ElfType::try_from(ty,)?;
 	fields!(
 		machine,
@@ -883,11 +926,17 @@ fn header_flag_fields(
 }
 
 //fn read_le_bytes<I: PrimitiveInteger + Sum<<I as Shl<usize,>>::Output,>,>(
-fn read_le_bytes<I: PrimitiveInteger,>(offset: &mut usize, binary: &[u8],) -> Option<I,>
-where for<'a> &'a [u8]: AsInt<I,> {
+fn read_le_bytes<I: PrimitiveInteger,>(
+	offset: &mut usize,
+	binary: &[u8],
+) -> Option<I,>
+where
+	for<'a> &'a [u8]: AsInt<I,>,
+{
 	//let window = &binary[*offset..*offset + size];
 	// let val =
-	// 	window.iter().enumerate().map(|(i, b,)| Integer::<I,>::cast_int(*b,) << i * 8,).sum::<I>();
+	// 	window.iter().enumerate().map(|(i, b,)| Integer::<I,>::cast_int(*b,) <<
+	// i * 8,).sum::<I>();
 	let size = size_of::<I,>();
 	if size + *offset > binary.len() {
 		*offset += size;
@@ -970,7 +1019,13 @@ impl ElfHeaderIdent {
 		let target_os_abi = TargetOsAbi::try_from(ident[ELF_OS_ABI_INDEX],)?;
 		let abi_version = AbiVersion(ident[ELF_ABI_VERSION_INDEX],);
 
-		Ok(Self { file_class, endianness, elf_version, target_os_abi, abi_version, },)
+		Ok(Self {
+			file_class,
+			endianness,
+			elf_version,
+			target_os_abi,
+			abi_version,
+		},)
 	}
 
 	fn is_64(&self,) -> bool {
@@ -1072,7 +1127,8 @@ impl StringTable {
 			}),);
 		}
 
-		let mut rslt = Self::from_slice(&binary[offset..offset + len], delimiter,);
+		let mut rslt =
+			Self::from_slice(&binary[offset..offset + len], delimiter,);
 		let mut i = 0;
 		while i < rslt.bytes.len() {
 			let s = rslt.delimitor.read_bytes(&binary[i..],)?;
@@ -1093,14 +1149,18 @@ impl StringTable {
 	}
 
 	fn get_at(&self, offset: usize,) -> Option<String,> {
-		match self.strings.binary_search_by_key(&offset, |(key, _value,)| *key,) {
+		match self.strings.binary_search_by_key(&offset, |(key, _value,)| *key,)
+		{
 			Ok(index,) => Some(self.strings[index].1.clone(),),
 			Err(index,) => {
 				if index == 0 {
 					return None;
 				}
-				let (string_begin_offset, entire_string,) = &self.strings[index - 1];
-				entire_string.get(offset - string_begin_offset..,).map(|s| s.to_string(),)
+				let (string_begin_offset, entire_string,) =
+					&self.strings[index - 1];
+				entire_string
+					.get(offset - string_begin_offset..,)
+					.map(|s| s.to_string(),)
 			},
 		}
 	}
@@ -1122,7 +1182,9 @@ impl StringContext {
 				{
 					i += 1;
 					if i >= bytes.len() {
-						return Err(oso_err!(EfiParseError::DelimiterNotFound(*delimiter)),);
+						return Err(oso_err!(
+							EfiParseError::DelimiterNotFound(*delimiter)
+						),);
 					}
 				}
 
@@ -1168,11 +1230,20 @@ impl SymbolTable {
 				Container::Little => todo!(),
 				Container::Big => Self::SIZE_OF_SYMBOL_64,
 			},)
-			.ok_or(oso_err!(EfiParseError::TooManySymbolsOffset { offset, count }),)?;
+			.ok_or(oso_err!(EfiParseError::TooManySymbolsOffset {
+				offset,
+				count
+			}),)?;
 
 		let bytes = binary[offset..offset + size].to_vec();
 
-		Ok(SymbolTable { bytes, count, ctx: context.clone(), start: offset, end: offset + size, },)
+		Ok(SymbolTable {
+			bytes,
+			count,
+			ctx: context.clone(),
+			start: offset,
+			end: offset + size,
+		},)
 	}
 }
 
@@ -1272,7 +1343,8 @@ impl Dynamic {
 	pub const DF_EXTEND_NOOPEN: u64 = 0x0000_0040;
 	pub const DF_EXTEND_NORELOC: u64 = 0x0040_0000;
 	/// === State flags ===
-	/// selectable in the `d_un.d_val` element of the DT_FLAGS_1 entry in the dynamic section.
+	/// selectable in the `d_un.d_val` element of the DT_FLAGS_1 entry in the
+	/// dynamic section.
 	///
 	/// Set RTLD_NOW for this object.
 	pub const DF_EXTEND_NOW: u64 = 0x0000_0001;
@@ -1416,7 +1488,8 @@ impl Dynamic {
 	pub const DT_VERNEED: u64 = 0x6fff_fffe;
 	/// Number of needed versions
 	pub const DT_VERNEEDNUM: u64 = 0x6fff_ffff;
-	/// The versioning entry types. The next are defined as part of the GNU extension
+	/// The versioning entry types. The next are defined as part of the GNU
+	/// extension
 	pub const DT_VERSYM: u64 = 0x6fff_fff0;
 
 	fn parse(
@@ -1427,9 +1500,15 @@ impl Dynamic {
 			if program_header.ty == ProgramHeaderType::Dynamic {
 				let offset = program_header.offset as usize;
 				let file_size = program_header.file_size as usize;
-				let bytes = if file_size > 0 { &binary[offset..offset + file_size] } else { &[] };
-				let size =
-					Dyn::size_of(&Context { container: Container::Big, ..Default::default() },);
+				let bytes = if file_size > 0 {
+					&binary[offset..offset + file_size]
+				} else {
+					&[]
+				};
+				let size = Dyn::size_of(&Context {
+					container: Container::Big,
+					..Default::default()
+				},);
 				let count = file_size / size;
 				let mut dyns = Vec::with_capacity(count,);
 				let offset = &mut 0;
@@ -1493,8 +1572,9 @@ impl Dyn {
 
 #[derive(Default,)]
 pub struct DynamicInfo {
-	/// An addend is an extra constant value used in a relocation to help compute the correct final
-	/// address. It adjusts the value that gets written into the relocated memory.
+	/// An addend is an extra constant value used in a relocation to help
+	/// compute the correct final address. It adjusts the value that gets
+	/// written into the relocated memory.
 	pub relocation_addend:                usize,
 	pub relocation_addend_size:           usize,
 	pub relocation_addend_entry:          u64,
@@ -1535,74 +1615,110 @@ impl DynamicInfo {
 	pub fn update(&mut self, phdrs: &[ProgramHeader], dynamic: &Dyn,) {
 		match dynamic.tag {
 			Dynamic::DT_RELA => {
-				self.relocation_addend = vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,) as usize
+				self.relocation_addend =
+					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,) as usize
 			}, // .rela.dyn
-			Dynamic::DT_RELASZ => self.relocation_addend_size = dynamic.val as usize,
+			Dynamic::DT_RELASZ => {
+				self.relocation_addend_size = dynamic.val as usize
+			},
 			Dynamic::DT_RELAENT => self.relocation_addend_entry = dynamic.val,
-			Dynamic::DT_RELACOUNT => self.relocation_addend_entry_count = dynamic.val as usize,
+			Dynamic::DT_RELACOUNT => {
+				self.relocation_addend_entry_count = dynamic.val as usize
+			},
 			Dynamic::DT_REL => {
-				self.relocation = vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,) as usize
+				self.relocation =
+					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,) as usize
 			}, /* .rel.dyn */
 			Dynamic::DT_RELSZ => self.relocation_size = dynamic.val as usize,
 			Dynamic::DT_RELENT => self.relocation_entry = dynamic.val,
-			Dynamic::DT_RELCOUNT => self.relocation_entry_count = dynamic.val as usize,
-			Dynamic::DT_GNU_HASH => self.gnu_hash = vm_to_offset(phdrs, dynamic.val,),
+			Dynamic::DT_RELCOUNT => {
+				self.relocation_entry_count = dynamic.val as usize
+			},
+			Dynamic::DT_GNU_HASH => {
+				self.gnu_hash = vm_to_offset(phdrs, dynamic.val,)
+			},
 			Dynamic::DT_HASH => self.hash = vm_to_offset(phdrs, dynamic.val,),
 			Dynamic::DT_STRTAB => {
-				self.string_table_address = vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,) as usize
+				self.string_table_address =
+					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,) as usize
 			},
 			Dynamic::DT_STRSZ => self.string_table_size = dynamic.val as usize,
 			Dynamic::DT_SYMTAB => {
-				self.symbol_table = vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,) as usize
+				self.symbol_table =
+					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,) as usize
 			},
-			Dynamic::DT_SYMENT => self.symbol_table_entry = dynamic.val as usize,
-			Dynamic::DT_PLTGOT => self.plt_got_address = vm_to_offset(phdrs, dynamic.val,),
-			Dynamic::DT_PLTRELSZ => self.plt_relocation_size = dynamic.val as usize,
+			Dynamic::DT_SYMENT => {
+				self.symbol_table_entry = dynamic.val as usize
+			},
+			Dynamic::DT_PLTGOT => {
+				self.plt_got_address = vm_to_offset(phdrs, dynamic.val,)
+			},
+			Dynamic::DT_PLTRELSZ => {
+				self.plt_relocation_size = dynamic.val as usize
+			},
 			Dynamic::DT_PLTREL => self.plt_relocation_type = dynamic.val,
 			Dynamic::DT_JMPREL => {
 				self.jmp_relocation_address =
 					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,) as usize
 			}, /* .rela.plt */
 			Dynamic::DT_VERDEF => {
-				self.version_definition_count = vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
+				self.version_definition_count =
+					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
 			},
 			Dynamic::DT_VERDEFNUM => {
-				self.version_definition_count = vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
+				self.version_definition_count =
+					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
 			},
 			Dynamic::DT_VERNEED => {
-				self.version_need_table_address = vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
+				self.version_need_table_address =
+					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
 			},
 			Dynamic::DT_VERNEEDNUM => self.version_need_count = dynamic.val,
 			Dynamic::DT_VERSYM => {
-				self.version_symbol_table_address = vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
+				self.version_symbol_table_address =
+					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
 			},
 			Dynamic::DT_INIT => {
-				self.init_fn_address = vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
+				self.init_fn_address =
+					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
 			},
 			Dynamic::DT_FINI => {
-				self.finalization_fn_address = vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
+				self.finalization_fn_address =
+					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
 			},
 			Dynamic::DT_INIT_ARRAY => {
-				self.init_fn_array_address = vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
+				self.init_fn_array_address =
+					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
 			},
-			Dynamic::DT_INIT_ARRAYSZ => self.init_fn_array_len = dynamic.val as usize,
+			Dynamic::DT_INIT_ARRAYSZ => {
+				self.init_fn_array_len = dynamic.val as usize
+			},
 			Dynamic::DT_FINI_ARRAY => {
-				self.finalization_fn_array_address = vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
+				self.finalization_fn_array_address =
+					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
 			},
-			Dynamic::DT_FINI_ARRAYSZ => self.finalization_fn_array_len = dynamic.val as usize,
+			Dynamic::DT_FINI_ARRAYSZ => {
+				self.finalization_fn_array_len = dynamic.val as usize
+			},
 			Dynamic::DT_NEEDED => self.version_need_count += 1,
 			Dynamic::DT_FLAGS => self.flags = dynamic.val,
 			Dynamic::DT_FLAGS_1 => self.extended_flags = dynamic.val,
-			Dynamic::DT_SONAME => self.shared_object_name_offset = dynamic.val as usize,
+			Dynamic::DT_SONAME => {
+				self.shared_object_name_offset = dynamic.val as usize
+			},
 			Dynamic::DT_TEXTREL => self.text_section_relocation = true,
 			_ => (),
 		}
 	}
 }
 
-fn vm_to_offset(program_headers: &[ProgramHeader], address: u64,) -> Option<u64,> {
+fn vm_to_offset(
+	program_headers: &[ProgramHeader],
+	address: u64,
+) -> Option<u64,> {
 	for program_header in program_headers {
-		if program_header.ty == ProgramHeaderType::Load && address >= program_header.virtual_address
+		if program_header.ty == ProgramHeaderType::Load
+			&& address >= program_header.virtual_address
 		{
 			let offset = address - program_header.virtual_address;
 			if offset < program_header.memory_size {
@@ -1635,7 +1751,9 @@ impl RelocationSection {
 		is_addend: bool,
 		ctx: &Context,
 	) -> Rslt<Self, EfiParseError,> {
-		let bytes = if size != 0 { &binary[offset..offset + size] } else { &[] }.to_vec();
+		let bytes =
+			if size != 0 { &binary[offset..offset + size] } else { &[] }
+				.to_vec();
 
 		Ok(Self {
 			bytes,
@@ -1646,7 +1764,10 @@ impl RelocationSection {
 		},)
 	}
 
-	fn size(is_relocation_addrend: bool, Context { container, .. }: &Context,) -> usize {
+	fn size(
+		is_relocation_addrend: bool,
+		Context { container, .. }: &Context,
+	) -> usize {
 		match (is_relocation_addrend, container,) {
 			(true, Container::Little,) => Self::SIZE_OF_RELOCATION_ADDEND_32,
 			(true, Container::Big,) => Self::SIZE_OF_RELOCATION_ADDEND_64,
@@ -1697,7 +1818,8 @@ pub struct Relocation {
 	pub offset:       u64,
 	/// addend
 	pub addend:       Option<i64,>,
-	/// the index into the corresponding symbol table - either dynamic or regular
+	/// the index into the corresponding symbol table - either dynamic or
+	/// regular
 	pub symbol_index: usize,
 	/// the relocation type
 	pub ty:           u32,
@@ -1711,7 +1833,9 @@ impl Relocation {
 	) -> Rslt<Self,> {
 		let relocation = match (is_relocation_addrend, &context.container,) {
 			(true, Container::Little,) => todo!(),
-			(true, Container::Big,) => RelocAddend::parse(bytes, offset,).into(),
+			(true, Container::Big,) => {
+				RelocAddend::parse(bytes, offset,).into()
+			},
 			(false, Container::Little,) => todo!(),
 			(false, Container::Big,) => Reloc::parse(bytes, offset,).into(),
 		};
@@ -1792,8 +1916,9 @@ impl SymbolVersionSection {
 		section_headers: &[SectionHeader],
 		ctx: &Context,
 	) -> Rslt<Option<Self,>, EfiParseError,> {
-		let (offset, size,) = if let Some(section_header,) =
-			section_headers.iter().find(|section_header| section_header.ty == SHT_GNU_VERSYM,)
+		let (offset, size,) = if let Some(section_header,) = section_headers
+			.iter()
+			.find(|section_header| section_header.ty == SHT_GNU_VERSYM,)
 		{
 			(section_header.offset as usize, section_header.size as usize,)
 		} else {
@@ -1817,7 +1942,9 @@ impl VersionDefinitionSection {
 		ctx: &Context,
 	) -> Rslt<Option<Self,>, EfiParseError,> {
 		let (offset, size, count,) = if let Some(section_header,) =
-			section_headers.iter().find(|section_header| section_header.ty == SHT_GNU_VERDEF,)
+			section_headers
+				.iter()
+				.find(|section_header| section_header.ty == SHT_GNU_VERDEF,)
 		{
 			(
 				section_header.offset as usize,
@@ -1845,7 +1972,9 @@ impl VersionNeededSection {
 		ctx: &Context,
 	) -> Rslt<Option<Self,>, EfiParseError,> {
 		let (offset, size, count,) = if let Some(section_header,) =
-			section_headers.iter().find(|section_header| section_header.ty == SHT_GNU_VERNEED,)
+			section_headers
+				.iter()
+				.find(|section_header| section_header.ty == SHT_GNU_VERNEED,)
 		{
 			(
 				section_header.offset as usize,

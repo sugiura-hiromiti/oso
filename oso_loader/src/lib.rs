@@ -1,15 +1,19 @@
 //! # OSO Loader
 //!
-//! A UEFI-based bootloader for the OSO operating system that handles ELF kernel loading
-//! and system initialization across multiple architectures (x86_64, aarch64, riscv64).
+//! A UEFI-based bootloader for the OSO operating system that handles ELF kernel
+//! loading and system initialization across multiple architectures (x86_64,
+//! aarch64, riscv64).
 //!
 //! ## Features
 //!
 //! - **ELF Kernel Loading**: Parses and loads ELF format kernels into memory
-//! - **Multi-architecture Support**: Supports x86_64, aarch64, and riscv64 architectures
+//! - **Multi-architecture Support**: Supports x86_64, aarch64, and riscv64
+//!   architectures
 //! - **UEFI Integration**: Provides a lightweight UEFI interface wrapper
-//! - **Device Tree Support**: Handles device tree configuration for kernel handoff
-//! - **Graphics Configuration**: Sets up frame buffer configuration for kernel graphics
+//! - **Device Tree Support**: Handles device tree configuration for kernel
+//!   handoff
+//! - **Graphics Configuration**: Sets up frame buffer configuration for kernel
+//!   graphics
 //! - **Memory Management**: Manages memory allocation and MMU configuration
 //!
 //! ## Architecture-specific Features
@@ -21,8 +25,9 @@
 //!
 //! ## Usage
 //!
-//! This crate is designed to be compiled as a UEFI application. The main entry point
-//! is `efi_main` which initializes the system, loads the kernel, and transfers control.
+//! This crate is designed to be compiled as a UEFI application. The main entry
+//! point is `efi_main` which initializes the system, loads the kernel, and
+//! transfers control.
 
 #![no_std]
 #![allow(incomplete_features)]
@@ -67,7 +72,8 @@ pub mod raw;
 /// Custom panic handler for the UEFI environment
 ///
 /// This panic handler prints debug information and enters a wait-for-event loop
-/// instead of terminating the program, which is appropriate for a UEFI application.
+/// instead of terminating the program, which is appropriate for a UEFI
+/// application.
 #[panic_handler]
 fn panic(panic: &core::panic::PanicInfo,) -> ! {
 	println!("{panic:#?}");
@@ -144,7 +150,14 @@ pub fn init(image_handle: UnsafeHandle, syst: *const SystemTable,) {
 	// Connect each device, ignoring connection errors
 	handles.iter().for_each(|handle| {
 		// Ignore errors from connect_controller intentionally
-		unsafe { bs.connect_controller(*handle, None, None, raw::types::Boolean::TRUE,) };
+		unsafe {
+			bs.connect_controller(
+				*handle,
+				None,
+				None,
+				raw::types::Boolean::TRUE,
+			)
+		};
 	},);
 }
 
@@ -177,7 +190,8 @@ fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,> {
 ///
 /// # Returns
 ///
-/// * `Ok(NonNull<ConfigTable>)` - Pointer to the device tree configuration table
+/// * `Ok(NonNull<ConfigTable>)` - Pointer to the device tree configuration
+///   table
 /// * `Err(UefiError)` - If the device tree cannot be found or accessed
 ///
 /// # Errors
@@ -237,7 +251,9 @@ pub fn exec_kernel(kernel_entry: u64, device_tree_ptr: DeviceTreeAddress,) {
 	#[cfg(target_arch = "x86_64")]
 	type KernelEntry = extern "sysv64" fn(DeviceTreeAddress,);
 
-	let entry_point = unsafe { core::mem::transmute::<*const (), KernelEntry,>(kernel_entry,) };
+	let entry_point = unsafe {
+		core::mem::transmute::<*const (), KernelEntry,>(kernel_entry,)
+	};
 
 	// Architecture-specific preparation for kernel execution
 	#[cfg(target_arch = "aarch64")]

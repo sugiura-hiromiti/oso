@@ -139,7 +139,10 @@ impl SectionHeader {
 		Ok(section_headers,)
 	}
 
-	fn parse_fields(binary: &[u8], offset: &mut usize,) -> Rslt<Self, EfiParseError,> {
+	fn parse_fields(
+		binary: &[u8],
+		offset: &mut usize,
+	) -> Rslt<Self, EfiParseError,> {
 		macro_rules! fields {
 			($field:ident) => {
 				let Some($field,) = read_le_bytes(offset, binary,) else {

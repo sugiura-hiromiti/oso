@@ -10,8 +10,10 @@ use crate::raw::types::file::OpenMode;
 #[repr(C)]
 pub struct SimpleFileSystemProtocol {
 	pub revision:    u64,
-	pub open_volume:
-		unsafe extern "efiapi" fn(this: *mut Self, root: *mut *mut FileProtocolV1,) -> Status,
+	pub open_volume: unsafe extern "efiapi" fn(
+		this: *mut Self,
+		root: *mut *mut FileProtocolV1,
+	) -> Status,
 }
 
 /**
@@ -116,7 +118,8 @@ The operation will wait for all pending asynchronous I/O requests to complete be
 |EFI_SUCCESS|The file was closed|
 
 */
-type FileClose = unsafe extern "efiapi" fn(this: *mut FileProtocolV1,) -> Status;
+type FileClose =
+	unsafe extern "efiapi" fn(this: *mut FileProtocolV1,) -> Status;
 
 /**
 ---
@@ -134,7 +137,8 @@ The Delete() function closes and deletes a file. In all cases the file handle is
 |EFI_WARN_DELETE_FAILURE |The handle was closed, but the file was not deleted|
 
 */
-type FileDelete = unsafe extern "efiapi" fn(this: *mut FileProtocolV1,) -> Status;
+type FileDelete =
+	unsafe extern "efiapi" fn(this: *mut FileProtocolV1,) -> Status;
 
 /**
 ---
@@ -259,8 +263,10 @@ The address to return the file’s current position value.
 |EFI_DEVICE_ERROR |An attempt was made to get the position from a deleted file|
 
 */
-type FileGetPosition =
-	unsafe extern "efiapi" fn(this: *const FileProtocolV1, position: *mut u64,) -> Status;
+type FileGetPosition = unsafe extern "efiapi" fn(
+	this: *const FileProtocolV1,
+	position: *mut u64,
+) -> Status;
 
 /**
 ---
@@ -293,8 +299,10 @@ The byte position from the start of the file to set.
 |EFI_DEVICE_ERROR |An attempt was made to set the position of a deleted file|
 
 */
-type FileSetPosition =
-	unsafe extern "efiapi" fn(this: *mut FileProtocolV1, position: u64,) -> Status;
+type FileSetPosition = unsafe extern "efiapi" fn(
+	this: *mut FileProtocolV1,
+	position: u64,
+) -> Status;
 
 /**
 ---
@@ -424,7 +432,8 @@ The Flush() function flushes all modified data associated with a file to a devic
 |EFI_VOLUME_FULL |The volume is full|
 
 */
-type FileFlush = unsafe extern "efiapi" fn(this: *mut FileProtocolV1,) -> Status;
+type FileFlush =
+	unsafe extern "efiapi" fn(this: *mut FileProtocolV1,) -> Status;
 
 /**
 ---
@@ -563,8 +572,10 @@ Type EFI_FILE_IO_TOKEN is defined in “Related Definitions” below.
 |EFI_OUT_OF_RESOURCES |Unable to queue the request due to lack of resources|
 
 */
-type FileReadEx =
-	unsafe extern "efiapi" fn(this: *mut FileProtocolV2, token: *mut FileIoToken,) -> Status;
+type FileReadEx = unsafe extern "efiapi" fn(
+	this: *mut FileProtocolV2,
+	token: *mut FileIoToken,
+) -> Status;
 
 /**
 ---
@@ -620,8 +631,10 @@ Type EFI_FILE_IO_TOKEN is defined in “Related Definitions” above.
 |EFI_OUT_OF_RESOURCES |Unable to queue the request due to lack of resources|
 
 */
-type FileWriteEx =
-	unsafe extern "efiapi" fn(this: *mut FileProtocolV2, token: *mut FileIoToken,) -> Status;
+type FileWriteEx = unsafe extern "efiapi" fn(
+	this: *mut FileProtocolV2,
+	token: *mut FileIoToken,
+) -> Status;
 
 /**
 ---
@@ -662,8 +675,10 @@ The BufferSize and Buffer fields are not used for a FlushEx operation.
 |EFI_OUT_OF_RESOURCES |Unable to queue the request due to lack of resources|
 
 */
-type FileFlushEx =
-	unsafe extern "efiapi" fn(this: *mut FileProtocolV2, token: *mut FileIoToken,) -> Status;
+type FileFlushEx = unsafe extern "efiapi" fn(
+	this: *mut FileProtocolV2,
+	token: *mut FileIoToken,
+) -> Status;
 
 #[repr(C)]
 pub struct FileProtocolV1 {

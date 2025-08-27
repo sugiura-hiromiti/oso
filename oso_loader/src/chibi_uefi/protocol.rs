@@ -57,22 +57,34 @@ impl BootServices {
 	/// # Safety
 	/// TODO: fill doc comment
 	pub unsafe fn locate_handle_buffer(
-		&self, ty: HandleSearchType,
+		&self,
+		ty: HandleSearchType,
 	) -> RsltU<&mut [UnsafeHandle],> {
 		let (ty, guid, key,) = match ty {
 			HandleSearchType::AllHandles => (0, ptr::null(), ptr::null(),),
 			HandleSearchType::ByRegisterNotify(protocol_search_key,) => {
 				(1, ptr::null(), protocol_search_key.0.as_ptr().cast_const(),)
 			},
-			HandleSearchType::ByProtocol(guid,) => (2, ptr::from_ref(guid,), ptr::null(),),
+			HandleSearchType::ByProtocol(guid,) => {
+				(2, ptr::from_ref(guid,), ptr::null(),)
+			},
 		};
 
 		let mut num_handles: usize = 0;
 		let mut buffer: *mut UnsafeHandle = ptr::null_mut();
-		unsafe { (self.locate_handle_buffer)(ty, guid, key, &mut num_handles, &mut buffer,) }
-			.ok_or()?;
+		unsafe {
+			(self.locate_handle_buffer)(
+				ty,
+				guid,
+				key,
+				&mut num_handles,
+				&mut buffer,
+			)
+		}
+		.ok_or()?;
 
-		let handler_range = unsafe { core::slice::from_raw_parts_mut(buffer, num_handles,) };
+		let handler_range =
+			unsafe { core::slice::from_raw_parts_mut(buffer, num_handles,) };
 
 		Ok(handler_range,)
 	}
@@ -84,7 +96,9 @@ impl BootServices {
 
 	/// # Safety
 	/// TODO: fill doc comment
-	pub unsafe fn handles_for_protocol<P: Protocol,>(&self,) -> RsltU<&mut [UnsafeHandle],> {
+	pub unsafe fn handles_for_protocol<P: Protocol,>(
+		&self,
+	) -> RsltU<&mut [UnsafeHandle],> {
 		let search_ty = self.protocol_for::<P>();
 		unsafe { self.locate_handle_buffer(search_ty,) }
 	}
@@ -93,8 +107,9 @@ impl BootServices {
 	/// TODO: fill doc comment
 	pub unsafe fn handle_for_protocol<P: Protocol,>(&self,) -> RsltU<Handle,> {
 		let handles = unsafe { self.handles_for_protocol::<P>() }?;
-		let first_handle =
-			*handles.first().ok_or(oso_err!(UefiError::Custom("length of handles is 0")),)?;
+		let first_handle = *handles
+			.first()
+			.ok_or(oso_err!(UefiError::Custom("length of handles is 0")),)?;
 		unsafe { Handle::from_ptr(first_handle,) }
 			.ok_or(oso_err!(UefiError::Custom("handle is null")),)
 	}
@@ -155,7 +170,9 @@ impl BootServices {
 		unsafe { self.open_protocol(necessity, OpenProtoAttr::EXCULSIVE,) }
 	}
 
-	pub fn open_protocol_with<P: Protocol,>(&self,) -> RsltU<ProtocolInterface<P,>,> {
+	pub fn open_protocol_with<P: Protocol,>(
+		&self,
+	) -> RsltU<ProtocolInterface<P,>,> {
 		let bs = boot_services();
 		let handle = unsafe { bs.handle_for_protocol::<P>() }?;
 		let necessity = OpenProtoNecessity::for_app(handle,);
@@ -170,10 +187,12 @@ impl BootServices {
 	) -> RsltU<NonNull<ProtocolInterface<P,>,>,> {
 		let interface = ptr::null_mut();
 		unsafe {
-			(self.handle_protocol)(handle.as_ptr(), &P::GUID, interface,).ok_or_with(|_| {
-				let interface = (*interface).cast::<ProtocolInterface<P,>>();
-				NonNull::new(interface,).expect("interface is null",)
-			},)
+			(self.handle_protocol)(handle.as_ptr(), &P::GUID, interface,)
+				.ok_or_with(|_| {
+					let interface =
+						(*interface).cast::<ProtocolInterface<P,>>();
+					NonNull::new(interface,).expect("interface is null",)
+				},)
 		}
 	}
 }
@@ -182,8 +201,8 @@ impl BootServices {
 pub enum HandleSearchType<'g,> {
 	/// return all handles present on the system
 	AllHandles,
-	/// return all handles that implement a protocol when an intereface for that protocol is
-	/// (re)installed
+	/// return all handles that implement a protocol when an intereface for that
+	/// protocol is (re)installed
 	ByRegisterNotify(ProtocolSearchKey,),
 	/// returns all handles supporting a certain protocol, specified by its guid
 	ByProtocol(&'g Guid,),
@@ -203,7 +222,8 @@ impl OpenProtoAttr {
 	/// ドライバがプロトコルインターフェースのアクセスを得る為に使用される
 	/// このフラグが立っている場合、プロトコルインターフェースが削除、
 	/// 再インストールされる際にドライバが停止する
-	/// 一度プロトコルインターフェースがドライバを用いて、そしてこのフラグをオンにして開かれた場合、
+	/// 一度プロトコルインターフェースがドライバを用いて、
+	/// そしてこのフラグをオンにして開かれた場合、
 	/// 他のドライバはこのフラグを立てて同じプロトコルインターフェースを開くことが許可されない
 	pub const BY_DRIVER: Self = Self(0x10,);
 	/// boot_services.handle_protocolで使用される
@@ -216,7 +236,8 @@ impl OpenProtoAttr {
 	pub const TEST_PROTOCOL: Self = Self(0x4,);
 }
 
-/// protocol interface representation which is designed as safe(automatically closed on drop)
+/// protocol interface representation which is designed as safe(automatically
+/// closed on drop)
 pub struct ProtocolInterface<P: Protocol,> {
 	interface: Option<NonNull<P,>,>,
 	handles:   OpenProtoNecessity,

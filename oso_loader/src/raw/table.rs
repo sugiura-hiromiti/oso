@@ -56,7 +56,8 @@ impl ConfigTableStream {
 			let target_config_table = unsafe { config_tables.as_ptr().add(i,) };
 
 			let config_table = unsafe {
-				// `config_tables.as_ptr().add(i)`は本来nullではないはずなのでunsafeしても良さげ
+				// `config_tables.as_ptr().
+				// add(i)`は本来nullではないはずなのでunsafeしても良さげ
 				NonNull::new_unchecked(target_config_table,)
 			};
 
@@ -69,12 +70,16 @@ impl ConfigTableStream {
 	}
 }
 
-pub const DEVICE_TREE_TABLE_GUID: Guid = guid!("b1b621d5-f19c-41a5-830b-d9152c69aae0");
+pub const DEVICE_TREE_TABLE_GUID: Guid =
+	guid!("b1b621d5-f19c-41a5-830b-d9152c69aae0");
 
 impl SystemTable {
 	pub fn get_config_tables(&self,) -> Rslt<ConfigTableStream, UefiError,> {
 		let config_tables = NonNull::new(self.config_tables,);
-		Ok(ConfigTableStream { max_index: self.config_table_count, config_tables, },)
+		Ok(ConfigTableStream {
+			max_index: self.config_table_count,
+			config_tables,
+		},)
 	}
 
 	pub fn config_table_with(
@@ -84,7 +89,9 @@ impl SystemTable {
 		Ok(self.get_config_tables()?.config_table_with(guid,),)
 	}
 
-	pub fn device_tree(&self,) -> Rslt<Option<NonNull<ConfigTable,>,>, UefiError,> {
+	pub fn device_tree(
+		&self,
+	) -> Rslt<Option<NonNull<ConfigTable,>,>, UefiError,> {
 		self.config_table_with(DEVICE_TREE_TABLE_GUID,)
 	}
 }

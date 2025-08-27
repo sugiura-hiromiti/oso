@@ -5,7 +5,8 @@ use core::ptr::NonNull;
 use core::sync::atomic::AtomicPtr;
 use core::sync::atomic::Ordering;
 
-static SYSTEM_TABLE: AtomicPtr<SystemTable,> = AtomicPtr::new(core::ptr::null_mut(),);
+static SYSTEM_TABLE: AtomicPtr<SystemTable,> =
+	AtomicPtr::new(core::ptr::null_mut(),);
 
 unsafe fn set_system_table(ptr: *const SystemTable,) {
 	SYSTEM_TABLE.store(ptr.cast_mut(), Ordering::Release,);
