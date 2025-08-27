@@ -1,13 +1,16 @@
 //! # Function Wrapper Generation Utilities
 //!
-//! This module provides utilities for generating wrapper functions and extracting
-//! method arguments from function signatures. It's primarily used in procedural
-//! macros that need to analyze and transform function definitions.
+//! This module provides utilities for generating wrapper functions and
+//! extracting method arguments from function signatures. It's primarily used in
+//! procedural macros that need to analyze and transform function definitions.
 
 use crate::RsltP;
 use syn::Signature;
 
-pub fn wrapper(static_frame_buffer: syn::Ident, trait_def: syn::ItemTrait,) -> RsltP {
+pub fn wrapper(
+	static_frame_buffer: syn::Ident,
+	trait_def: syn::ItemTrait,
+) -> RsltP {
 	// Generate wrapper functions for each trait method
 	let wrapper_fns = trait_def.items.clone().into_iter().filter_map(|i| {
 		if let syn::TraitItem::Fn(method,) = i {
@@ -50,21 +53,24 @@ pub fn wrapper(static_frame_buffer: syn::Ident, trait_def: syn::ItemTrait,) -> R
 	Ok((wrapper_fns, vec![],),)
 }
 
-/// Extracts method arguments from a function signature, excluding the receiver (`self`)
+/// Extracts method arguments from a function signature, excluding the receiver
+/// (`self`)
 ///
 /// This function analyzes a function signature and returns an iterator over all
-/// the argument patterns, filtering out any receiver arguments (like `self`, `&self`,
-/// `&mut self`, etc.). This is useful when generating wrapper functions or when you
-/// need to forward arguments to another function.
+/// the argument patterns, filtering out any receiver arguments (like `self`,
+/// `&self`, `&mut self`, etc.). This is useful when generating wrapper
+/// functions or when you need to forward arguments to another function.
 ///
 /// # Arguments
 ///
-/// * `sig` - A reference to a `syn::Signature` representing the function signature to analyze
+/// * `sig` - A reference to a `syn::Signature` representing the function
+///   signature to analyze
 ///
 /// # Returns
 ///
-/// An iterator that yields `Box<syn::Pat>` for each non-receiver argument in the signature.
-/// The patterns represent the argument names and destructuring patterns.
+/// An iterator that yields `Box<syn::Pat>` for each non-receiver argument in
+/// the signature. The patterns represent the argument names and destructuring
+/// patterns.
 ///
 /// # Examples
 ///
@@ -85,7 +91,9 @@ pub fn wrapper(static_frame_buffer: syn::Ident, trait_def: syn::ItemTrait,) -> R
 /// - Creating proxy methods that delegate to other implementations
 /// - Analyzing function signatures in procedural macros
 /// - Building function call expressions with the same arguments
-pub fn method_args(sig: &Signature,) -> impl Iterator<Item = std::boxed::Box<syn::Pat,>,> {
+pub fn method_args(
+	sig: &Signature,
+) -> impl Iterator<Item = std::boxed::Box<syn::Pat,>,> {
 	sig.inputs.iter().filter_map(|a| match a {
 		// Skip receiver arguments (self, &self, &mut self, etc.)
 		syn::FnArg::Receiver(_,) => None,
@@ -231,7 +239,8 @@ mod tests {
 
 	#[test]
 	fn test_wrapper_function_basic() {
-		let static_frame_buffer = syn::Ident::new("FRAME_BUFFER", proc_macro2::Span::call_site(),);
+		let static_frame_buffer =
+			syn::Ident::new("FRAME_BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {
 			trait TestTrait {
 				fn test_method(&self, arg: i32,) -> bool;
@@ -253,7 +262,8 @@ mod tests {
 
 	#[test]
 	fn test_wrapper_function_multiple_methods() {
-		let static_frame_buffer = syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
+		let static_frame_buffer =
+			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {
 			trait MultiTrait {
 				fn method1(&self,) -> i32;
@@ -280,7 +290,8 @@ mod tests {
 
 	#[test]
 	fn test_wrapper_function_with_const() {
-		let static_frame_buffer = syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
+		let static_frame_buffer =
+			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {
 			trait ConstTrait {
 				const fn const_method(&self,) -> i32;
@@ -300,7 +311,8 @@ mod tests {
 
 	#[test]
 	fn test_wrapper_function_with_unsafe() {
-		let static_frame_buffer = syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
+		let static_frame_buffer =
+			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {
 			trait UnsafeTrait {
 				unsafe fn unsafe_method(&self,) -> i32;
@@ -320,7 +332,8 @@ mod tests {
 
 	#[test]
 	fn test_wrapper_function_with_async() {
-		let static_frame_buffer = syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
+		let static_frame_buffer =
+			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {
 			trait AsyncTrait {
 				async fn async_method(&self,) -> i32;
@@ -340,7 +353,8 @@ mod tests {
 
 	#[test]
 	fn test_wrapper_function_with_generics() {
-		let static_frame_buffer = syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
+		let static_frame_buffer =
+			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {
 			trait GenericTrait {
 				fn generic_method<T,>(&self, arg: T,) -> T;
@@ -361,7 +375,8 @@ mod tests {
 
 	#[test]
 	fn test_wrapper_function_with_return_type() {
-		let static_frame_buffer = syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
+		let static_frame_buffer =
+			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {
 			trait ReturnTrait {
 				fn return_method(&self,) -> Result<String, Error,>;
@@ -384,7 +399,8 @@ mod tests {
 
 	#[test]
 	fn test_wrapper_function_filters_non_functions() {
-		let static_frame_buffer = syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
+		let static_frame_buffer =
+			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {
 			trait MixedTrait {
 				type AssocType;
@@ -408,7 +424,8 @@ mod tests {
 
 	#[test]
 	fn test_wrapper_function_empty_trait() {
-		let static_frame_buffer = syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
+		let static_frame_buffer =
+			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {
 			trait EmptyTrait {
 			}
@@ -427,7 +444,8 @@ mod tests {
 
 	#[test]
 	fn test_wrapper_function_with_where_clause() {
-		let static_frame_buffer = syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
+		let static_frame_buffer =
+			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {
 			trait WhereTrait {
 				fn where_method<T,>(&self, arg: T,) -> T where T: Clone;
@@ -440,7 +458,8 @@ mod tests {
 		let (tokens, diags,) = result.unwrap();
 		let token_string = tokens.to_string();
 
-		// Check that where clause is preserved (though it might be formatted differently)
+		// Check that where clause is preserved (though it might be formatted
+		// differently)
 		assert!(token_string.contains("pub fn where_method"));
 		assert!(token_string.contains("Clone"));
 		assert!(diags.is_empty());

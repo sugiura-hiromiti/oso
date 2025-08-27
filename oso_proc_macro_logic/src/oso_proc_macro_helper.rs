@@ -3,7 +3,9 @@ macro_rules! fnl {
 	($name:ident => $ty:ty, $doc:literal) => {
 		#[proc_macro]
 		#[doc = $doc]
-		pub fn $name(item: proc_macro::TokenStream,) -> proc_macro::TokenStream {
+		pub fn $name(
+			item: proc_macro::TokenStream,
+		) -> proc_macro::TokenStream {
 			$crate::def! { $name, item => $ty, }
 		}
 	};
@@ -140,7 +142,8 @@ mod tests {
 
 	#[test]
 	fn test_diag_clone_if_possible() {
-		// Test that Diag can be created with same content (since String is Clone)
+		// Test that Diag can be created with same content (since String is
+		// Clone)
 		let original = Diag::Err("original message".to_string(),);
 		let duplicate = Diag::Err("original message".to_string(),);
 
@@ -354,10 +357,12 @@ mod tests {
 	#[test]
 	fn test_macro_syntax_validation() {
 		// Test that macro syntax is valid by checking compilation
-		// This is more of a compilation test - if it compiles, the macros are syntactically correct
+		// This is more of a compilation test - if it compiles, the macros are
+		// syntactically correct
 
-		// We can't easily test macro expansion in unit tests without actually using them,
-		// but we can verify the macro definitions don't cause compilation errors
+		// We can't easily test macro expansion in unit tests without actually
+		// using them, but we can verify the macro definitions don't cause
+		// compilation errors
 		assert!(true);
 	}
 
@@ -401,7 +406,8 @@ mod tests {
 	#[test]
 	fn test_diag_with_control_characters() {
 		// Test with control characters
-		let control_chars = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F";
+		let control_chars =
+			"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F";
 		let diag = Diag::Err(control_chars.to_string(),);
 
 		match diag {

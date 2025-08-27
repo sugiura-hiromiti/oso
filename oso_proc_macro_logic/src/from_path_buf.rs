@@ -99,7 +99,9 @@ fn enum_parts(struct_def: &syn::DeriveInput,) -> Rslt<EnumParts,> {
 				Option<proc_macro2::TokenStream,>,
 				proc_macro2::TokenStream,
 			),> {
-				let path = pb.to_str().ok_or(anyhow!("failed convert PathBuf to &str"),)?;
+				let path = pb
+					.to_str()
+					.ok_or(anyhow!("failed convert PathBuf to &str"),)?;
 				let path = quote::quote! {#path};
 				let variant: String = pb.to_camel();
 				let variant = format_ident!("{variant}");
@@ -124,7 +126,8 @@ fn enum_parts(struct_def: &syn::DeriveInput,) -> Rslt<EnumParts,> {
 }
 
 fn detect_chart_type(struct_def: &syn::DeriveInput,) -> Option<syn::Type,> {
-	let syn::Data::Struct(syn::DataStruct { fields, .. },) = &struct_def.data else {
+	let syn::Data::Struct(syn::DataStruct { fields, .. },) = &struct_def.data
+	else {
 		panic!("expected struct, found {struct_def:?}")
 	};
 	fields.iter().find(|f| {
@@ -138,7 +141,9 @@ fn struct_dump(
 	mut struct_def: syn::DeriveInput,
 	enum_name: Option<syn::Type,>,
 ) -> Rslt<proc_macro2::TokenStream,> {
-	let syn::Data::Struct(syn::DataStruct { ref mut fields, .. },) = struct_def.data else {
+	let syn::Data::Struct(syn::DataStruct { ref mut fields, .. },) =
+		struct_def.data
+	else {
 		bail!("unexpected derive input. this macro only support struct derive");
 	};
 
@@ -190,7 +195,10 @@ fn field_construct(
 	f: syn::Field,
 ) -> Rslt<proc_macro2::TokenStream,> {
 	let construct = match f.ty {
-		syn::Type::Path(syn::TypePath { path: syn::Path { segments, .. }, .. },) => {
+		syn::Type::Path(syn::TypePath {
+			path: syn::Path { segments, .. },
+			..
+		},) => {
 			let field_name = &f.ident;
 			let id = if let Some(field_name,) = field_name {
 				quote::quote! {
@@ -202,7 +210,8 @@ fn field_construct(
 
 			if let Some(last,) = segments.last() {
 				let Some(syn::Type::Path(syn::TypePath {
-					path: syn::Path { segments, .. }, ..
+					path: syn::Path { segments, .. },
+					..
 				},),) = enum_name
 				else {
 					unimplemented!()
@@ -233,7 +242,9 @@ fn field_construct(
 }
 
 fn is_attred(f: &mut syn::Field,) -> bool {
-	f.attrs.iter().any(|a| matches!(&a.meta, syn::Meta::Path(p) if p.is_ident("chart")),)
+	f.attrs
+		.iter()
+		.any(|a| matches!(&a.meta, syn::Meta::Path(p) if p.is_ident("chart")),)
 }
 
 #[cfg(test)]
@@ -273,12 +284,14 @@ mod tests {
 		};
 
 		// This should work since from_path_buf expects a struct
-		// However, it depends on all_crates() which may panic in test environments
+		// However, it depends on all_crates() which may panic in test
+		// environments
 		let result = std::panic::catch_unwind(|| from_path_buf(test_struct,),);
 
 		match result {
 			Ok(inner_result,) => {
-				// The result depends on all_crates() working, but we can verify structure
+				// The result depends on all_crates() working, but we can verify
+				// structure
 				match inner_result {
 					Ok((tokens, diags,),) => {
 						let token_string = tokens.to_string();
@@ -288,13 +301,15 @@ mod tests {
 						assert!(diags.is_empty());
 					},
 					Err(_,) => {
-						// This is acceptable since it depends on the environment and all_crates()
+						// This is acceptable since it depends on the
+						// environment and all_crates()
 						assert!(true);
 					},
 				}
 			},
 			Err(_,) => {
-				// If it panics due to all_crates() issues, that's acceptable in test environment
+				// If it panics due to all_crates() issues, that's acceptable in
+				// test environment
 				assert!(true);
 			},
 		}
@@ -320,19 +335,22 @@ mod tests {
 
 	#[test]
 	fn test_enum_impl_basic_functionality() {
-		// Create a simple test struct as DeriveInput (since struct_impl expects DeriveInput)
+		// Create a simple test struct as DeriveInput (since struct_impl expects
+		// DeriveInput)
 		let test_struct: syn::DeriveInput = parse_quote! {
 			pub struct CrateType {
 				field: i32,
 			}
 		};
 
-		// Test that struct_impl doesn't panic - use panic handling since all_crates() may panic
+		// Test that struct_impl doesn't panic - use panic handling since
+		// all_crates() may panic
 		let result = std::panic::catch_unwind(|| struct_impl(test_struct,),);
 
 		match result {
 			Ok(inner_result,) => {
-				// The result depends on all_crates() working, but we can verify structure
+				// The result depends on all_crates() working, but we can verify
+				// structure
 				match inner_result {
 					Ok((tokens, diags,),) => {
 						let token_string = tokens.to_string();
@@ -342,13 +360,15 @@ mod tests {
 						assert!(diags.is_empty());
 					},
 					Err(_,) => {
-						// This is acceptable since it depends on the environment and all_crates()
+						// This is acceptable since it depends on the
+						// environment and all_crates()
 						assert!(true);
 					},
 				}
 			},
 			Err(_,) => {
-				// If it panics due to all_crates() issues, that's acceptable in test environment
+				// If it panics due to all_crates() issues, that's acceptable in
+				// test environment
 				assert!(true);
 			},
 		}
@@ -384,7 +404,10 @@ mod tests {
 	fn test_camel_case_conversion_logic() {
 		// Test the camel case conversion logic used in enum_impl
 		let test_name = "oso_kernel_test";
-		let camel_cased = test_name.split('_',).map(|s| s[..1].to_uppercase() + &s[1..],).join("",);
+		let camel_cased = test_name
+			.split('_',)
+			.map(|s| s[..1].to_uppercase() + &s[1..],)
+			.join("",);
 
 		assert_eq!(camel_cased, "OsoKernelTest");
 	}
@@ -392,7 +415,10 @@ mod tests {
 	#[test]
 	fn test_camel_case_single_word() {
 		let test_name = "kernel";
-		let camel_cased = test_name.split('_',).map(|s| s[..1].to_uppercase() + &s[1..],).join("",);
+		let camel_cased = test_name
+			.split('_',)
+			.map(|s| s[..1].to_uppercase() + &s[1..],)
+			.join("",);
 
 		assert_eq!(camel_cased, "Kernel");
 	}
@@ -402,7 +428,13 @@ mod tests {
 		let test_name = "oso__kernel"; // Double underscore
 		let camel_cased = test_name
 			.split('_',)
-			.map(|s| if s.is_empty() { String::new() } else { s[..1].to_uppercase() + &s[1..] },)
+			.map(|s| {
+				if s.is_empty() {
+					String::new()
+				} else {
+					s[..1].to_uppercase() + &s[1..]
+				}
+			},)
 			.join("",);
 
 		assert_eq!(camel_cased, "OsoKernel");
@@ -458,7 +490,8 @@ mod tests {
 
 		match result {
 			Ok(inner_result,) => {
-				// We expect either success or a specific error from all_crates()
+				// We expect either success or a specific error from
+				// all_crates()
 				match inner_result {
 					Ok(_,) => assert!(true),
 					Err(e,) => {
@@ -469,7 +502,8 @@ mod tests {
 				}
 			},
 			Err(_,) => {
-				// If it panics due to all_crates() issues, that's acceptable in test environment
+				// If it panics due to all_crates() issues, that's acceptable in
+				// test environment
 				assert!(true);
 			},
 		}
@@ -528,7 +562,8 @@ mod tests {
 	fn test_result_try_collect() {
 		// Test the try_collect functionality used in enum_impl
 		let results: Vec<Result<i32, &str,>,> = vec![Ok(1,), Ok(2,), Ok(3,)];
-		let collected: Result<Vec<i32,>, &str,> = results.into_iter().try_collect();
+		let collected: Result<Vec<i32,>, &str,> =
+			results.into_iter().try_collect();
 
 		assert!(collected.is_ok());
 		assert_eq!(collected.unwrap(), vec![1, 2, 3]);
@@ -536,8 +571,10 @@ mod tests {
 
 	#[test]
 	fn test_result_try_collect_with_error() {
-		let results: Vec<Result<i32, &str,>,> = vec![Ok(1,), Err("error",), Ok(3,)];
-		let collected: Result<Vec<i32,>, &str,> = results.into_iter().try_collect();
+		let results: Vec<Result<i32, &str,>,> =
+			vec![Ok(1,), Err("error",), Ok(3,)];
+		let collected: Result<Vec<i32,>, &str,> =
+			results.into_iter().try_collect();
 
 		assert!(collected.is_err());
 		assert_eq!(collected.unwrap_err(), "error");

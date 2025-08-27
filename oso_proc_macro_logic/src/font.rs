@@ -1,8 +1,8 @@
 //! # Font Data Processing Module
 //!
-//! This module provides functionality for loading and processing ASCII font data
-//! for use in the OSO operating system. It handles bitmap font conversion from
-//! text-based representations to binary formats suitable for rendering.
+//! This module provides functionality for loading and processing ASCII font
+//! data for use in the OSO operating system. It handles bitmap font conversion
+//! from text-based representations to binary formats suitable for rendering.
 
 use crate::Rslt;
 use crate::RsltP;
@@ -24,18 +24,20 @@ pub fn font(path: syn::LitStr,) -> RsltP {
 /// Loads and processes ASCII font data from a specified file path
 ///
 /// This function reads a font data file containing ASCII character bitmaps
-/// represented as text patterns using '.' for empty pixels and '@' for filled pixels.
-/// Each character is expected to be 16 lines tall with 8 pixels per line.
+/// represented as text patterns using '.' for empty pixels and '@' for filled
+/// pixels. Each character is expected to be 16 lines tall with 8 pixels per
+/// line.
 ///
 /// # Arguments
 ///
-/// * `specified_path` - A string literal containing the relative path to the font file from the
-///   project root directory
+/// * `specified_path` - A string literal containing the relative path to the
+///   font file from the project root directory
 ///
 /// # Returns
 ///
-/// A vector of 256 strings, where each string represents the bitmap data for one
-/// ASCII character. Each string contains 128 characters (16 lines × 8 characters per line).
+/// A vector of 256 strings, where each string represents the bitmap data for
+/// one ASCII character. Each string contains 128 characters (16 lines × 8
+/// characters per line).
 ///
 /// # Panics
 ///
@@ -52,7 +54,8 @@ pub fn font(path: syn::LitStr,) -> RsltP {
 /// assert_eq!(font_data.len(), 256);
 /// ```
 fn font_data(specified_path: LitStr,) -> Rslt<Vec<String,>,> {
-	// Get the project root directory, falling back to compile-time directory if needed
+	// Get the project root directory, falling back to compile-time directory if
+	// needed
 	let project_root = std::env::var("CARGO_MANIFEST_DIR",)?;
 
 	// Construct the full path to the font file
@@ -76,7 +79,8 @@ fn font_data(specified_path: LitStr,) -> Rslt<Vec<String,>,> {
 		fonts[idx] = fonts_data_lines[idx * 16..(idx + 1) * 16].join("",);
 	}
 
-	// Verify that each character has exactly 128 characters (16 lines × 8 chars)
+	// Verify that each character has exactly 128 characters (16 lines × 8
+	// chars)
 	fonts.iter().for_each(|s| assert_eq!(s.len(), 128),);
 	Ok(fonts,)
 }
@@ -90,13 +94,14 @@ fn font_data(specified_path: LitStr,) -> Rslt<Vec<String,>,> {
 ///
 /// # Arguments
 ///
-/// * `fonts` - A vector of strings containing the text-based bitmap data, where '.' represents an
-///   empty pixel and '@' represents a filled pixel
+/// * `fonts` - A vector of strings containing the text-based bitmap data, where
+///   '.' represents an empty pixel and '@' represents a filled pixel
 ///
 /// # Returns
 ///
-/// A vector of u128 values, where each value represents the bitmap for one character.
-/// The bits are arranged with the first line at the least significant bits.
+/// A vector of u128 values, where each value represents the bitmap for one
+/// character. The bits are arranged with the first line at the least
+/// significant bits.
 ///
 /// # Bitmap Encoding
 ///
@@ -133,7 +138,8 @@ fn convert_bitfield(fonts: &[String],) -> Vec<u128,> {
 					// Parse the binary string to get the line value
 					let line = u128::from_str_radix(&s, 2,).unwrap();
 
-					// Shift the line to its proper position (line i goes to bit position i*8)
+					// Shift the line to its proper position (line i goes to bit
+					// position i*8)
 					line << i
 				},)
 				.sum(); // Combine all lines using bitwise OR (via sum)
@@ -152,7 +158,8 @@ mod tests {
 
 	/// Creates a temporary font file for testing
 	fn create_test_font_file() -> NamedTempFile {
-		let temp_file = NamedTempFile::new().expect("Failed to create temp file",);
+		let temp_file =
+			NamedTempFile::new().expect("Failed to create temp file",);
 
 		// Create sample font data for character 'A' (ASCII 65)
 		// 16 lines of 8 characters each, representing a simple 'A' pattern
@@ -181,7 +188,8 @@ mod tests {
 			full_font_data.push('\n',);
 		}
 
-		fs::write(temp_file.path(), full_font_data,).expect("Failed to write test font data",);
+		fs::write(temp_file.path(), full_font_data,)
+			.expect("Failed to write test font data",);
 		temp_file
 	}
 
@@ -194,9 +202,10 @@ mod tests {
 		let test_file_path = format!("{}/test_font_temp.txt", project_root);
 
 		// Create sample font data
-		let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@\
-		                        ..\n..@..@..\n..@..@..\n..@..@..\n........\n........\n........\n..\
-		                        ......\n........\n........\n";
+		let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@\
+		                        ..\n..@@@@..\n..@..@..\n..@..@..\n..@..@..\n..\
+		                        @..@..\n........\n........\n........\n........\
+		                        \n........\n........\n";
 		let mut full_font_data = String::new();
 		for _ in 0..256 {
 			full_font_data.push_str(sample_font_data,);
@@ -204,7 +213,10 @@ mod tests {
 
 		fs::write(&test_file_path, full_font_data,)?;
 
-		let lit_str = syn::LitStr::new("test_font_temp.txt", proc_macro2::Span::call_site(),);
+		let lit_str = syn::LitStr::new(
+			"test_font_temp.txt",
+			proc_macro2::Span::call_site(),
+		);
 		let fonts = font_data(lit_str,)?;
 
 		// Should load exactly 256 characters
@@ -224,9 +236,10 @@ mod tests {
 		let test_file_path = format!("{}/test_font_temp2.txt", project_root);
 
 		// Create sample font data
-		let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@\
-		                        ..\n..@..@..\n..@..@..\n..@..@..\n........\n........\n........\n..\
-		                        ......\n........\n........\n";
+		let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@\
+		                        ..\n..@@@@..\n..@..@..\n..@..@..\n..@..@..\n..\
+		                        @..@..\n........\n........\n........\n........\
+		                        \n........\n........\n";
 		let mut full_font_data = String::new();
 		for _ in 0..256 {
 			full_font_data.push_str(sample_font_data,);
@@ -234,10 +247,14 @@ mod tests {
 
 		fs::write(&test_file_path, full_font_data,)?;
 
-		let lit_str = syn::LitStr::new("test_font_temp2.txt", proc_macro2::Span::call_site(),);
+		let lit_str = syn::LitStr::new(
+			"test_font_temp2.txt",
+			proc_macro2::Span::call_site(),
+		);
 		let fonts = font_data(lit_str,)?;
 
-		// Each character should have exactly 128 characters (16 lines × 8 chars)
+		// Each character should have exactly 128 characters (16 lines × 8
+		// chars)
 		for (i, font_char,) in fonts.iter().enumerate() {
 			assert_eq!(
 				font_char.len(),
@@ -333,8 +350,10 @@ mod tests {
 
 	#[test]
 	fn test_fonts_nonexistent_file() {
-		let lit_str =
-			syn::LitStr::new("/nonexistent/path/font.txt", proc_macro2::Span::call_site(),);
+		let lit_str = syn::LitStr::new(
+			"/nonexistent/path/font.txt",
+			proc_macro2::Span::call_site(),
+		);
 		let result = font_data(lit_str,);
 		assert!(result.is_err(), "Should return error for nonexistent file");
 	}
@@ -376,7 +395,10 @@ mod tests {
 
 		fs::write(&test_file_path, full_font_data,)?;
 
-		let lit_str = syn::LitStr::new("test_font_hex_temp.txt", proc_macro2::Span::call_site(),);
+		let lit_str = syn::LitStr::new(
+			"test_font_hex_temp.txt",
+			proc_macro2::Span::call_site(),
+		);
 		let fonts = font_data(lit_str,)?;
 
 		// Should still load 256 characters, with hex lines filtered out
@@ -501,12 +523,14 @@ mod tests {
 		use std::env;
 
 		let project_root = env::var("CARGO_MANIFEST_DIR",)?;
-		let test_file_path = format!("{}/test_font_integration.txt", project_root);
+		let test_file_path =
+			format!("{}/test_font_integration.txt", project_root);
 
 		// Create valid font data
-		let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@\
-		                        ..\n..@..@..\n..@..@..\n..@..@..\n........\n........\n........\n..\
-		                        ......\n........\n........\n";
+		let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@\
+		                        ..\n..@@@@..\n..@..@..\n..@..@..\n..@..@..\n..\
+		                        @..@..\n........\n........\n........\n........\
+		                        \n........\n........\n";
 		let mut full_font_data = String::new();
 		for _ in 0..256 {
 			full_font_data.push_str(sample_font_data,);
@@ -514,8 +538,10 @@ mod tests {
 
 		fs::write(&test_file_path, full_font_data,)?;
 
-		let lit_str =
-			syn::LitStr::new("test_font_integration.txt", proc_macro2::Span::call_site(),);
+		let lit_str = syn::LitStr::new(
+			"test_font_integration.txt",
+			proc_macro2::Span::call_site(),
+		);
 		let result = font(lit_str,)?;
 
 		let (tokens, diags,) = result;
@@ -538,9 +564,11 @@ mod tests {
 		use std::env;
 
 		let project_root = env::var("CARGO_MANIFEST_DIR",)?;
-		let test_file_path = format!("{}/test_font_mixed_endings.txt", project_root);
+		let test_file_path =
+			format!("{}/test_font_mixed_endings.txt", project_root);
 
-		// Create font data with consistent line endings to ensure proper parsing
+		// Create font data with consistent line endings to ensure proper
+		// parsing
 		let mut font_file_data = String::new();
 		for i in 0..256 {
 			// Create 16 lines of 8 characters each for this character
@@ -555,8 +583,10 @@ mod tests {
 
 		fs::write(&test_file_path, font_file_data,)?;
 
-		let lit_str =
-			syn::LitStr::new("test_font_mixed_endings.txt", proc_macro2::Span::call_site(),);
+		let lit_str = syn::LitStr::new(
+			"test_font_mixed_endings.txt",
+			proc_macro2::Span::call_site(),
+		);
 
 		let result = font_data(lit_str,);
 
@@ -567,7 +597,8 @@ mod tests {
 		match result {
 			Ok(fonts,) => {
 				assert_eq!(fonts.len(), 256);
-				// Each font should have exactly 128 characters (16 lines × 8 chars)
+				// Each font should have exactly 128 characters (16 lines × 8
+				// chars)
 				fonts.iter().for_each(|font| assert_eq!(font.len(), 128),);
 			},
 			Err(e,) => {
@@ -635,16 +666,22 @@ mod tests {
 		// Test various error conditions
 
 		// Non-existent file
-		let lit_str =
-			syn::LitStr::new("definitely_does_not_exist.txt", proc_macro2::Span::call_site(),);
+		let lit_str = syn::LitStr::new(
+			"definitely_does_not_exist.txt",
+			proc_macro2::Span::call_site(),
+		);
 		let result = font_data(lit_str,);
 		assert!(result.is_err());
 
 		// Test with invalid CARGO_MANIFEST_DIR
 		unsafe {
-			std::env::set_var("CARGO_MANIFEST_DIR", "/invalid/path/that/does/not/exist",);
+			std::env::set_var(
+				"CARGO_MANIFEST_DIR",
+				"/invalid/path/that/does/not/exist",
+			);
 		}
-		let lit_str = syn::LitStr::new("test.txt", proc_macro2::Span::call_site(),);
+		let lit_str =
+			syn::LitStr::new("test.txt", proc_macro2::Span::call_site(),);
 		let result = font_data(lit_str,);
 		assert!(result.is_err());
 
@@ -668,12 +705,14 @@ mod tests {
 		use std::env;
 
 		let project_root = env::var("CARGO_MANIFEST_DIR",)?;
-		let test_file_path = format!("{}/test_font_insufficient.txt", project_root);
+		let test_file_path =
+			format!("{}/test_font_insufficient.txt", project_root);
 
 		// Create font data with only 100 characters instead of 256
-		let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@\
-		                        ..\n..@..@..\n..@..@..\n..@..@..\n........\n........\n........\n..\
-		                        ......\n........\n........\n";
+		let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@\
+		                        ..\n..@@@@..\n..@..@..\n..@..@..\n..@..@..\n..\
+		                        @..@..\n........\n........\n........\n........\
+		                        \n........\n........\n";
 		let mut font_file_data = String::new();
 		for _ in 0..100 {
 			// Only 100 characters
@@ -682,10 +721,13 @@ mod tests {
 
 		fs::write(&test_file_path, font_file_data,)?;
 
-		let lit_str =
-			syn::LitStr::new("test_font_insufficient.txt", proc_macro2::Span::call_site(),);
+		let lit_str = syn::LitStr::new(
+			"test_font_insufficient.txt",
+			proc_macro2::Span::call_site(),
+		);
 
-		// Use panic catching since the function might panic on insufficient data
+		// Use panic catching since the function might panic on insufficient
+		// data
 		let result = std::panic::catch_unwind(|| font_data(lit_str,),);
 
 		// Cleanup
@@ -711,9 +753,11 @@ mod tests {
 		use std::env;
 
 		let project_root = env::var("CARGO_MANIFEST_DIR",)?;
-		let test_file_path = format!("{}/test_font_wrong_length.txt", project_root);
+		let test_file_path =
+			format!("{}/test_font_wrong_length.txt", project_root);
 
-		// Create font data where each character has wrong length (not 128 chars)
+		// Create font data where each character has wrong length (not 128
+		// chars)
 		let wrong_font_data = "........\n...@@...\n..@..@..\n"; // Only 3 lines instead of 16
 		let mut font_file_data = String::new();
 		for _ in 0..256 {
@@ -722,8 +766,10 @@ mod tests {
 
 		fs::write(&test_file_path, font_file_data,)?;
 
-		let lit_str =
-			syn::LitStr::new("test_font_wrong_length.txt", proc_macro2::Span::call_site(),);
+		let lit_str = syn::LitStr::new(
+			"test_font_wrong_length.txt",
+			proc_macro2::Span::call_site(),
+		);
 
 		// This should panic due to the assertion in font_data
 		let result = std::panic::catch_unwind(|| font_data(lit_str,),);
@@ -784,8 +830,9 @@ mod tests {
 		let fonts = vec![pattern];
 		let result = convert_bitfield(&fonts,);
 
-		// First bit should be set (MSB) - but the actual implementation might use different bit
-		// ordering Let's just verify that the result is non-zero and has exactly one bit set
+		// First bit should be set (MSB) - but the actual implementation might
+		// use different bit ordering Let's just verify that the result is
+		// non-zero and has exactly one bit set
 		assert_eq!(result.len(), 1);
 		assert_ne!(result[0], 0); // Should have some bits set
 		assert_eq!(result[0].count_ones(), 1); // Should have exactly one bit set
@@ -814,11 +861,14 @@ mod tests {
 		// Test error handling for various invalid inputs
 		use std::env;
 
-		let _project_root = env::var("CARGO_MANIFEST_DIR",).unwrap_or_else(|_| ".".to_string(),);
+		let _project_root = env::var("CARGO_MANIFEST_DIR",)
+			.unwrap_or_else(|_| ".".to_string(),);
 
 		// Test with non-existent file
-		let nonexistent_file =
-			syn::LitStr::new("nonexistent_font_file.txt", proc_macro2::Span::call_site(),);
+		let nonexistent_file = syn::LitStr::new(
+			"nonexistent_font_file.txt",
+			proc_macro2::Span::call_site(),
+		);
 		let result = font_data(nonexistent_file,);
 		assert!(result.is_err());
 	}
@@ -834,19 +884,25 @@ mod tests {
 		// Integration test that combines font_data and convert_bitfield
 		use std::env;
 
-		let project_root = env::var("CARGO_MANIFEST_DIR",).unwrap_or_else(|_| ".".to_string(),);
-		let test_file_path = format!("{}/test_integration_font.txt", project_root);
+		let project_root = env::var("CARGO_MANIFEST_DIR",)
+			.unwrap_or_else(|_| ".".to_string(),);
+		let test_file_path =
+			format!("{}/test_integration_font.txt", project_root);
 
 		// Create valid font data
-		let sample_char = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@..\n.\
-		                   .@..@..\n..@..@..\n..@..@..\n........\n........\n........\n........\n..\
-		                   ......\n........\n";
+		let sample_char = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n.\
+		                   .@@@@..\n..@..@..\n..@..@..\n..@..@..\n..@..@..\n..\
+		                   ......\n........\n........\n........\n........\n...\
+		                   .....\n";
 		let font_file_data = sample_char.repeat(256,);
 
-		fs::write(&test_file_path, font_file_data,).expect("Failed to write test file",);
+		fs::write(&test_file_path, font_file_data,)
+			.expect("Failed to write test file",);
 
-		let lit_str =
-			syn::LitStr::new("test_integration_font.txt", proc_macro2::Span::call_site(),);
+		let lit_str = syn::LitStr::new(
+			"test_integration_font.txt",
+			proc_macro2::Span::call_site(),
+		);
 
 		// Test the full pipeline
 		let result = font_data(lit_str,);
@@ -863,7 +919,8 @@ mod tests {
 				assert_eq!(bitfields.len(), 256);
 			},
 			Err(_,) => {
-				// This might fail in some test environments, which is acceptable
+				// This might fail in some test environments, which is
+				// acceptable
 				assert!(true);
 			},
 		}

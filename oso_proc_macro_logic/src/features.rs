@@ -6,7 +6,10 @@ use oso_dev_util_helper::util::CaseConvert;
 use quote::ToTokens;
 use quote::format_ident;
 
-pub fn features(_attr: proc_macro2::TokenStream, mut item: syn::ItemEnum,) -> RsltP {
+pub fn features(
+	_attr: proc_macro2::TokenStream,
+	mut item: syn::ItemEnum,
+) -> RsltP {
 	let mut hs = std::collections::HashSet::new();
 	all_crates()?
 		.iter()
