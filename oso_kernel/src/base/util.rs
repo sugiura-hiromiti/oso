@@ -1,27 +1,33 @@
 //! # System Utilities and Helper Functions
 //!
-//! This module contains various utility functions and data structures used throughout
-//! the OSO kernel. It provides fundamental data structures and algorithms that are
-//! commonly needed in kernel development.
+//! This module contains various utility functions and data structures used
+//! throughout the OSO kernel. It provides fundamental data structures and
+//! algorithms that are commonly needed in kernel development.
 //!
 //! ## Features
 //!
-//! - **Linked List Implementation**: Memory-efficient linked list with lifetime management
-//! - **Node-based Data Structures**: Building blocks for complex data structures
-//! - **Kernel Utilities**: Common algorithms and helper functions for kernel operations
+//! - **Linked List Implementation**: Memory-efficient linked list with lifetime
+//!   management
+//! - **Node-based Data Structures**: Building blocks for complex data
+//!   structures
+//! - **Kernel Utilities**: Common algorithms and helper functions for kernel
+//!   operations
 //!
 //! ## Current Implementation Status
 //!
-//! The module currently contains a commented-out linked list implementation that
-//! demonstrates advanced Rust lifetime management and unsafe pointer operations.
-//! This implementation is designed for use in kernel environments where dynamic
-//! allocation may be limited or unavailable.
+//! The module currently contains a commented-out linked list implementation
+//! that demonstrates advanced Rust lifetime management and unsafe pointer
+//! operations. This implementation is designed for use in kernel environments
+//! where dynamic allocation may be limited or unavailable.
 //!
 //! ## Design Principles
 //!
-//! - **Zero-cost Abstractions**: Efficient implementations with minimal runtime overhead
-//! - **Memory Safety**: Safe abstractions over unsafe operations where necessary
-//! - **Lifetime Management**: Proper handling of object lifetimes in kernel context
+//! - **Zero-cost Abstractions**: Efficient implementations with minimal runtime
+//!   overhead
+//! - **Memory Safety**: Safe abstractions over unsafe operations where
+//!   necessary
+//! - **Lifetime Management**: Proper handling of object lifetimes in kernel
+//!   context
 //! - **No Standard Library**: All implementations work in `no_std` environments
 //!
 //! ## Future Implementations
@@ -181,8 +187,8 @@
 // 	/// # Visibility
 // 	///
 // 	/// This method is private to the `util` module to maintain encapsulation.
-// 	pub(in crate::base::util) fn append(&mut self, next: &'a mut Node<'a, T,>,) {
-// 		let mut p = &mut self.next;
+// 	pub(in crate::base::util) fn append(&mut self, next: &'a mut Node<'a, T,>,)
+// { 		let mut p = &mut self.next;
 // 		while let Some(next,) = p {
 // 			p = &mut next.next;
 // 		}
@@ -221,8 +227,8 @@
 // 	///
 // 	/// This method is private to the `util` module to maintain encapsulation.
 // 	pub(in crate::base::util) fn remove(&mut self, mut idx: usize,) {
-// 		assert_ne!(0, idx, "Cannot remove the current node (index 0) from within the node itself");
-// 		idx -= 1;
+// 		assert_ne!(0, idx, "Cannot remove the current node (index 0) from within
+// the node itself"); 		idx -= 1;
 //
 // 		let mut p = &mut self.next;
 // 		for _ in 0..idx {
@@ -282,9 +288,9 @@
 // 	/// # Visibility
 // 	///
 // 	/// This method is private to the `util` module to maintain encapsulation.
-// 	pub(in crate::base::util) fn get(&self, mut idx: usize,) -> Option<&'a Node<'a, T,>,> {
-// 		assert_ne!(0, idx, "Use direct access for the current node (index 0)");
-// 		idx -= 1;
+// 	pub(in crate::base::util) fn get(&self, mut idx: usize,) -> Option<&'a
+// Node<'a, T,>,> { 		assert_ne!(0, idx, "Use direct access for the current node
+// (index 0)"); 		idx -= 1;
 //
 // 		let mut p = &self.next;
 // 		for _ in 0..idx {

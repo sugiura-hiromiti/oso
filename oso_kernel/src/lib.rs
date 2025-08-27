@@ -1,17 +1,21 @@
 //! # OSO Kernel
 //!
-//! The core kernel implementation for the OSO operating system, designed for aarch64 architecture
-//! with pure Rust implementation and no external dependencies.
+//! The core kernel implementation for the OSO operating system, designed for
+//! aarch64 architecture with pure Rust implementation and no external
+//! dependencies.
 //!
 //! ## Features
 //!
-//! - **Pure Rust Implementation**: Written entirely in Rust with no external dependencies
-//! - **AArch64 Focus**: Primarily targets ARM64 architecture with partial x86_64 support
-//! - **No Standard Library**: Operates in a `no_std` environment for bare-metal execution
-//! - **Advanced Rust Features**: Leverages cutting-edge Rust language features for zero-cost
-//!   abstractions
-//! - **Modular Architecture**: Organized into distinct modules for applications, base
-//!   functionality, and drivers
+//! - **Pure Rust Implementation**: Written entirely in Rust with no external
+//!   dependencies
+//! - **AArch64 Focus**: Primarily targets ARM64 architecture with partial
+//!   x86_64 support
+//! - **No Standard Library**: Operates in a `no_std` environment for bare-metal
+//!   execution
+//! - **Advanced Rust Features**: Leverages cutting-edge Rust language features
+//!   for zero-cost abstractions
+//! - **Modular Architecture**: Organized into distinct modules for
+//!   applications, base functionality, and drivers
 //!
 //! ## Architecture
 //!
@@ -32,8 +36,8 @@
 //!
 //! ## Usage
 //!
-//! The kernel is designed to be loaded by the OSO bootloader and initialized through
-//! the [`init()`] function:
+//! The kernel is designed to be loaded by the OSO bootloader and initialized
+//! through the [`init()`] function:
 //!
 //! ```rust,ignore
 //! use oso_kernel::init;
@@ -44,8 +48,9 @@
 //!
 //! ## Panic Handling
 //!
-//! The kernel implements a custom panic handler that prints debug information and
-//! enters a low-power wait-for-event state rather than terminating the system.
+//! The kernel implements a custom panic handler that prints debug information
+//! and enters a low-power wait-for-event state rather than terminating the
+//! system.
 //!
 //! ## Dependencies
 //!
@@ -87,14 +92,14 @@ use oso_no_std_shared::wfe;
 
 /// Application execution and management subsystem
 ///
-/// This module provides functionality for running user applications and managing
-/// their lifecycle within the kernel environment.
+/// This module provides functionality for running user applications and
+/// managing their lifecycle within the kernel environment.
 pub mod app;
 
 /// Core kernel functionality and basic data structures
 ///
-/// This module contains fundamental kernel components including memory management,
-/// process management, and core system utilities.
+/// This module contains fundamental kernel components including memory
+/// management, process management, and core system utilities.
 pub mod base;
 
 /// Hardware device drivers and low-level hardware abstraction
@@ -105,9 +110,9 @@ pub mod driver;
 
 /// Custom panic handler for the kernel environment
 ///
-/// This panic handler is called when the kernel encounters an unrecoverable error.
-/// It prints diagnostic information and enters a low-power wait-for-event state
-/// to preserve system stability.
+/// This panic handler is called when the kernel encounters an unrecoverable
+/// error. It prints diagnostic information and enters a low-power
+/// wait-for-event state to preserve system stability.
 ///
 /// # Arguments
 ///
@@ -135,15 +140,17 @@ fn panic(info: &core::panic::PanicInfo,) -> ! {
 
 /// Initializes the kernel and all its subsystems
 ///
-/// This function is responsible for setting up the kernel environment, initializing
-/// hardware components, and preparing the system for operation. It should be called
-/// once during the boot process after the bootloader has transferred control to the kernel.
+/// This function is responsible for setting up the kernel environment,
+/// initializing hardware components, and preparing the system for operation. It
+/// should be called once during the boot process after the bootloader has
+/// transferred control to the kernel.
 ///
 /// # Initialization Sequence
 ///
 /// The initialization process includes:
 ///
-/// 1. **Hardware Initialization**: Set up CPU, memory management unit, and interrupt controllers
+/// 1. **Hardware Initialization**: Set up CPU, memory management unit, and
+///    interrupt controllers
 /// 2. **Kernel Setup**: Initialize core kernel data structures and subsystems
 /// 3. **Utility Setup**: Configure system utilities and services
 /// 4. **Driver Initialization**: Load and initialize device drivers
@@ -151,8 +158,9 @@ fn panic(info: &core::panic::PanicInfo,) -> ! {
 ///
 /// # Safety
 ///
-/// This function performs low-level hardware initialization and should only be called
-/// once during the boot process. Multiple calls may result in undefined behavior.
+/// This function performs low-level hardware initialization and should only be
+/// called once during the boot process. Multiple calls may result in undefined
+/// behavior.
 ///
 /// # Examples
 ///

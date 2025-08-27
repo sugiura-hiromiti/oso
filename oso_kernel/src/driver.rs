@@ -1,8 +1,9 @@
 //! # Hardware Device Drivers and Low-Level Hardware Abstraction
 //!
-//! This module contains device drivers for various hardware components and provides
-//! low-level hardware abstraction layers for the OSO kernel. It enables the kernel
-//! to interact with different types of hardware devices in a consistent manner.
+//! This module contains device drivers for various hardware components and
+//! provides low-level hardware abstraction layers for the OSO kernel. It
+//! enables the kernel to interact with different types of hardware devices in a
+//! consistent manner.
 //!
 //! ## Overview
 //!
@@ -65,7 +66,8 @@
 /// PCI bus and device driver implementation
 ///
 /// This module provides PCI (Peripheral Component Interconnect) bus support,
-/// including device enumeration, configuration space access, and device management.
+/// including device enumeration, configuration space access, and device
+/// management.
 pub mod pci;
 
 /// USB host controller and device drivers

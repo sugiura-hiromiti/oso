@@ -1,23 +1,29 @@
 //! # PCI Device Driver and Device Tree Parser
 //!
-//! This module provides PCI (Peripheral Component Interconnect) device discovery and management
-//! through Device Tree (FDT - Flattened Device Tree) parsing. The Device Tree is provided by
-//! firmware (such as UEFI or bootloader) and contains hardware configuration information.
+//! This module provides PCI (Peripheral Component Interconnect) device
+//! discovery and management through Device Tree (FDT - Flattened Device Tree)
+//! parsing. The Device Tree is provided by firmware (such as UEFI or
+//! bootloader) and contains hardware configuration information.
 //!
 //! ## Overview
 //!
-//! The PCI driver implements a complete Device Tree parser that can extract PCI device
-//! information from the Flattened Device Tree format. This is essential for hardware
-//! discovery on ARM and RISC-V systems where PCI devices are described in the device tree
-//! rather than being enumerable through configuration space scanning.
+//! The PCI driver implements a complete Device Tree parser that can extract PCI
+//! device information from the Flattened Device Tree format. This is essential
+//! for hardware discovery on ARM and RISC-V systems where PCI devices are
+//! described in the device tree rather than being enumerable through
+//! configuration space scanning.
 //!
 //! ## Features
 //!
-//! - **Device Tree Parsing**: Complete FDT (Flattened Device Tree) parser implementation
-//! - **PCI Device Discovery**: Extract PCI device information from device tree nodes
+//! - **Device Tree Parsing**: Complete FDT (Flattened Device Tree) parser
+//!   implementation
+//! - **PCI Device Discovery**: Extract PCI device information from device tree
+//!   nodes
 //! - **Memory Reservation**: Handle memory reservation entries from device tree
-//! - **Binary Data Parsing**: Generic binary parser framework for device tree structures
-//! - **Big-Endian Support**: Device trees are typically stored in big-endian format
+//! - **Binary Data Parsing**: Generic binary parser framework for device tree
+//!   structures
+//! - **Big-Endian Support**: Device trees are typically stored in big-endian
+//!   format
 //!
 //! ## Device Tree Structure
 //!
@@ -26,7 +32,8 @@
 //! 1. **Header Block**: Contains metadata about the device tree
 //! 2. **Memory Reservation Block**: Lists reserved memory regions
 //! 3. **Structure Block**: Contains the actual device tree nodes and properties
-//! 4. **Strings Block**: Contains null-terminated strings referenced by the structure block
+//! 4. **Strings Block**: Contains null-terminated strings referenced by the
+//!    structure block
 //!
 //! ## Architecture
 //!
@@ -56,12 +63,13 @@
 //!
 //! ## Implementation Status
 //!
-//! This module is currently under development. Many functions are marked as `todo!()`
-//! and will be implemented as part of the PCI subsystem development.
+//! This module is currently under development. Many functions are marked as
+//! `todo!()` and will be implemented as part of the PCI subsystem development.
 //!
 //! ## TODO
 //!
-//! - Implement derive macros for automatic parser generation from type definitions
+//! - Implement derive macros for automatic parser generation from type
+//!   definitions
 //! - Provide foundation for macro-generated parsers in `oso_binary_parser`
 //! - Complete implementation of all parser methods
 //! - Add PCI-specific device tree node parsing
@@ -81,12 +89,13 @@ use oso_error::Rslt;
 
 /// Main interface for Device Tree operations and parsing
 ///
-/// This trait provides the primary interface for interacting with a Flattened Device Tree (FDT).
-/// It combines header parsing, memory reservation handling, and structure parsing into a
-/// unified interface for device tree operations.
+/// This trait provides the primary interface for interacting with a Flattened
+/// Device Tree (FDT). It combines header parsing, memory reservation handling,
+/// and structure parsing into a unified interface for device tree operations.
 ///
-/// The Device Tree is a data structure that describes hardware components and their
-/// relationships, commonly used in ARM and RISC-V systems for hardware discovery.
+/// The Device Tree is a data structure that describes hardware components and
+/// their relationships, commonly used in ARM and RISC-V systems for hardware
+/// discovery.
 ///
 /// # Implementation Requirements
 ///
@@ -110,11 +119,14 @@ use oso_error::Rslt;
 ///     let strings_parser = dt.strings_parser();
 /// }
 /// ```
-pub trait DeviceTree: DeviceTreeHeader + DeviceTreeMemoryReservation + DeviceTreeStructure {
+pub trait DeviceTree:
+	DeviceTreeHeader + DeviceTreeMemoryReservation + DeviceTreeStructure
+{
 	/// Returns a reference to the memory reservation parser
 	///
-	/// The memory reservation parser handles the memory reservation block of the device tree,
-	/// which contains information about memory regions that should not be used by the OS.
+	/// The memory reservation parser handles the memory reservation block of
+	/// the device tree, which contains information about memory regions that
+	/// should not be used by the OS.
 	///
 	/// # Returns
 	///
@@ -125,8 +137,8 @@ pub trait DeviceTree: DeviceTreeHeader + DeviceTreeMemoryReservation + DeviceTre
 
 	/// Returns a reference to the structure parser
 	///
-	/// The structure parser handles the main structure block of the device tree,
-	/// which contains the actual device nodes and their properties.
+	/// The structure parser handles the main structure block of the device
+	/// tree, which contains the actual device nodes and their properties.
 	///
 	/// # Returns
 	///
@@ -138,7 +150,8 @@ pub trait DeviceTree: DeviceTreeHeader + DeviceTreeMemoryReservation + DeviceTre
 	/// Returns a reference to the strings parser
 	///
 	/// The strings parser handles the strings block of the device tree,
-	/// which contains null-terminated strings referenced by the structure block.
+	/// which contains null-terminated strings referenced by the structure
+	/// block.
 	///
 	/// # Returns
 	///
@@ -150,8 +163,8 @@ pub trait DeviceTree: DeviceTreeHeader + DeviceTreeMemoryReservation + DeviceTre
 
 /// Device Tree header parsing and validation interface
 ///
-/// This trait provides methods for parsing and validating the Device Tree header,
-/// which contains metadata about the device tree structure and layout.
+/// This trait provides methods for parsing and validating the Device Tree
+/// header, which contains metadata about the device tree structure and layout.
 ///
 /// The header is always located at the beginning of the device tree blob and
 /// contains offsets and sizes for the other blocks.
@@ -170,8 +183,8 @@ pub trait DeviceTree: DeviceTreeHeader + DeviceTreeMemoryReservation + DeviceTre
 pub trait DeviceTreeHeader {
 	/// Validates the device tree magic number
 	///
-	/// The magic number should be 0xd00dfeed (big-endian) for a valid device tree.
-	/// This is the first validation step when parsing a device tree.
+	/// The magic number should be 0xd00dfeed (big-endian) for a valid device
+	/// tree. This is the first validation step when parsing a device tree.
 	///
 	/// # Returns
 	///
@@ -190,35 +203,41 @@ pub trait DeviceTreeHeader {
 
 	/// Returns the total size of the device tree in bytes
 	///
-	/// This includes all blocks: header, memory reservation, structure, and strings.
+	/// This includes all blocks: header, memory reservation, structure, and
+	/// strings.
 	///
 	/// # Returns
 	///
 	/// Total size of the device tree blob in bytes
 	fn total_size(&self,) -> usize;
 
-	/// Returns the byte offset to the structure block from the beginning of the device tree
+	/// Returns the byte offset to the structure block from the beginning of the
+	/// device tree
 	///
-	/// The structure block contains the actual device tree nodes and properties.
+	/// The structure block contains the actual device tree nodes and
+	/// properties.
 	///
 	/// # Returns
 	///
 	/// Byte offset to the structure block
 	fn structure_block_offset(&self,) -> usize;
 
-	/// Returns the byte offset to the strings block from the beginning of the device tree
+	/// Returns the byte offset to the strings block from the beginning of the
+	/// device tree
 	///
-	/// The strings block contains null-terminated strings referenced by properties.
+	/// The strings block contains null-terminated strings referenced by
+	/// properties.
 	///
 	/// # Returns
 	///
 	/// Byte offset to the strings block
 	fn strings_block_offset(&self,) -> usize;
 
-	/// Returns the byte offset to the memory reservation block from the beginning of the device
-	/// tree
+	/// Returns the byte offset to the memory reservation block from the
+	/// beginning of the device tree
 	///
-	/// The memory reservation block contains entries describing reserved memory regions.
+	/// The memory reservation block contains entries describing reserved memory
+	/// regions.
 	///
 	/// # Returns
 	///
@@ -269,12 +288,12 @@ pub trait DeviceTreeHeader {
 
 /// Memory reservation block parsing interface
 ///
-/// This trait provides methods for parsing the memory reservation block of the device tree.
-/// The memory reservation block contains a list of memory regions that are reserved
-/// and should not be used by the operating system.
+/// This trait provides methods for parsing the memory reservation block of the
+/// device tree. The memory reservation block contains a list of memory regions
+/// that are reserved and should not be used by the operating system.
 ///
-/// Each entry in the memory reservation block consists of an address and size pair,
-/// both stored as 64-bit big-endian values.
+/// Each entry in the memory reservation block consists of an address and size
+/// pair, both stored as 64-bit big-endian values.
 pub trait DeviceTreeMemoryReservation: MemoryReserveEntry {
 	/// Returns the number of memory reservation entries
 	///
@@ -325,9 +344,9 @@ pub trait MemoryReserveEntry: BinaryParser<false, usize,> {
 
 /// Device Tree structure block parsing interface
 ///
-/// This trait provides methods for parsing the structure block of the device tree,
-/// which contains the actual device nodes and their properties. The structure block
-/// uses a token-based format to represent the tree structure.
+/// This trait provides methods for parsing the structure block of the device
+/// tree, which contains the actual device nodes and their properties. The
+/// structure block uses a token-based format to represent the tree structure.
 ///
 /// The structure block contains tokens that represent:
 /// - Begin/end node markers
@@ -368,9 +387,9 @@ pub trait DeviceTreeStructure: DeviceTreeStrings {
 
 /// Device Tree strings block parsing interface
 ///
-/// This trait provides methods for accessing strings stored in the strings block
-/// of the device tree. The strings block contains null-terminated strings that
-/// are referenced by properties in the structure block.
+/// This trait provides methods for accessing strings stored in the strings
+/// block of the device tree. The strings block contains null-terminated strings
+/// that are referenced by properties in the structure block.
 pub trait DeviceTreeStrings {
 	/// Retrieves a string from the strings block at the specified offset
 	///
@@ -392,7 +411,8 @@ pub trait DeviceTreeStrings {
 
 	/// Checks if the string at the given offset matches the specified name
 	///
-	/// This is a convenience method that combines string retrieval and comparison.
+	/// This is a convenience method that combines string retrieval and
+	/// comparison.
 	///
 	/// # Arguments
 	///
@@ -428,9 +448,11 @@ pub trait DeviceTreeStrings {
 ///
 /// # Endianness
 ///
-/// Device trees are typically stored in big-endian format, so most implementations
-/// will use `IS_LITTLE_ENDIAN = false`.
-pub trait BinaryParser<const IS_LITTLE_ENDIAN: bool, T: BinaryParserTarget,>: Sized {
+/// Device trees are typically stored in big-endian format, so most
+/// implementations will use `IS_LITTLE_ENDIAN = false`.
+pub trait BinaryParser<const IS_LITTLE_ENDIAN: bool, T: BinaryParserTarget,>:
+	Sized
+{
 	/// Returns true if the parser uses little-endian byte order
 	///
 	/// # Returns
@@ -513,7 +535,8 @@ pub trait BinaryParser<const IS_LITTLE_ENDIAN: bool, T: BinaryParserTarget,>: Si
 	///
 	/// # Safety
 	///
-	/// The caller must ensure that `offset + len` is within the bounds of the data.
+	/// The caller must ensure that `offset + len` is within the bounds of the
+	/// data.
 	fn bytes_of(&self, offset: usize, len: usize,) -> &[u8] {
 		let raw = unsafe { self.raw().add(offset,) };
 		unsafe { core::slice::from_raw_parts(raw, len,) }
@@ -620,7 +643,8 @@ impl BinaryParserTarget for usize {
 	///
 	/// # Arguments
 	///
-	/// * `bytes` - Raw bytes to interpret (should be 4 or 8 bytes depending on architecture)
+	/// * `bytes` - Raw bytes to interpret (should be 4 or 8 bytes depending on
+	///   architecture)
 	///
 	/// # Returns
 	///
@@ -648,7 +672,8 @@ impl BinaryParserTarget for usize {
 ///
 /// * `ptr` - Raw pointer to the device tree blob in memory
 /// * `cur_pos` - Current parsing position (byte offset from start)
-/// * `memory_reservation_entries_count` - Cached count of memory reservation entries
+/// * `memory_reservation_entries_count` - Cached count of memory reservation
+///   entries
 ///
 /// # Examples
 ///
@@ -861,8 +886,9 @@ impl BinaryParser<false, usize,> for MemoryReserveEntryData {
 
 /// Structure block placeholder
 ///
-/// This struct represents the structure block of the device tree, which contains
-/// the actual device tree nodes and their properties in a token-based format.
+/// This struct represents the structure block of the device tree, which
+/// contains the actual device tree nodes and their properties in a token-based
+/// format.
 ///
 /// # Structure Block Format
 ///

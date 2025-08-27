@@ -1,7 +1,8 @@
 //! # OSO Kernel Entry Point
 //!
-//! This module contains the main entry points for the OSO kernel on different architectures.
-//! It handles the initial kernel setup, interrupt configuration, and application execution.
+//! This module contains the main entry points for the OSO kernel on different
+//! architectures. It handles the initial kernel setup, interrupt configuration,
+//! and application execution.
 //!
 //! ## Architecture Support
 //!
@@ -51,13 +52,15 @@ use oso_kernel::init;
 
 /// Main entry point for the OSO kernel on AArch64 architecture
 ///
-/// This function is called by the bootloader after the kernel has been loaded into memory.
-/// It performs critical initialization steps and launches the main kernel application.
+/// This function is called by the bootloader after the kernel has been loaded
+/// into memory. It performs critical initialization steps and launches the main
+/// kernel application.
 ///
 /// # Arguments
 ///
-/// * `_device_tree_ptr` - Pointer to the device tree blob (DTB) passed by the bootloader. Currently
-///   unused but reserved for future hardware discovery implementation.
+/// * `_device_tree_ptr` - Pointer to the device tree blob (DTB) passed by the
+///   bootloader. Currently unused but reserved for future hardware discovery
+///   implementation.
 ///
 /// # Safety
 ///
@@ -68,15 +71,16 @@ use oso_kernel::init;
 ///
 /// # Boot Sequence
 ///
-/// 1. **Interrupt Disable**: Disables IRQ (Interrupt Request) to prevent interruptions during
-///    critical initialization phases
+/// 1. **Interrupt Disable**: Disables IRQ (Interrupt Request) to prevent
+///    interruptions during critical initialization phases
 /// 2. **Kernel Initialization**: Calls `init()` to set up all kernel subsystems
 /// 3. **Application Launch**: Starts the main kernel application
 /// 4. **Power Management**: Enters wait-for-interrupt state to conserve power
 ///
 /// # Assembly Instructions
 ///
-/// - `msr daifset, #2`: Sets the IRQ mask bit in the DAIF register to disable interrupts
+/// - `msr daifset, #2`: Sets the IRQ mask bit in the DAIF register to disable
+///   interrupts
 ///
 /// # Examples
 ///
@@ -96,8 +100,9 @@ use oso_kernel::init;
 #[unsafe(no_mangle)]
 #[cfg(target_arch = "aarch64")]
 pub extern "C" fn kernel_main(_device_tree_ptr: DeviceTreeAddress,) {
-	// Disable IRQ (interrupt request) to prevent interruptions during initialization
-	// This is critical for system stability during the boot process
+	// Disable IRQ (interrupt request) to prevent interruptions during
+	// initialization This is critical for system stability during the boot
+	// process
 	unsafe {
 		// Set IRQ mask bit (bit 1) in DAIF register
 		// DAIF: Debug, SError, IRQ, FIQ exception mask register
@@ -118,9 +123,9 @@ pub extern "C" fn kernel_main(_device_tree_ptr: DeviceTreeAddress,) {
 
 /// Main entry point for the OSO kernel on x86_64 architecture
 ///
-/// This function provides basic x86_64 support for development and testing purposes.
-/// The x86_64 implementation is currently minimal and primarily used for cross-platform
-/// development validation.
+/// This function provides basic x86_64 support for development and testing
+/// purposes. The x86_64 implementation is currently minimal and primarily used
+/// for cross-platform development validation.
 ///
 /// # Calling Convention
 ///
@@ -129,9 +134,9 @@ pub extern "C" fn kernel_main(_device_tree_ptr: DeviceTreeAddress,) {
 ///
 /// # Current Implementation
 ///
-/// The current implementation immediately enters a halt loop for debugging purposes.
-/// This prevents the system from continuing execution and allows for debugging
-/// and development work.
+/// The current implementation immediately enters a halt loop for debugging
+/// purposes. This prevents the system from continuing execution and allows for
+/// debugging and development work.
 ///
 /// # Assembly Instructions
 ///
@@ -192,9 +197,9 @@ pub extern "sysv64" fn kernel_main() {
 
 /// Main kernel application entry point
 ///
-/// This function represents the primary application that runs after kernel initialization.
-/// Currently, it serves as a placeholder for future application functionality and
-/// contains commented-out graphics demonstration code.
+/// This function represents the primary application that runs after kernel
+/// initialization. Currently, it serves as a placeholder for future application
+/// functionality and contains commented-out graphics demonstration code.
 ///
 /// # Returns
 ///
@@ -267,9 +272,9 @@ fn app() -> Rslt<(),> {
 	// outline_rectangle(&(102, 102,), &(298, 298,), &"#fedcba",)?;
 
 	// Debug information output
-	// println!("width: {} height: {}", FRAME_BUFFER.width, FRAME_BUFFER.height);
-	// println!("size: {} stride: {}", FRAME_BUFFER.size, FRAME_BUFFER.stride);
-	// println!("buf address: {}", FRAME_BUFFER.buf);
+	// println!("width: {} height: {}", FRAME_BUFFER.width,
+	// FRAME_BUFFER.height); println!("size: {} stride: {}", FRAME_BUFFER.size,
+	// FRAME_BUFFER.stride); println!("buf address: {}", FRAME_BUFFER.buf);
 
 	// Cursor rendering
 	// let mut cursor_buf = CursorBuf::new();

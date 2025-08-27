@@ -6,9 +6,10 @@
 //!
 //! ## Overview
 //!
-//! The base module serves as the foundation for all kernel operations, providing
-//! wrapped functionality for physical world interactions including display management,
-//! USB device handling, I/O operations, and system utilities.
+//! The base module serves as the foundation for all kernel operations,
+//! providing wrapped functionality for physical world interactions including
+//! display management, USB device handling, I/O operations, and system
+//! utilities.
 //!
 //! ## Features
 //!
@@ -57,5 +58,6 @@ pub mod io;
 
 /// System utilities and helper functions
 ///
-/// Contains various utility functions and data structures used throughout the kernel.
+/// Contains various utility functions and data structures used throughout the
+/// kernel.
 pub mod util;
