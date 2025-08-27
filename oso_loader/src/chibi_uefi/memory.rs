@@ -27,7 +27,9 @@ unsafe impl GlobalAlloc for LoaderAllocator {
 		}
 		let mem_ty = MemoryType::LOADER_DATA;
 		let bs = boot_services();
-		bs.allocate_pool(mem_ty, layout.size(),).expect("allocation failed",).as_ptr()
+		bs.allocate_pool(mem_ty, layout.size(),)
+			.expect("allocation failed",)
+			.as_ptr()
 	}
 
 	unsafe fn dealloc(&self, ptr: *mut u8, layout: core::alloc::Layout,) {
@@ -35,7 +37,8 @@ unsafe impl GlobalAlloc for LoaderAllocator {
 			panic!()
 		}
 		let bs = boot_services();
-		bs.free_pool(unsafe { ptr.as_mut_unchecked() },).expect("deallocation failed",);
+		bs.free_pool(unsafe { ptr.as_mut_unchecked() },)
+			.expect("deallocation failed",);
 	}
 }
 
@@ -45,7 +48,11 @@ fn alloc_error(layout: Layout,) -> ! {
 }
 
 impl BootServices {
-	pub fn allocate_pool(&self, mem_ty: MemoryType, size: usize,) -> RsltU<NonNull<u8,>,> {
+	pub fn allocate_pool(
+		&self,
+		mem_ty: MemoryType,
+		size: usize,
+	) -> RsltU<NonNull<u8,>,> {
 		let mut buf = core::ptr::null_mut();
 		unsafe { (self.allocate_pool)(mem_ty, size, &mut buf,) }.ok_or()?;
 		Ok(unsafe {
@@ -65,8 +72,15 @@ impl BootServices {
 		page_count: usize,
 		mut alloc_head: PhysicalAddress,
 	) -> RsltU<PhysicalAddress,> {
-		unsafe { (self.allocate_pages)(allocation_type, mem_ty, page_count, &mut alloc_head,) }
-			.ok_or_with(|_| alloc_head,)
+		unsafe {
+			(self.allocate_pages)(
+				allocation_type,
+				mem_ty,
+				page_count,
+				&mut alloc_head,
+			)
+		}
+		.ok_or_with(|_| alloc_head,)
 	}
 
 	pub fn memory_map_size(&self,) -> (usize, usize,) {
@@ -86,12 +100,18 @@ impl BootServices {
 		};
 		assert_eq!(status, Status::EFI_BUFFER_TOO_SMALL);
 
-		assert_eq!(map_size % descriptor_size, 0, "memory map size is multiple of descriptor size");
+		assert_eq!(
+			map_size % descriptor_size,
+			0,
+			"memory map size is multiple of descriptor size"
+		);
 
-		let memory_map_info =
-			MemoryMapInfo {
-				map_size, desc_size: descriptor_size, map_key, desc_ver: desc_version,
-			};
+		let memory_map_info = MemoryMapInfo {
+			map_size,
+			desc_size: descriptor_size,
+			map_key,
+			desc_ver: desc_version,
+		};
 
 		memory_map_info.assert_sanity_check();
 
@@ -120,6 +140,11 @@ impl BootServices {
 				&mut desc_ver,
 			)
 		}
-		.ok_or_with(|_| MemoryMapInfo { map_size, desc_size, map_key, desc_ver, },)
+		.ok_or_with(|_| MemoryMapInfo {
+			map_size,
+			desc_size,
+			map_key,
+			desc_ver,
+		},)
 	}
 }

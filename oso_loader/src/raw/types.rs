@@ -75,11 +75,19 @@ impl Guid {
 		clock_seq_low: u8,
 		node: [u8; 6],
 	) -> Self {
-		let time_low = u32::from_ne_bytes([time_low[0], time_low[1], time_low[2], time_low[3],],);
+		let time_low = u32::from_ne_bytes([
+			time_low[0],
+			time_low[1],
+			time_low[2],
+			time_low[3],
+		],);
 		Self {
 			time_low,
 			time_mid: [time_mid[0], time_mid[1],],
-			time_high_and_version: [time_high_and_version[0], time_high_and_version[1],],
+			time_high_and_version: [
+				time_high_and_version[0],
+				time_high_and_version[1],
+			],
 			clock_seq_high_and_reserved,
 			clock_seq_low,
 			node,

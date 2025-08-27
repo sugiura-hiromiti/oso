@@ -1,7 +1,7 @@
 //! # Kernel and Graphics Loading Module
 //!
-//! This module provides functionality for loading ELF kernels from the filesystem
-//! and configuring graphics output for the kernel environment.
+//! This module provides functionality for loading ELF kernels from the
+//! filesystem and configuring graphics output for the kernel environment.
 
 use crate::Rslt;
 use crate::chibi_uefi::required_pages;
@@ -107,17 +107,21 @@ fn open_kernel_file() -> Rslt<NonNull<FileProtocolV1,>,> {
 	let bs = boot_services();
 
 	// Locate the file system protocol
-	let sfs_handle = unsafe { bs.handle_for_protocol::<SimpleFileSystemProtocol>() }?;
+	let sfs_handle =
+		unsafe { bs.handle_for_protocol::<SimpleFileSystemProtocol>() }?;
 
 	// Open the root volume
 	let volume = unsafe {
-		bs.open_protocol_exclusive::<SimpleFileSystemProtocol>(sfs_handle,)?.interface().as_mut()
+		bs.open_protocol_exclusive::<SimpleFileSystemProtocol>(sfs_handle,)?
+			.interface()
+			.as_mut()
 	}
 	.open_volume()?;
 
 	// Open the kernel file
 	let kernel_file = volume.open("oso_kernel.elf", open_mode, attrs,)?;
-	let non_null_kernel_file = NonNull::new(kernel_file,).expect("reference can't be null",);
+	let non_null_kernel_file =
+		NonNull::new(kernel_file,).expect("reference can't be null",);
 	Ok(non_null_kernel_file,)
 }
 
@@ -191,8 +195,12 @@ fn copy_load_segment(elf: &Elf, src: &[u8],) {
 
 		// Memory size may be larger than file size due to .bss section
 		let mem_size = ph.memory_size as usize;
-		let dest =
-			unsafe { core::slice::from_raw_parts_mut(ph.virtual_address as *mut u8, mem_size,) };
+		let dest = unsafe {
+			core::slice::from_raw_parts_mut(
+				ph.virtual_address as *mut u8,
+				mem_size,
+			)
+		};
 
 		let offset = ph.offset as usize;
 		let file_size = ph.file_size as usize;
@@ -234,7 +242,8 @@ pub fn graphic_config() -> Rslt<FrameBufConf,> {
 	let bs = boot_services();
 
 	// Open Graphics Output Protocol
-	let mut gout = bs.open_protocol_with::<GraphicsOutputProtocol>()?.interface();
+	let mut gout =
+		bs.open_protocol_with::<GraphicsOutputProtocol>()?.interface();
 	let gout = unsafe { gout.as_mut() };
 
 	// Query current graphics mode information
@@ -246,7 +255,8 @@ pub fn graphic_config() -> Rslt<FrameBufConf,> {
 	let pixel_format = info.pixel_format();
 
 	// Create frame buffer configuration
-	let fbc = FrameBufConf::new(pixel_format, base, size, width, height, stride,);
+	let fbc =
+		FrameBufConf::new(pixel_format, base, size, width, height, stride,);
 
 	Ok(fbc,)
 }

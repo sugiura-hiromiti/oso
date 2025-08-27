@@ -13,7 +13,11 @@ macro_rules! guid {
 impl Guid {
 	#[track_caller]
 	pub fn gen_from_str(s: impl AsRef<str,>,) -> Rslt<Self,> {
-		let mut s = s.as_ref().chars().filter_map(|c| Hex::try_from(c,).ok(),).map(|h| h as u8,);
+		let mut s = s
+			.as_ref()
+			.chars()
+			.filter_map(|c| Hex::try_from(c,).ok(),)
+			.map(|h| h as u8,);
 		let mut time_low: [u8; 4] = s.next_chunk().unwrap();
 		time_low.reverse();
 		let mut time_mid: [u8; 2] = s.next_chunk().unwrap();
@@ -47,7 +51,8 @@ impl Guid {
 		let time_high_and_version: [u8; 2] = [hex[7], hex[6],];
 		let clock_seq_high_and_reserved = hex[8];
 		let clock_seq_low = hex[9];
-		let node: [u8; 6] = [hex[10], hex[11], hex[12], hex[13], hex[14], hex[15],];
+		let node: [u8; 6] =
+			[hex[10], hex[11], hex[12], hex[13], hex[14], hex[15],];
 		Guid::new(
 			time_low,
 			time_mid,
@@ -161,13 +166,19 @@ pub trait BytesToInt<const N: usize,> {
 }
 
 pub trait BytesNotTooLong<const B: bool,> {}
-impl<const BYTES: usize,> BytesNotTooLong<{ bytes_not_too_long::<BYTES,>() },> for [Hex; BYTES] {}
+impl<const BYTES: usize,> BytesNotTooLong<{ bytes_not_too_long::<BYTES,>() },>
+	for [Hex; BYTES]
+{
+}
 const fn bytes_not_too_long<const BYTES: usize,>() -> bool {
 	BYTES <= 32
 }
 
 pub trait BytesIsEven<const B: bool, const N: usize,> {}
-impl<const BYTES: usize,> BytesIsEven<{ bytes_is_even::<BYTES,>() }, BYTES,> for [Hex; BYTES] {}
+impl<const BYTES: usize,> BytesIsEven<{ bytes_is_even::<BYTES,>() }, BYTES,>
+	for [Hex; BYTES]
+{
+}
 const fn bytes_is_even<const BYTES: usize,>() -> bool {
 	BYTES.is_multiple_of(2,)
 }
@@ -193,7 +204,8 @@ pub trait AsBytes<const BYTES: usize, O = Self,> {
 	fn as_bytes(&self,) -> Self::Output;
 }
 
-impl<const BYTES: usize,> const AsBytes<BYTES, [u8; BYTES / 2],> for [Hex; BYTES]
+impl<const BYTES: usize,> const AsBytes<BYTES, [u8; BYTES / 2],>
+	for [Hex; BYTES]
 where [Hex; BYTES]: BytesNotTooLong<true,> + BytesIsEven<true, BYTES,>
 {
 	fn as_bytes(&self,) -> Self::Output {

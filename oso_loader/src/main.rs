@@ -1,7 +1,8 @@
 //! # OSO Loader Main Entry Point
 //!
-//! This module contains the main UEFI application entry point for the OSO bootloader.
-//! It orchestrates the boot process from UEFI initialization through kernel handoff.
+//! This module contains the main UEFI application entry point for the OSO
+//! bootloader. It orchestrates the boot process from UEFI initialization
+//! through kernel handoff.
 
 #![no_std]
 #![no_main]
@@ -60,7 +61,8 @@ pub extern "efiapi" fn efi_image_entry_point(
 	init(image_handle, system_table,);
 
 	// Load kernel and prepare for execution
-	let (kernel_entry, device_tree_ptr,) = app().expect("error arise while executing application",);
+	let (kernel_entry, device_tree_ptr,) =
+		app().expect("error arise while executing application",);
 
 	// Exit UEFI boot services - point of no return
 	exit_boot_services();
