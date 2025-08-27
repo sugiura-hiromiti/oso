@@ -1,10 +1,12 @@
 //! # OSO Bridge
 //!
-//! `oso_bridge` is a no_std crate that provides low-level interfaces and utilities for
-//! operating system development, particularly focused on bare-metal environments.
+//! `oso_bridge` is a no_std crate that provides low-level interfaces and
+//! utilities for operating system development, particularly focused on
+//! bare-metal environments.
 //!
-//! This crate serves as a bridge between hardware and the operating system kernel,
-//! providing essential primitives for CPU control, framebuffer management, and device tree access.
+//! This crate serves as a bridge between hardware and the operating system
+//! kernel, providing essential primitives for CPU control, framebuffer
+//! management, and device tree access.
 //!
 //! ## Features
 //!
@@ -14,8 +16,8 @@
 //!
 //! ## Usage
 //!
-//! This crate is designed to be used in no_std environments, typically in kernel or bootloader
-//! code:
+//! This crate is designed to be used in no_std environments, typically in
+//! kernel or bootloader code:
 //!
 //! ```rust,no_run
 //! use oso_no_std_shared::bridge::graphic::FrameBufConf;

@@ -3,21 +3,25 @@
 
 //! # OSO No-Std Shared Library
 //!
-//! This crate provides shared utilities and data structures for the OSO operating system
-//! that work in `no_std` environments. It serves as a foundational library containing
-//! common functionality used across different components of the OSO ecosystem.
+//! This crate provides shared utilities and data structures for the OSO
+//! operating system that work in `no_std` environments. It serves as a
+//! foundational library containing common functionality used across different
+//! components of the OSO ecosystem.
 //!
 //! ## Features
 //!
 //! - **Bridge Module**: Low-level hardware interfaces and CPU control functions
-//! - **Data Module**: Generic data structures like trees for system data management
-//! - **Parser Module**: Parsing utilities for binary data, HTML, and code generation
+//! - **Data Module**: Generic data structures like trees for system data
+//!   management
+//! - **Parser Module**: Parsing utilities for binary data, HTML, and code
+//!   generation
 //! - **CPU Control**: Platform-specific CPU power management functions
 //!
 //! ## Architecture
 //!
-//! This crate is designed to work in bare-metal environments and uses several unstable
-//! Rust features to provide zero-cost abstractions and compile-time optimizations.
+//! This crate is designed to work in bare-metal environments and uses several
+//! unstable Rust features to provide zero-cost abstractions and compile-time
+//! optimizations.
 //!
 //! ## Usage
 //!
@@ -57,8 +61,8 @@ use core::arch::asm;
 /// Puts the CPU into a low-power state until an interrupt occurs.
 ///
 /// This function enters an infinite loop where the CPU is repeatedly put into a
-/// wait-for-interrupt state. This is commonly used in bare-metal environments to
-/// conserve power when there's no work to be done.
+/// wait-for-interrupt state. This is commonly used in bare-metal environments
+/// to conserve power when there's no work to be done.
 ///
 /// # Platform-specific behavior
 ///
@@ -97,8 +101,9 @@ pub fn wfi() -> ! {
 /// Puts the CPU into a low-power state until an event occurs.
 ///
 /// This function enters an infinite loop where the CPU is repeatedly put into a
-/// wait-for-event state. This is similar to `wfi()` but responds to events rather
-/// than just interrupts, which can be useful in certain synchronization scenarios.
+/// wait-for-event state. This is similar to `wfi()` but responds to events
+/// rather than just interrupts, which can be useful in certain synchronization
+/// scenarios.
 ///
 /// # Platform-specific behavior
 ///

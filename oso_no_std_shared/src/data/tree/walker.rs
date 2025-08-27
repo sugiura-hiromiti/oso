@@ -66,8 +66,8 @@ pub trait TreeWindow<N: NodeValue,>: TreeWalker<N,> {
 /// # Design Notes
 ///
 /// - The `nth_ancestor` method has a default implementation for convenience
-/// - Border conditions (like reaching root or leaf nodes) are handled through the `WalkTried`
-///   return type
+/// - Border conditions (like reaching root or leaf nodes) are handled through
+///   the `WalkTried` return type
 /// - Position tracking is handled through the `Coordinate` trait
 ///
 /// # Type Parameters
@@ -133,7 +133,10 @@ pub trait TreeWalker<N: NodeValue,>: Sized + Iterator {
 			let mut parent = self.parent::<WT>();
 			if parent.has_success() {
 				// Successfully found parent, continue recursion
-				TreeWalker::nth_ancestor::<WT,>(parent.current_tree_mut().as_mut().unwrap(), n - 1,)
+				TreeWalker::nth_ancestor::<WT,>(
+					parent.current_tree_mut().as_mut().unwrap(),
+					n - 1,
+				)
 			} else {
 				// Failed to find parent, return the failure
 				parent
@@ -281,7 +284,11 @@ pub trait TreeWalker<N: NodeValue,>: Sized + Iterator {
 	fn set_pos<WT: WalkTried,>(&mut self, coordinate: impl Coordinate,) -> WT;
 
 	/// similar to `set_pos` but act as moving by relative distance
-	fn move_pos<WT: WalkTried,>(&mut self, dimension: usize, distance: isize,) -> WT;
+	fn move_pos<WT: WalkTried,>(
+		&mut self,
+		dimension: usize,
+		distance: isize,
+	) -> WT;
 
 	// === Position Information Methods ===
 

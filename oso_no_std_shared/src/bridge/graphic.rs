@@ -14,14 +14,16 @@
 //! ## Key Components
 //!
 //! - [`PixelFormatConf`]: Enum representing different pixel formats
-//! - [`FrameBufConf`]: Structure containing framebuffer configuration parameters
+//! - [`FrameBufConf`]: Structure containing framebuffer configuration
+//!   parameters
 //!
 //! ## Design Principles
 //!
 //! - **ABI Stability**: Uses `#[repr(C)]` for consistent memory layout
 //! - **No Standard Library**: Works in `no_std` environments
 //! - **Safety**: Provides safe abstractions over raw hardware interfaces
-//! - **Flexibility**: Supports multiple pixel formats and display configurations
+//! - **Flexibility**: Supports multiple pixel formats and display
+//!   configurations
 //!
 //! ## Usage Scenarios
 //!
@@ -49,7 +51,8 @@
 //!
 //! ### Kernel Graphics Initialization
 //!
-//! The kernel receives the configuration and initializes its graphics subsystem:
+//! The kernel receives the configuration and initializes its graphics
+//! subsystem:
 //!
 //! ```rust,no_run
 //! // Kernel code
@@ -70,7 +73,8 @@
 //!
 //! The framebuffer memory layout depends on the pixel format and stride:
 //!
-//! - **Stride**: May be larger than `width * bytes_per_pixel` due to alignment requirements
+//! - **Stride**: May be larger than `width * bytes_per_pixel` due to alignment
+//!   requirements
 //! - **Padding**: Some hardware requires row padding for optimal performance
 //! - **Endianness**: Pixel format determines byte order within each pixel
 //!
@@ -83,9 +87,9 @@
 
 /// Represents the pixel format configuration for a framebuffer
 ///
-/// This enum defines the different pixel formats that can be used when configuring
-/// a framebuffer for graphics output. Each format represents a different way of
-/// organizing color data within each pixel.
+/// This enum defines the different pixel formats that can be used when
+/// configuring a framebuffer for graphics output. Each format represents a
+/// different way of organizing color data within each pixel.
 ///
 /// # Pixel Format Details
 ///
@@ -139,7 +143,8 @@
 ///
 /// - **RGB/BGR**: Direct pixel access, good for individual pixel operations
 /// - **Bitmask**: May require additional computation for color conversion
-/// - **BltOnly**: Optimized for bulk operations, limited individual pixel access
+/// - **BltOnly**: Optimized for bulk operations, limited individual pixel
+///   access
 #[repr(C)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy,)]
 pub enum PixelFormatConf {
@@ -192,8 +197,8 @@ impl PixelFormatConf {
 	/// ```
 	pub fn bytes_per_pixel(&self,) -> Option<usize,> {
 		match self {
-			PixelFormatConf::Rgb | PixelFormatConf::Bgr => Some(4,), // Assuming 32-bit RGBA/BGRA
-			PixelFormatConf::Bitmask | PixelFormatConf::BltOnly => None, // Variable or unknown
+			PixelFormatConf::Rgb | PixelFormatConf::Bgr => Some(4,), /* Assuming 32-bit RGBA/BGRA */
+			PixelFormatConf::Bitmask | PixelFormatConf::BltOnly => None, /* Variable or unknown */
 		}
 	}
 
@@ -219,7 +224,9 @@ impl PixelFormatConf {
 	/// ```
 	pub fn supports_pixel_access(&self,) -> bool {
 		match self {
-			PixelFormatConf::Rgb | PixelFormatConf::Bgr | PixelFormatConf::Bitmask => true,
+			PixelFormatConf::Rgb
+			| PixelFormatConf::Bgr
+			| PixelFormatConf::Bitmask => true,
 			PixelFormatConf::BltOnly => false,
 		}
 	}
@@ -246,9 +253,10 @@ impl PixelFormatConf {
 ///
 /// ## ABI Stability
 ///
-/// Since Rust doesn't have a stabilized ABI, this structure uses the `#[repr(C)]`
-/// attribute to ensure a consistent memory layout when passed between components
-/// compiled with different versions of Rust or different compilers.
+/// Since Rust doesn't have a stabilized ABI, this structure uses the
+/// `#[repr(C)]` attribute to ensure a consistent memory layout when passed
+/// between components compiled with different versions of Rust or different
+/// compilers.
 ///
 /// ## Memory Layout
 ///
@@ -263,8 +271,8 @@ impl PixelFormatConf {
 /// ```
 ///
 /// The `stride` field indicates the number of bytes from the start of one row
-/// to the start of the next row, which may be larger than `width * bytes_per_pixel`
-/// due to alignment requirements.
+/// to the start of the next row, which may be larger than `width *
+/// bytes_per_pixel` due to alignment requirements.
 ///
 /// ## Fields
 ///
@@ -379,8 +387,8 @@ impl FrameBufConf {
 	///
 	/// # Panics
 	///
-	/// This function may panic in debug builds if the parameters are inconsistent
-	/// (e.g., if `stride * height > size`).
+	/// This function may panic in debug builds if the parameters are
+	/// inconsistent (e.g., if `stride * height > size`).
 	pub fn new(
 		pixel_format: PixelFormatConf,
 		base: *mut u8,
@@ -397,7 +405,10 @@ impl FrameBufConf {
 			stride >= width * pixel_format.bytes_per_pixel().unwrap_or(1),
 			"Stride must be at least width * bytes_per_pixel"
 		);
-		debug_assert!(stride * height <= size, "Total framebuffer size must accommodate all rows");
+		debug_assert!(
+			stride * height <= size,
+			"Total framebuffer size must accommodate all rows"
+		);
 
 		Self { pixel_format, size, base, width, height, stride, }
 	}
@@ -508,7 +519,11 @@ impl FrameBufConf {
 	/// ```
 	pub fn is_valid(&self,) -> bool {
 		// Basic sanity checks
-		if self.width == 0 || self.height == 0 || self.stride == 0 || self.size == 0 {
+		if self.width == 0
+			|| self.height == 0
+			|| self.stride == 0
+			|| self.size == 0
+		{
 			return false;
 		}
 

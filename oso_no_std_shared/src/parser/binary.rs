@@ -1,13 +1,14 @@
 //! # Binary Data Parsing Module
 //!
-//! This module provides specialized functionality for parsing binary data formats.
-//! It extends the core parser framework with binary-specific operations and
-//! utilities optimized for system-level binary data processing.
+//! This module provides specialized functionality for parsing binary data
+//! formats. It extends the core parser framework with binary-specific
+//! operations and utilities optimized for system-level binary data processing.
 //!
 //! ## Key Components
 //!
 //! - `BinaryParser<C>`: Trait for parsers that specifically handle binary data
-//! - `BinaryParserBuilder<T>`: Builder pattern implementation for constructing binary parsers
+//! - `BinaryParserBuilder<T>`: Builder pattern implementation for constructing
+//!   binary parsers
 //!
 //! ## Design Goals
 //!
@@ -31,9 +32,10 @@ use core::marker::PhantomData;
 
 /// Trait for parsers that specifically handle binary data formats.
 ///
-/// This trait extends the base `Parser` trait with binary-specific functionality.
-/// It serves as a marker trait to distinguish binary parsers from other parser
-/// types and may be extended in the future with binary-specific methods.
+/// This trait extends the base `Parser` trait with binary-specific
+/// functionality. It serves as a marker trait to distinguish binary parsers
+/// from other parser types and may be extended in the future with
+/// binary-specific methods.
 ///
 /// # Type Parameters
 ///
@@ -149,8 +151,8 @@ impl<T,> BinaryParserBuilder<T,> {
 	///
 	/// # Note
 	///
-	/// This method is currently commented out but represents future functionality
-	/// for handling different byte orders in binary data.
+	/// This method is currently commented out but represents future
+	/// functionality for handling different byte orders in binary data.
 	/// pub fn with_endianness(self, endianness: Endianness) -> Self {
 	///     // Configure endianness handling
 	///     self
@@ -167,8 +169,8 @@ impl<T,> BinaryParserBuilder<T,> {
 	///
 	/// # Note
 	///
-	/// This method is currently commented out but represents future functionality
-	/// for handling memory alignment requirements.
+	/// This method is currently commented out but represents future
+	/// functionality for handling memory alignment requirements.
 	/// pub fn with_alignment(self, alignment: usize) -> Self {
 	///     // Configure alignment requirements
 	///     self

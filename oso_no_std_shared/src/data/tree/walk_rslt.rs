@@ -103,7 +103,9 @@ pub struct WalkRslt<N: NodeValue, T: TreeWalker<N,>, C: Coordinate,> {
 	coord:        C,
 }
 
-impl<N: NodeValue, T: TreeWalker<N,>, C: Coordinate,> WalkTried for WalkRslt<N, T, C,> {
+impl<N: NodeValue, T: TreeWalker<N,>, C: Coordinate,> WalkTried
+	for WalkRslt<N, T, C,>
+{
 	type C = C;
 	type N = N;
 	type T = T;
@@ -125,6 +127,10 @@ impl<N: NodeValue, T: TreeWalker<N,>, C: Coordinate,> WalkTried for WalkRslt<N, 
 	}
 
 	fn from(tn: T, coord: Self::C,) -> Self {
-		Self { __constraint: core::marker::PhantomData::<N,>, tree: Some(tn,), coord, }
+		Self {
+			__constraint: core::marker::PhantomData::<N,>,
+			tree: Some(tn,),
+			coord,
+		}
 	}
 }
